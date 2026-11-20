@@ -1,0 +1,1899 @@
+{
+    "database": "samples",
+    "entries": [
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": 50,
+                        "collection": "restaurants",
+                        "db": "samples",
+                        "documents": [
+                            {
+                                "_id": {
+                                    "$oid": "6ada7d441bcace55d9a1e147"
+                                },
+                                "address": {
+                                    "building": "251",
+                                    "coord": [
+                                        -73.9775552,
+                                        40.7432016
+                                    ],
+                                    "street": "East   31 Street",
+                                    "zipcode": "10016"
+                                },
+                                "borough": "Manhattan",
+                                "cuisine": "Italian",
+                                "grades": [
+                                    {
+                                        "date": {
+                                            "$date": "2014-04-22T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 13
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2013-06-19T00:00:00Z"
+                                        },
+                                        "grade": "C",
+                                        "score": 32
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2012-05-22T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 12
+                                    }
+                                ],
+                                "name": "Marchis Restaurant",
+                                "restaurant_id": "40364668"
+                            },
+                            {
+                                "_id": {
+                                    "$oid": "6ada7d441bcace55d9a1e158"
+                                },
+                                "address": {
+                                    "building": "67",
+                                    "coord": [
+                                        -74.0707363,
+                                        40.59321569999999
+                                    ],
+                                    "street": "Olympia Boulevard",
+                                    "zipcode": "10305"
+                                },
+                                "borough": "Staten Island",
+                                "cuisine": "Italian",
+                                "grades": [
+                                    {
+                                        "date": {
+                                            "$date": "2014-04-24T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 13
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2013-04-04T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 2
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2012-02-02T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 5
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2011-07-23T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 11
+                                    }
+                                ],
+                                "name": "Crystal Room",
+                                "restaurant_id": "40365013"
+                            },
+                            {
+                                "_id": {
+                                    "$oid": "6ada7d441bcace55d9a1e15b"
+                                },
+                                "address": {
+                                    "building": "93",
+                                    "coord": [
+                                        -73.99950489999999,
+                                        40.7169224
+                                    ],
+                                    "street": "Baxter Street",
+                                    "zipcode": "10013"
+                                },
+                                "borough": "Manhattan",
+                                "cuisine": "Italian",
+                                "grades": [
+                                    {
+                                        "date": {
+                                            "$date": "2014-12-15T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 9
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2013-12-06T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 10
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2012-10-23T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 12
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2012-06-04T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 11
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2012-01-12T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 13
+                                    }
+                                ],
+                                "name": "Forlinis Restaurant",
+                                "restaurant_id": "40365098"
+                            }
+                        ],
+                        "fields": {
+                        },
+                        "limit": 3,
+                        "options": null,
+                        "output": "",
+                        "pipeline": null,
+                        "query": {
+                            "cuisine": "Italian"
+                        },
+                        "skip": 0,
+                        "type": "query"
+                    }
+                ]
+            },
+            "script": "db.restaurants.find({cuisine:'Italian'}).limit(3).sort({_id:1})"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": 50,
+                        "collection": "restaurants",
+                        "db": "samples",
+                        "documents": [
+                            {
+                                "name": "(Lewis Drug Store) Locanda Vini E Olii"
+                            },
+                            {
+                                "name": "101 Restaurant And Bar"
+                            },
+                            {
+                                "name": "44 Sw Ristorante & Bar"
+                            },
+                            {
+                                "name": "900 Park"
+                            },
+                            {
+                                "name": "A Voce"
+                            }
+                        ],
+                        "fields": {
+                            "_id": 0,
+                            "name": 1
+                        },
+                        "limit": 5,
+                        "options": null,
+                        "output": "",
+                        "pipeline": null,
+                        "query": {
+                            "cuisine": "Italian"
+                        },
+                        "skip": 0,
+                        "type": "query"
+                    }
+                ]
+            },
+            "script": "db.restaurants.find({cuisine:'Italian'}, {name:1, _id:0}).sort({name:1}).limit(5)"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": 50,
+                        "collection": "restaurants",
+                        "db": "samples",
+                        "documents": [
+                            {
+                                "_id": {
+                                    "$oid": "6ada7d441bcace55d9a1e10c"
+                                },
+                                "address": {
+                                    "building": "265-15",
+                                    "coord": [
+                                        -73.7032601,
+                                        40.7386417
+                                    ],
+                                    "street": "Hillside Avenue",
+                                    "zipcode": "11004"
+                                },
+                                "borough": "Queens",
+                                "cuisine": "Ice Cream, Gelato, Yogurt, Ices",
+                                "grades": [
+                                    {
+                                        "date": {
+                                            "$date": "2014-10-28T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 9
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2013-09-18T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 10
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2012-09-20T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 13
+                                    }
+                                ],
+                                "name": "Carvel Ice Cream",
+                                "restaurant_id": "40361322"
+                            },
+                            {
+                                "_id": {
+                                    "$oid": "6ada7d441bcace55d9a1e10d"
+                                },
+                                "address": {
+                                    "building": "6909",
+                                    "coord": [
+                                        -74.0259567,
+                                        40.6353674
+                                    ],
+                                    "street": "3 Avenue",
+                                    "zipcode": "11209"
+                                },
+                                "borough": "Brooklyn",
+                                "cuisine": "Delicatessen",
+                                "grades": [
+                                    {
+                                        "date": {
+                                            "$date": "2014-08-21T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 4
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2014-03-05T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 3
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2013-01-10T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 10
+                                    }
+                                ],
+                                "name": "Nordic Delicacies",
+                                "restaurant_id": "40361390"
+                            }
+                        ],
+                        "fields": {
+                        },
+                        "limit": 2,
+                        "options": null,
+                        "output": "",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": 2,
+                        "type": "query"
+                    }
+                ]
+            },
+            "script": "db.restaurants.find().skip(2).limit(2).sort({_id:1})"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": 7,
+                        "collection": "restaurants",
+                        "db": "samples",
+                        "documents": [
+                            {
+                                "_id": {
+                                    "$oid": "6ada7d441bcace55d9a1e10a"
+                                },
+                                "address": {
+                                    "building": "203",
+                                    "coord": [
+                                        -73.97822040000001,
+                                        40.6435254
+                                    ],
+                                    "street": "Church Avenue",
+                                    "zipcode": "11218"
+                                },
+                                "borough": "Brooklyn",
+                                "cuisine": "Ice Cream, Gelato, Yogurt, Ices",
+                                "grades": [
+                                    {
+                                        "date": {
+                                            "$date": "2014-02-10T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 2
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2013-01-02T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 13
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2012-01-09T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 3
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2011-11-07T00:00:00Z"
+                                        },
+                                        "grade": "P",
+                                        "score": 12
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2011-07-21T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 13
+                                    }
+                                ],
+                                "name": "Carvel Ice Cream",
+                                "restaurant_id": "40360076"
+                            },
+                            {
+                                "_id": {
+                                    "$oid": "6ada7d441bcace55d9a1e10b"
+                                },
+                                "address": {
+                                    "building": "7114",
+                                    "coord": [
+                                        -73.9068506,
+                                        40.6199034
+                                    ],
+                                    "street": "Avenue U",
+                                    "zipcode": "11234"
+                                },
+                                "borough": "Brooklyn",
+                                "cuisine": "Delicatessen",
+                                "grades": [
+                                    {
+                                        "date": {
+                                            "$date": "2014-05-29T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 10
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2014-01-14T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 10
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2013-08-03T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 8
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2012-07-18T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 10
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2012-03-09T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 13
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2011-10-14T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 9
+                                    }
+                                ],
+                                "name": "Wilken'S Fine Food",
+                                "restaurant_id": "40356483"
+                            },
+                            {
+                                "_id": {
+                                    "$oid": "6ada7d441bcace55d9a1e10c"
+                                },
+                                "address": {
+                                    "building": "265-15",
+                                    "coord": [
+                                        -73.7032601,
+                                        40.7386417
+                                    ],
+                                    "street": "Hillside Avenue",
+                                    "zipcode": "11004"
+                                },
+                                "borough": "Queens",
+                                "cuisine": "Ice Cream, Gelato, Yogurt, Ices",
+                                "grades": [
+                                    {
+                                        "date": {
+                                            "$date": "2014-10-28T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 9
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2013-09-18T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 10
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2012-09-20T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 13
+                                    }
+                                ],
+                                "name": "Carvel Ice Cream",
+                                "restaurant_id": "40361322"
+                            },
+                            {
+                                "_id": {
+                                    "$oid": "6ada7d441bcace55d9a1e10d"
+                                },
+                                "address": {
+                                    "building": "6909",
+                                    "coord": [
+                                        -74.0259567,
+                                        40.6353674
+                                    ],
+                                    "street": "3 Avenue",
+                                    "zipcode": "11209"
+                                },
+                                "borough": "Brooklyn",
+                                "cuisine": "Delicatessen",
+                                "grades": [
+                                    {
+                                        "date": {
+                                            "$date": "2014-08-21T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 4
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2014-03-05T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 3
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2013-01-10T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 10
+                                    }
+                                ],
+                                "name": "Nordic Delicacies",
+                                "restaurant_id": "40361390"
+                            },
+                            {
+                                "_id": {
+                                    "$oid": "6ada7d441bcace55d9a1e10e"
+                                },
+                                "address": {
+                                    "building": "522",
+                                    "coord": [
+                                        -73.95171,
+                                        40.767461
+                                    ],
+                                    "street": "East   74 Street",
+                                    "zipcode": "10021"
+                                },
+                                "borough": "Manhattan",
+                                "cuisine": "American",
+                                "grades": [
+                                    {
+                                        "date": {
+                                            "$date": "2014-09-02T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 12
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2013-12-19T00:00:00Z"
+                                        },
+                                        "grade": "B",
+                                        "score": 16
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2013-05-28T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 9
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2012-12-07T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 13
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2012-03-29T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 11
+                                    }
+                                ],
+                                "name": "Glorious Food",
+                                "restaurant_id": "40361521"
+                            },
+                            {
+                                "_id": {
+                                    "$oid": "6ada7d441bcace55d9a1e10f"
+                                },
+                                "address": {
+                                    "building": "129-08",
+                                    "coord": [
+                                        -73.839297,
+                                        40.78147
+                                    ],
+                                    "street": "20 Avenue",
+                                    "zipcode": "11356"
+                                },
+                                "borough": "Queens",
+                                "cuisine": "Delicatessen",
+                                "grades": [
+                                    {
+                                        "date": {
+                                            "$date": "2014-08-16T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 12
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2013-08-27T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 9
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2012-09-20T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 7
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2011-09-29T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 10
+                                    }
+                                ],
+                                "name": "Sal'S Deli",
+                                "restaurant_id": "40361618"
+                            },
+                            {
+                                "_id": {
+                                    "$oid": "6ada7d441bcace55d9a1e110"
+                                },
+                                "address": {
+                                    "building": "284",
+                                    "coord": [
+                                        -73.9829239,
+                                        40.6580753
+                                    ],
+                                    "street": "Prospect Park West",
+                                    "zipcode": "11215"
+                                },
+                                "borough": "Brooklyn",
+                                "cuisine": "American",
+                                "grades": [
+                                    {
+                                        "date": {
+                                            "$date": "2014-11-19T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 11
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2013-11-14T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 2
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2012-12-05T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 13
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2012-05-17T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 11
+                                    }
+                                ],
+                                "name": "The Movable Feast",
+                                "restaurant_id": "40361606"
+                            }
+                        ],
+                        "fields": {
+                        },
+                        "limit": 20,
+                        "options": null,
+                        "output": "",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": 0,
+                        "type": "query"
+                    }
+                ]
+            },
+            "script": "db.restaurants.find({}).sort({_id:1}).batchSize(7).limit(20)"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                            {
+                                "name": "Marchis Restaurant"
+                            }
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "{\"name\":\"Marchis Restaurant\"}",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "custom"
+                    }
+                ]
+            },
+            "script": "db.restaurants.findOne({cuisine:'Italian'}, {name:1, _id:0})"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "null",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "db.restaurants.findOne({_id: ObjectId('000000000000000000000000')})"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "1069",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "db.restaurants.count({cuisine:'Italian'})"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "25359",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "db.restaurants.countDocuments({})"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "1069",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "db.restaurants.find({cuisine:'Italian'}).count()"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "3",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "db.restaurants.find({cuisine:'Italian'}).limit(3).size()"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "3",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "db.restaurants.find({cuisine:'Italian'}).limit(3).count(true)"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                            {
+                                "_id": {
+                                    "$oid": "6ada7d441bcace55d9a1e10a"
+                                },
+                                "address": {
+                                    "building": "203",
+                                    "coord": [
+                                        -73.97822040000001,
+                                        40.6435254
+                                    ],
+                                    "street": "Church Avenue",
+                                    "zipcode": "11218"
+                                },
+                                "borough": "Brooklyn",
+                                "cuisine": "Ice Cream, Gelato, Yogurt, Ices",
+                                "grades": [
+                                    {
+                                        "date": {
+                                            "$date": "2014-02-10T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 2
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2013-01-02T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 13
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2012-01-09T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 3
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2011-11-07T00:00:00Z"
+                                        },
+                                        "grade": "P",
+                                        "score": 12
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2011-07-21T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 13
+                                    }
+                                ],
+                                "name": "Carvel Ice Cream",
+                                "restaurant_id": "40360076"
+                            },
+                            {
+                                "_id": {
+                                    "$oid": "6ada7d441bcace55d9a1e10b"
+                                },
+                                "address": {
+                                    "building": "7114",
+                                    "coord": [
+                                        -73.9068506,
+                                        40.6199034
+                                    ],
+                                    "street": "Avenue U",
+                                    "zipcode": "11234"
+                                },
+                                "borough": "Brooklyn",
+                                "cuisine": "Delicatessen",
+                                "grades": [
+                                    {
+                                        "date": {
+                                            "$date": "2014-05-29T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 10
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2014-01-14T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 10
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2013-08-03T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 8
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2012-07-18T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 10
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2012-03-09T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 13
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2011-10-14T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 9
+                                    }
+                                ],
+                                "name": "Wilken'S Fine Food",
+                                "restaurant_id": "40356483"
+                            },
+                            {
+                                "_id": {
+                                    "$oid": "6ada7d441bcace55d9a1e10c"
+                                },
+                                "address": {
+                                    "building": "265-15",
+                                    "coord": [
+                                        -73.7032601,
+                                        40.7386417
+                                    ],
+                                    "street": "Hillside Avenue",
+                                    "zipcode": "11004"
+                                },
+                                "borough": "Queens",
+                                "cuisine": "Ice Cream, Gelato, Yogurt, Ices",
+                                "grades": [
+                                    {
+                                        "date": {
+                                            "$date": "2014-10-28T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 9
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2013-09-18T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 10
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2012-09-20T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 13
+                                    }
+                                ],
+                                "name": "Carvel Ice Cream",
+                                "restaurant_id": "40361322"
+                            }
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "[{\"_id\":{\"$oid\":\"6ada7d441bcace55d9a1e10a\"},\"address\":{\"building\":\"203\",\"coord\":[-73.97822040000001,40.6435254],\"street\":\"Church Avenue\",\"zipcode\":\"11218\"},\"borough\":\"Brooklyn\",\"cuisine\":\"Ice Cream, Gelato, Yogurt, Ices\",\"grades\":[{\"date\":{\"$date\":\"2014-02-10T00:00:00Z\"},\"grade\":\"A\",\"score\":2},{\"date\":{\"$date\":\"2013-01-02T00:00:00Z\"},\"grade\":\"A\",\"score\":13},{\"date\":{\"$date\":\"2012-01-09T00:00:00Z\"},\"grade\":\"A\",\"score\":3},{\"date\":{\"$date\":\"2011-11-07T00:00:00Z\"},\"grade\":\"P\",\"score\":12},{\"date\":{\"$date\":\"2011-07-21T00:00:00Z\"},\"grade\":\"A\",\"score\":13}],\"name\":\"Carvel Ice Cream\",\"restaurant_id\":\"40360076\"},{\"_id\":{\"$oid\":\"6ada7d441bcace55d9a1e10b\"},\"address\":{\"building\":\"7114\",\"coord\":[-73.9068506,40.6199034],\"street\":\"Avenue U\",\"zipcode\":\"11234\"},\"borough\":\"Brooklyn\",\"cuisine\":\"Delicatessen\",\"grades\":[{\"date\":{\"$date\":\"2014-05-29T00:00:00Z\"},\"grade\":\"A\",\"score\":10},{\"date\":{\"$date\":\"2014-01-14T00:00:00Z\"},\"grade\":\"A\",\"score\":10},{\"date\":{\"$date\":\"2013-08-03T00:00:00Z\"},\"grade\":\"A\",\"score\":8},{\"date\":{\"$date\":\"2012-07-18T00:00:00Z\"},\"grade\":\"A\",\"score\":10},{\"date\":{\"$date\":\"2012-03-09T00:00:00Z\"},\"grade\":\"A\",\"score\":13},{\"date\":{\"$date\":\"2011-10-14T00:00:00Z\"},\"grade\":\"A\",\"score\":9}],\"name\":\"Wilken'S Fine Food\",\"restaurant_id\":\"40356483\"},{\"_id\":{\"$oid\":\"6ada7d441bcace55d9a1e10c\"},\"address\":{\"building\":\"265-15\",\"coord\":[-73.7032601,40.7386417],\"street\":\"Hillside Avenue\",\"zipcode\":\"11004\"},\"borough\":\"Queens\",\"cuisine\":\"Ice Cream, Gelato, Yogurt, Ices\",\"grades\":[{\"date\":{\"$date\":\"2014-10-28T00:00:00Z\"},\"grade\":\"A\",\"score\":9},{\"date\":{\"$date\":\"2013-09-18T00:00:00Z\"},\"grade\":\"A\",\"score\":10},{\"date\":{\"$date\":\"2012-09-20T00:00:00Z\"},\"grade\":\"A\",\"score\":13}],\"name\":\"Carvel Ice Cream\",\"restaurant_id\":\"40361322\"}]",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "custom"
+                    }
+                ]
+            },
+            "script": "db.restaurants.find({}).limit(3).sort({_id:1}).toArray()"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "4",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "db.restaurants.find({cuisine:'Italian'}).limit(4).sort({_id:1}).itcount()"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "[\"Italian\"]",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "db.restaurants.distinct('cuisine', {cuisine: 'Italian'})"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "restaurants",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                            {
+                                "_id": "American",
+                                "n": 6183
+                            },
+                            {
+                                "_id": "Chinese",
+                                "n": 2418
+                            },
+                            {
+                                "_id": "Café/Coffee/Tea",
+                                "n": 1214
+                            }
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": {
+                        },
+                        "output": "",
+                        "pipeline": {
+                            "0": {
+                                "$group": {
+                                    "_id": "$cuisine",
+                                    "n": {
+                                        "$sum": 1
+                                    }
+                                }
+                            },
+                            "1": {
+                                "$sort": {
+                                    "_id": 1,
+                                    "n": -1
+                                }
+                            },
+                            "2": {
+                                "$limit": 3
+                            }
+                        },
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "aggregate"
+                    }
+                ]
+            },
+            "script": "db.restaurants.aggregate([{$group:{_id:'$cuisine', n:{$sum:1}}},{$sort:{n:-1,_id:1}},{$limit:3}])"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "zips",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                            {
+                                "n": 1595
+                            }
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": {
+                        },
+                        "output": "",
+                        "pipeline": {
+                            "0": {
+                                "$match": {
+                                    "state": "NY"
+                                }
+                            },
+                            "1": {
+                                "$count": "n"
+                            }
+                        },
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "aggregate"
+                    }
+                ]
+            },
+            "script": "db.zips.aggregate([{$match:{state:'NY'}},{$count:'n'}])"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "zips",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                            {
+                                "_id": "AK",
+                                "n": 195
+                            },
+                            {
+                                "_id": "AL",
+                                "n": 567
+                            },
+                            {
+                                "_id": "AR",
+                                "n": 578
+                            },
+                            {
+                                "_id": "AZ",
+                                "n": 270
+                            },
+                            {
+                                "_id": "CA",
+                                "n": 1516
+                            },
+                            {
+                                "_id": "CO",
+                                "n": 414
+                            },
+                            {
+                                "_id": "CT",
+                                "n": 263
+                            },
+                            {
+                                "_id": "DC",
+                                "n": 24
+                            },
+                            {
+                                "_id": "DE",
+                                "n": 53
+                            },
+                            {
+                                "_id": "FL",
+                                "n": 804
+                            },
+                            {
+                                "_id": "GA",
+                                "n": 635
+                            },
+                            {
+                                "_id": "HI",
+                                "n": 80
+                            },
+                            {
+                                "_id": "IA",
+                                "n": 922
+                            },
+                            {
+                                "_id": "ID",
+                                "n": 244
+                            },
+                            {
+                                "_id": "IL",
+                                "n": 1237
+                            },
+                            {
+                                "_id": "IN",
+                                "n": 676
+                            },
+                            {
+                                "_id": "KS",
+                                "n": 715
+                            },
+                            {
+                                "_id": "KY",
+                                "n": 809
+                            },
+                            {
+                                "_id": "LA",
+                                "n": 464
+                            },
+                            {
+                                "_id": "MA",
+                                "n": 474
+                            },
+                            {
+                                "_id": "MD",
+                                "n": 420
+                            },
+                            {
+                                "_id": "ME",
+                                "n": 410
+                            },
+                            {
+                                "_id": "MI",
+                                "n": 876
+                            },
+                            {
+                                "_id": "MN",
+                                "n": 882
+                            },
+                            {
+                                "_id": "MO",
+                                "n": 994
+                            },
+                            {
+                                "_id": "MS",
+                                "n": 363
+                            },
+                            {
+                                "_id": "MT",
+                                "n": 314
+                            },
+                            {
+                                "_id": "NC",
+                                "n": 705
+                            },
+                            {
+                                "_id": "ND",
+                                "n": 391
+                            },
+                            {
+                                "_id": "NE",
+                                "n": 574
+                            },
+                            {
+                                "_id": "NH",
+                                "n": 218
+                            },
+                            {
+                                "_id": "NJ",
+                                "n": 540
+                            },
+                            {
+                                "_id": "NM",
+                                "n": 276
+                            },
+                            {
+                                "_id": "NV",
+                                "n": 104
+                            },
+                            {
+                                "_id": "NY",
+                                "n": 1595
+                            },
+                            {
+                                "_id": "OH",
+                                "n": 1007
+                            },
+                            {
+                                "_id": "OK",
+                                "n": 586
+                            },
+                            {
+                                "_id": "OR",
+                                "n": 384
+                            },
+                            {
+                                "_id": "PA",
+                                "n": 1458
+                            },
+                            {
+                                "_id": "RI",
+                                "n": 69
+                            },
+                            {
+                                "_id": "SC",
+                                "n": 350
+                            },
+                            {
+                                "_id": "SD",
+                                "n": 384
+                            },
+                            {
+                                "_id": "TN",
+                                "n": 582
+                            },
+                            {
+                                "_id": "TX",
+                                "n": 1671
+                            },
+                            {
+                                "_id": "UT",
+                                "n": 205
+                            },
+                            {
+                                "_id": "VA",
+                                "n": 816
+                            },
+                            {
+                                "_id": "VT",
+                                "n": 243
+                            },
+                            {
+                                "_id": "WA",
+                                "n": 484
+                            },
+                            {
+                                "_id": "WI",
+                                "n": 716
+                            },
+                            {
+                                "_id": "WV",
+                                "n": 656
+                            }
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": {
+                            "allowDiskUse": true
+                        },
+                        "output": "",
+                        "pipeline": {
+                            "0": {
+                                "$group": {
+                                    "_id": "$state",
+                                    "n": {
+                                        "$sum": 1
+                                    }
+                                }
+                            },
+                            "1": {
+                                "$sort": {
+                                    "_id": 1
+                                }
+                            }
+                        },
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "aggregate"
+                    }
+                ]
+            },
+            "script": "db.zips.aggregate([{$group:{_id:'$state', n:{$sum:1}}},{$sort:{_id:1}}], {allowDiskUse: true})"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                            {
+                                "key": {
+                                    "_id": 1
+                                },
+                                "name": "_id_",
+                                "ns": "samples.restaurants",
+                                "v": 2
+                            }
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "[{\"v\":2,\"key\":{\"_id\":1},\"name\":\"_id_\",\"ns\":\"samples.restaurants\"}]",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "custom"
+                    }
+                ]
+            },
+            "script": "db.restaurants.getIndexes()"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "[\"books\",\"companies\",\"countries\",\"grades\",\"inspections\",\"restaurants\",\"zips\"]",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "db.getCollectionNames()"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "[]",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "db.nosuchcollection.find().toArray()"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "0",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "db.nosuchcollection.count()"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "Italian\nItalian\nItalian",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "db.restaurants.find({cuisine:'Italian'}).limit(3).sort({_id:1}).forEach(function (d) { print(d.cuisine) })"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "[\"Ice Cream, Gelato, Yogurt, Ices\",\"Delicatessen\"]",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "db.restaurants.find({}).sort({_id:1}).limit(2).map(function (d) { return d.cuisine })"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                            {
+                                "ok": 1
+                            }
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "{\"ok\":1}",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "custom"
+                    }
+                ]
+            },
+            "script": "db.runCommand({ping: 1})"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": 50,
+                        "collection": "restaurants",
+                        "db": "samples",
+                        "documents": [
+                            {
+                                "_id": {
+                                    "$oid": "6ada7d441bcace55d9a1e10a"
+                                },
+                                "address": {
+                                    "building": "203",
+                                    "coord": [
+                                        -73.97822040000001,
+                                        40.6435254
+                                    ],
+                                    "street": "Church Avenue",
+                                    "zipcode": "11218"
+                                },
+                                "borough": "Brooklyn",
+                                "cuisine": "Ice Cream, Gelato, Yogurt, Ices",
+                                "grades": [
+                                    {
+                                        "date": {
+                                            "$date": "2014-02-10T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 2
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2013-01-02T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 13
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2012-01-09T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 3
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2011-11-07T00:00:00Z"
+                                        },
+                                        "grade": "P",
+                                        "score": 12
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2011-07-21T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 13
+                                    }
+                                ],
+                                "name": "Carvel Ice Cream",
+                                "restaurant_id": "40360076"
+                            }
+                        ],
+                        "fields": {
+                        },
+                        "limit": 1,
+                        "options": null,
+                        "output": "",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": 0,
+                        "type": "query"
+                    }
+                ]
+            },
+            "script": "db.getCollection('restaurants').find({}).sort({_id:1}).limit(1)"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": 50,
+                        "collection": "restaurants",
+                        "db": "samples",
+                        "documents": [
+                            {
+                                "_id": {
+                                    "$oid": "6ada7d441bcace55d9a1e10a"
+                                },
+                                "address": {
+                                    "building": "203",
+                                    "coord": [
+                                        -73.97822040000001,
+                                        40.6435254
+                                    ],
+                                    "street": "Church Avenue",
+                                    "zipcode": "11218"
+                                },
+                                "borough": "Brooklyn",
+                                "cuisine": "Ice Cream, Gelato, Yogurt, Ices",
+                                "grades": [
+                                    {
+                                        "date": {
+                                            "$date": "2014-02-10T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 2
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2013-01-02T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 13
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2012-01-09T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 3
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2011-11-07T00:00:00Z"
+                                        },
+                                        "grade": "P",
+                                        "score": 12
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2011-07-21T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 13
+                                    }
+                                ],
+                                "name": "Carvel Ice Cream",
+                                "restaurant_id": "40360076"
+                            }
+                        ],
+                        "fields": {
+                        },
+                        "limit": 1,
+                        "options": null,
+                        "output": "",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": 0,
+                        "type": "query"
+                    }
+                ]
+            },
+            "script": "db['restaurants'].find({}).sort({_id:1}).limit(1)"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "\"admin\"",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "db.getSiblingDB('admin').getName()"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "\"restaurants samples.restaurants\"",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "db.restaurants.getName() + ' ' + db.restaurants.getFullName()"
+        }
+    ],
+    "group": "reads"
+}

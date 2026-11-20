@@ -1,0 +1,598 @@
+name: CI
+
+on:
+  push:
+    branches: [ master, main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+    inputs:
+      qt_version:
+        description: 'Qt version to install (e.g. 6.8.2 or 6.12.0)'
+        required: false
+        default: '6.8.2'
+      release_version:
+        description: 'Optional release version override (e.g. 2.1.0)'
+        required: false
+        default: ''
+      publish_release:
+        description: 'Run the release manifest, minisign & publish job'
+        required: false
+        type: boolean
+        default: false
+      dry_run_release:
+        description: 'Run release job in --dry-run mode (no live uploads)'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' && github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/v') }}
+
+env:
+  QT_DEFAULT_VERSION: '6.8.2'
+  CI_BUILD_VERSION: ${{ inputs.release_version || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || '' }}
+
+jobs:
+  i18n:
+    name: Translation Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install minisign for release pipeline verification tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends minisign
+
+      - name: Check shell script syntax
+        run: bash -n ci/*.sh
+
+      - name: Run check-i18n.mjs
+        run: node ci/check-i18n.mjs
+
+      - name: Run release-pulse-api self-test
+        run: node services/release-pulse-api/test-server.mjs
+
+      - name: Run release pipeline test suite
+        run: node ci/test-release-pipeline.mjs
+
+      - name: Run SBOM & license bundle test suite
+        run: node ci/test-sbom-and-licenses.mjs
+
+      - name: Cache OSV-Scanner binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ragoshell-osv-scanner
+          key: osv-scanner-linux-amd64-v2.7.0
+
+      - name: Generate SPDX 2.3 SBOM & scan dependencies (OSV-Scanner)
+        run: |
+          set -euo pipefail
+          sbom_out="${RUNNER_TEMP:-/tmp}/ragoshell-source-sbom.spdx.json"
+          node ci/generate-sbom.mjs --skip-dist --no-auto-vcpkg --output "$sbom_out"
+          node ci/generate-sbom.mjs --verify-only --output "$sbom_out"
+
+          osv_ver="v2.7.0"
+          osv_sha256="160c6253e2922e9e0a6a9771c5c4c40a4b3c6090b34a3cdd5e80c96cc2e4218b"
+          osv_dir="$HOME/.cache/ragoshell-osv-scanner"
+          osv_bin="$osv_dir/osv-scanner-${osv_ver}-linux-amd64"
+          mkdir -p "$osv_dir"
+          if [ ! -f "$osv_bin" ] || ! printf '%s  %s\n' "$osv_sha256" "$osv_bin" | sha256sum --check --status; then
+            rm -f "$osv_bin"
+            curl --fail --location --silent --show-error --retry 3 --proto '=https' --tlsv1.2 \
+              -o "${osv_bin}.tmp" "https://github.com/google/osv-scanner/releases/download/${osv_ver}/osv-scanner_linux_amd64"
+            printf '%s  %s\n' "$osv_sha256" "${osv_bin}.tmp" | sha256sum --check
+            chmod 0755 "${osv_bin}.tmp"
+            mv -f "${osv_bin}.tmp" "$osv_bin"
+          fi
+
+          "$osv_bin" scan source --lockfile=vcpkg.json --lockfile="$sbom_out"
+
+  linux:
+    name: Linux x64 (Build, Tests & QML)
+    runs-on: ubuntu-latest
+    needs: [i18n]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential ninja-build cmake pkg-config autoconf automake libtool \
+            curl file patchelf desktop-file-utils appstream \
+            libgl1-mesa-dev libegl1-mesa-dev libwayland-dev libwayland-egl1 \
+            libwayland-cursor0 libwayland-client0 libxkbcommon-dev libxkbcommon-x11-0 \
+            libfontconfig1-dev libsecret-1-dev libdbus-1-3 \
+            libxcb-cursor0 libxcb-keysyms1 libxcb-image0 libxcb-shm0 \
+            libxcb-render-util0 libxcb-xfixes0 libxcb-shape0 libxcb-icccm4 \
+            libxcb-xinerama0 libxcb-randr0 libxcb-sync1 libxcb-xkb1
+
+      - name: Install Qt 6
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: ${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
+          host: linux
+          target: desktop
+          arch: gcc_64
+          modules: 'qt5compat qtimageformats'
+          dir: ${{ runner.temp }}/Qt
+          cache: true
+          cache-key-prefix: qt-linux-v2-${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
+
+      - name: Cache Linux AppImage packaging tools
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ragoshell-linux-tools
+          key: linux-appimage-tools-v1-${{ hashFiles('ci/build-linux.sh') }}
+          restore-keys: |
+            linux-appimage-tools-v1-
+
+      - name: Setup vcpkg binary cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/vcpkg/archives
+          key: vcpkg-linux-${{ hashFiles('vcpkg.json', 'vcpkg-overlays/**') }}
+          restore-keys: |
+            vcpkg-linux-
+
+      - name: Checkout & bootstrap vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git "$HOME/vcpkg"
+          "$HOME/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
+          echo "VCPKG_ROOT=$HOME/vcpkg" >> "$GITHUB_ENV"
+
+      - name: Build, Test & Package (ci/build-linux.sh)
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: '1'
+        run: |
+          chmod +x ci/build-linux.sh
+          RAGO_LINUX_TOOLS_DIR="$HOME/.cache/ragoshell-linux-tools" \
+            ./ci/build-linux.sh ${CI_BUILD_VERSION:+"$CI_BUILD_VERSION"}
+
+      - name: Upload Linux Artifact
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ragoshell-linux-x64
+          path: |
+            dist/ragoshell-*-linux-x64.AppImage
+            dist/ragoshell-*-linux-x64.tar.gz
+          if-no-files-found: error
+
+  macos:
+    name: macOS arm64 (Build, Tests & QML)
+    runs-on: macos-14
+    needs: [i18n]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install system dependencies
+        run: |
+          brew install ninja cmake pkg-config autoconf automake libtool
+
+      - name: Install Qt 6
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: ${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
+          host: mac
+          target: desktop
+          arch: clang_64
+          dir: ${{ runner.temp }}/Qt
+          cache: true
+          cache-key-prefix: qt-macos-${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
+
+      - name: Setup vcpkg binary cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/vcpkg/archives
+          key: vcpkg-macos-${{ hashFiles('vcpkg.json', 'vcpkg-overlays/**') }}
+          restore-keys: |
+            vcpkg-macos-
+
+      - name: Checkout & bootstrap vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git "$HOME/vcpkg"
+          "$HOME/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
+          echo "VCPKG_ROOT=$HOME/vcpkg" >> "$GITHUB_ENV"
+
+      - name: Build, Test & Package (ci/build-macos.sh)
+        env:
+          RAGO_MAC_SIGN_ID: ${{ github.event_name != 'pull_request' && (secrets.RAGO_MAC_SIGN_ID || secrets.APPLE_DEVELOPER_ID) || '' }}
+          RAGO_MAC_CERT_P12_BASE64: ${{ github.event_name != 'pull_request' && (secrets.RAGO_MAC_CERT_P12_BASE64 || secrets.APPLE_CERT_P12_BASE64) || '' }}
+          RAGO_MAC_CERT_PASSWORD: ${{ github.event_name != 'pull_request' && (secrets.RAGO_MAC_CERT_PASSWORD || secrets.APPLE_CERT_PASSWORD) || '' }}
+          RAGO_MAC_NOTARY_KEY_ID: ${{ github.event_name != 'pull_request' && (secrets.RAGO_MAC_NOTARY_KEY_ID || secrets.APPLE_API_KEY_ID) || '' }}
+          RAGO_MAC_NOTARY_ISSUER: ${{ github.event_name != 'pull_request' && (secrets.RAGO_MAC_NOTARY_ISSUER || secrets.APPLE_API_ISSUER) || '' }}
+          RAGO_MAC_NOTARY_KEY_BASE64: ${{ github.event_name != 'pull_request' && (secrets.RAGO_MAC_NOTARY_KEY_BASE64 || secrets.APPLE_API_KEY) || '' }}
+        run: |
+          chmod +x ci/build-macos.sh
+          ./ci/build-macos.sh ${CI_BUILD_VERSION:+"$CI_BUILD_VERSION"}
+
+      - name: Upload macOS Artifacts
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ragoshell-macos-arm64
+          path: |
+            dist/ragoshell-*-macos-arm64.dmg
+            dist/ragoshell-*-macos-arm64.tar.gz
+          if-no-files-found: error
+
+  windows:
+    name: Windows x64 (Build, Tests & QML)
+    runs-on: windows-latest
+    needs: [i18n]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Qt 6
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: ${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
+          host: windows
+          target: desktop
+          arch: win64_msvc2022_64
+          dir: ${{ runner.temp }}/Qt
+          cache: true
+          cache-key-prefix: qt-windows-${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
+
+      - name: Setup vcpkg binary cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/vcpkg-cache
+          key: vcpkg-windows-${{ hashFiles('vcpkg.json', 'vcpkg-overlays/**') }}
+          restore-keys: |
+            vcpkg-windows-
+
+      - name: Setup Azure Trusted Signing client (optional)
+        if: github.event_name != 'pull_request'
+        shell: pwsh
+        env:
+          RAGO_WIN_SIGN_METADATA_JSON: ${{ secrets.RAGO_WIN_SIGN_METADATA_JSON }}
+          RAGO_WIN_SIGN_DLIB: ${{ secrets.RAGO_WIN_SIGN_DLIB }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:RAGO_WIN_SIGN_METADATA_JSON) -or -not [string]::IsNullOrWhiteSpace($env:RAGO_WIN_SIGN_DLIB)) {
+              Write-Host 'Azure Trusted Signing metadata not configured (or RAGO_WIN_SIGN_DLIB already provided); skipping Dlib client download.'
+              exit 0
+          }
+          $ErrorActionPreference = 'Stop'
+          $tsDir = Join-Path $env:RUNNER_TEMP 'trusted-signing'
+          New-Item -ItemType Directory -Force $tsDir | Out-Null
+          $nupkgZip = Join-Path $tsDir 'Microsoft.Trusted.Signing.Client.zip'
+          Invoke-WebRequest -Uri 'https://www.nuget.org/api/v2/package/Microsoft.Trusted.Signing.Client' -OutFile $nupkgZip
+          Expand-Archive -Path $nupkgZip -DestinationPath (Join-Path $tsDir 'pkg') -Force
+          $dlibFile = Get-ChildItem -Path (Join-Path $tsDir 'pkg') -Recurse -Filter 'Azure.CodeSigning.Dlib.dll' |
+              Where-Object { $_.FullName -match '[\\/]x64[\\/]' } |
+              Select-Object -First 1
+          if (-not $dlibFile) {
+              throw 'Azure.CodeSigning.Dlib.dll (x64) not found in Microsoft.Trusted.Signing.Client NuGet package.'
+          }
+          "RAGO_WIN_SIGN_DLIB=$($dlibFile.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Build, Test & Package (ci/build-windows.ps1)
+        shell: pwsh
+        env:
+          VCPKG_DEFAULT_BINARY_CACHE: ${{ runner.temp }}/vcpkg-cache
+          RAGO_WIN_SIGN_PFX_BASE64: ${{ github.event_name != 'pull_request' && (secrets.RAGO_WIN_SIGN_PFX_BASE64 || secrets.WINDOWS_CERT_BASE64) || '' }}
+          RAGO_WIN_SIGN_PASSWORD: ${{ github.event_name != 'pull_request' && (secrets.RAGO_WIN_SIGN_PASSWORD || secrets.WINDOWS_CERT_PASSWORD) || '' }}
+          RAGO_WIN_SIGN_SHA1: ${{ github.event_name != 'pull_request' && secrets.RAGO_WIN_SIGN_SHA1 || '' }}
+          RAGO_WIN_SIGN_SUBJECT: ${{ github.event_name != 'pull_request' && secrets.RAGO_WIN_SIGN_SUBJECT || '' }}
+          RAGO_WIN_SIGN_DLIB: ${{ github.event_name != 'pull_request' && (env.RAGO_WIN_SIGN_DLIB || secrets.RAGO_WIN_SIGN_DLIB) || '' }}
+          RAGO_WIN_SIGN_METADATA_JSON: ${{ github.event_name != 'pull_request' && secrets.RAGO_WIN_SIGN_METADATA_JSON || '' }}
+          RAGO_WIN_SIGN_TIMESTAMP_URL: ${{ github.event_name != 'pull_request' && secrets.RAGO_WIN_SIGN_TIMESTAMP_URL || '' }}
+          AZURE_TENANT_ID: ${{ github.event_name != 'pull_request' && secrets.AZURE_TENANT_ID || '' }}
+          AZURE_CLIENT_ID: ${{ github.event_name != 'pull_request' && secrets.AZURE_CLIENT_ID || '' }}
+          AZURE_CLIENT_SECRET: ${{ github.event_name != 'pull_request' && secrets.AZURE_CLIENT_SECRET || '' }}
+        run: |
+          .\ci\build-windows.ps1 -Config Release -Version "$env:CI_BUILD_VERSION"
+
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ragoshell-windows-x64
+          path: |
+            dist/ragoshell-*-windows-x64.zip
+            dist/ragoshell-*-windows-x64-setup.exe
+            dist/ragoshell-*-windows-x64.msi
+          if-no-files-found: warn
+
+  android:
+    name: Android arm64 APK & AAB
+    runs-on: ubuntu-latest
+    needs: [i18n]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r27c
+          link-to-sdk: true
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential ninja-build cmake pkg-config autoconf automake libtool llvm unzip zip
+
+      - name: Install Qt 6 Host
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: ${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
+          host: linux
+          target: desktop
+          arch: gcc_64
+          dir: ${{ runner.temp }}/QtHost
+          cache: true
+          cache-key-prefix: qt-host-${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
+
+      - name: Install Qt 6 Android
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: ${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
+          host: linux
+          target: android
+          arch: android_arm64_v8a
+          dir: ${{ runner.temp }}/QtAndroid
+          cache: true
+          cache-key-prefix: qt-android-${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
+
+      - name: Setup vcpkg binary cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/vcpkg/archives
+          key: vcpkg-android-${{ hashFiles('vcpkg.json', 'vcpkg-overlays/**') }}
+          restore-keys: |
+            vcpkg-android-
+
+      - name: Checkout & bootstrap vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git "$HOME/vcpkg"
+          "$HOME/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
+          echo "VCPKG_ROOT=$HOME/vcpkg" >> "$GITHUB_ENV"
+
+      - name: Build, Sign & Verify Android APK + AAB (ci/build-android.sh)
+        env:
+          Qt6_DIR: ${{ runner.temp }}/QtHost
+          Qt6_DIR_ANDROID: ${{ runner.temp }}/QtAndroid
+          RAGO_ANDROID_REQUIRE_SIGNING: ${{ ((startsWith(github.ref, 'refs/tags/v') && vars.RELEASE_DRY_RUN != '1') || (github.event_name == 'workflow_dispatch' && inputs.publish_release == true && inputs.dry_run_release != true)) && '1' || '0' }}
+          RAGO_ANDROID_KEYSTORE_BASE64: ${{ github.event_name != 'pull_request' && (secrets.RAGO_ANDROID_KEYSTORE_BASE64 || secrets.ANDROID_KEYSTORE_BASE64) || '' }}
+          RAGO_ANDROID_KEYSTORE_PASS: ${{ github.event_name != 'pull_request' && (secrets.RAGO_ANDROID_KEYSTORE_PASS || secrets.ANDROID_KEYSTORE_PASSWORD) || '' }}
+          RAGO_ANDROID_KEY_ALIAS: ${{ github.event_name != 'pull_request' && (secrets.RAGO_ANDROID_KEY_ALIAS || secrets.ANDROID_KEY_ALIAS) || '' }}
+          RAGO_ANDROID_KEY_PASS: ${{ github.event_name != 'pull_request' && (secrets.RAGO_ANDROID_KEY_PASS || secrets.ANDROID_KEY_PASSWORD) || '' }}
+        run: |
+          chmod +x ci/build-android.sh
+          ./ci/build-android.sh ${CI_BUILD_VERSION:+"$CI_BUILD_VERSION"}
+
+      - name: Upload Android Artifacts
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ragoshell-android-arm64
+          path: |
+            dist/ragoshell-*-android-arm64.apk
+            dist/ragoshell-*-android-arm64.aab
+          if-no-files-found: error
+
+  release-dry-run:
+    name: Release Manifest & Minisign (Dry Run)
+    runs-on: ubuntu-latest
+    needs: [linux, macos, windows, android]
+    if: (github.event_name == 'workflow_dispatch' && inputs.publish_release == true && inputs.dry_run_release == true) || (startsWith(github.ref, 'refs/tags/v') && vars.RELEASE_DRY_RUN == '1')
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install minisign and Python 3
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends minisign jq curl ca-certificates python3
+
+      - name: Download all platform release artifacts into dist/
+        uses: actions/download-artifact@v4
+        with:
+          pattern: ragoshell-*
+          path: dist
+          merge-multiple: true
+
+      - name: Generate releases.json & SHA256SUMS.txt, sign with ephemeral key & verify dry-run plan
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          chmod +x ci/sign-release.sh ci/publish-release.sh ci/gitea-release.sh
+
+          ephem_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/rago-dryrun-key.XXXXXX")"
+          chmod 700 "$ephem_dir"
+          trap 'rm -rf "$ephem_dir"' EXIT
+
+          minisign -G -W -p "$ephem_dir/dryrun.pub" -s "$ephem_dir/dryrun.key" >/dev/null
+          export RAGO_MINISIGN_SECRET_KEY_FILE="$ephem_dir/dryrun.key"
+          export RAGO_MINISIGN_PUBKEY="$(tail -n 1 "$ephem_dir/dryrun.pub" | tr -d '[:space:]')"
+          export R2_ACCOUNT_ID="00000000000000000000000000000000"
+
+          pub_args=(--dry-run --allow-test-pubkey --dist dist --targets "r2,github,gitea")
+          if [ -n "${CI_BUILD_VERSION:-}" ]; then
+            pub_args+=(--version "$CI_BUILD_VERSION")
+          fi
+          ./ci/publish-release.sh "${pub_args[@]}"
+
+      - name: Upload dry-run release manifest & checksums artifact
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ragoshell-release-metadata-dryrun
+          path: |
+            dist/releases.json
+            dist/releases.json.minisig
+            dist/SHA256SUMS.txt
+            dist/SHA256SUMS.txt.minisig
+            dist/*-sbom.spdx.json
+          if-no-files-found: error
+
+  release:
+    name: Release Manifest, Minisign & Publish
+    runs-on: ubuntu-latest
+    needs: [linux, macos, windows, android]
+    if: (startsWith(github.ref, 'refs/tags/v') && vars.RELEASE_DRY_RUN != '1') || (github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && inputs.publish_release == true && inputs.dry_run_release == false)
+    environment: release
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install minisign and AWS CLI (for R2 S3-compatible uploads)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends minisign awscli jq curl ca-certificates python3 openssh-client
+
+      - name: Download all platform release artifacts into dist/
+        uses: actions/download-artifact@v4
+        with:
+          pattern: ragoshell-*
+          path: dist
+          merge-multiple: true
+
+      - name: Generate releases.json & SHA256SUMS.txt, sign with minisign, verify & publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RAGO_MINISIGN_SECRET_KEY: ${{ secrets.RAGO_MINISIGN_SECRET_KEY || secrets.MINISIGN_SECRET_KEY }}
+          RAGO_MINISIGN_PASSWORD: ${{ secrets.RAGO_MINISIGN_PASSWORD || secrets.MINISIGN_PASSWORD }}
+          RAGO_MINISIGN_PUBKEY: ${{ secrets.RAGO_MINISIGN_PUBKEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
+          GITEA_HOST: ${{ secrets.GITEA_HOST }}
+          GITEA_REPO: ${{ secrets.GITEA_REPO }}
+          PULSE_API_ADMIN_URL: ${{ secrets.PULSE_API_ADMIN_URL }}
+          PULSE_ADMIN_TOKEN: ${{ secrets.PULSE_ADMIN_TOKEN }}
+          RAGO_SITE_RELEASES_SSH: ${{ secrets.RAGO_SITE_RELEASES_SSH }}
+          RAGO_SITE_SSH_KEY: ${{ secrets.RAGO_SITE_SSH_KEY }}
+          RAGO_SITE_KNOWN_HOSTS: ${{ secrets.RAGO_SITE_KNOWN_HOSTS }}
+          RAGO_ANDROID_STORE_URL: ${{ secrets.RAGO_ANDROID_STORE_URL }}
+          RAGO_IOS_STORE_URL: ${{ secrets.RAGO_IOS_STORE_URL }}
+          RAGO_MIN_SUPPORTED_VERSION: ${{ secrets.RAGO_MIN_SUPPORTED_VERSION }}
+        run: |
+          set -euo pipefail
+          chmod +x ci/sign-release.sh ci/publish-release.sh ci/gitea-release.sh
+
+          ssh_cleanup=""
+          trap '[ -z "$ssh_cleanup" ] || rm -rf "$ssh_cleanup"' EXIT
+
+          targets=("github")
+          if [ -n "${R2_ACCESS_KEY_ID:-}" ] && [ -n "${R2_SECRET_ACCESS_KEY:-}" ]; then
+            targets+=("r2")
+          fi
+          if [ -n "${GITEA_TOKEN:-}" ]; then
+            targets+=("gitea")
+          fi
+          if [ -n "${PULSE_ADMIN_TOKEN:-}" ]; then
+            targets+=("pulse")
+          fi
+          if [ -n "${RAGO_SITE_RELEASES_SSH:-}" ] && [ -n "${RAGO_SITE_SSH_KEY:-}" ] && [ -n "${RAGO_SITE_KNOWN_HOSTS:-}" ]; then
+            ssh_cleanup="$(mktemp -d "${RUNNER_TEMP:-/tmp}/rago-site-ssh.XXXXXX")"
+            chmod 700 "$ssh_cleanup"
+            install -d -m 700 "$HOME/.ssh"
+            (umask 077 && printf '%s\n' "$RAGO_SITE_SSH_KEY" > "$ssh_cleanup/id_ed25519")
+            printf '%s\n' "$RAGO_SITE_KNOWN_HOSTS" >> "$HOME/.ssh/known_hosts"
+            chmod 600 "$HOME/.ssh/known_hosts"
+            printf 'Host *\n  IdentityFile %s/id_ed25519\n  IdentitiesOnly yes\n' "$ssh_cleanup" >> "$HOME/.ssh/config"
+            chmod 600 "$HOME/.ssh/config"
+            targets+=("site")
+          fi
+
+          IFS=',' eval 'targets_csv="${targets[*]}"'
+          pub_args=(--dist dist --targets "$targets_csv")
+          if [ -n "${CI_BUILD_VERSION:-}" ]; then
+            pub_args+=(--version "$CI_BUILD_VERSION")
+          fi
+          if [ -n "${RAGO_MIN_SUPPORTED_VERSION:-}" ]; then
+            pub_args+=(--min-supported-version "$RAGO_MIN_SUPPORTED_VERSION")
+          fi
+
+          ./ci/publish-release.sh "${pub_args[@]}"
+
+      - name: Upload signed release manifest & checksums artifact
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ragoshell-release-metadata
+          path: |
+            dist/releases.json
+            dist/releases.json.minisig
+            dist/SHA256SUMS.txt
+            dist/SHA256SUMS.txt.minisig
+            dist/*-sbom.spdx.json
+          if-no-files-found: error

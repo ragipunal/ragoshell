@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "latestVersion": "2.1.0",
+  "minSupportedVersion": "1.8.0",
+  "mandatory": false,
+  "publishedAt": "2026-11-01",
+  "allDownloadsUrl": "https://dl.ragoshell.com.tr/releases/",
+  "releaseNotes": {
+    "en": "MongoDB 8.0 shell improvements, cursor-aware IntelliSense, SSH/TLS stability fixes, and full mobile/tablet support.",
+    "tr": "MongoDB 8.0 kabuk iyileştirmeleri, imleç duyarlı IntelliSense, SSH/TLS kararlılık düzeltmeleri ve tam mobil/tablet desteği."
+  },
+  "downloads": {
+    "windows": {
+      "url": "https://dl.ragoshell.com.tr/releases/2.1.0/ragoshell-2.1.0-windows-x64-setup.exe",
+      "label": "Windows",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 68157440
+    },
+    "macos": {
+      "url": "https://dl.ragoshell.com.tr/releases/2.1.0/ragoshell-2.1.0-macos-arm64.dmg",
+      "label": "macOS",
+      "sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+      "size": 73400320
+    },
+    "linux": {
+      "url": "https://dl.ragoshell.com.tr/releases/2.1.0/ragoshell-2.1.0-linux-x64.AppImage",
+      "label": "Linux",
+      "sha256": "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1",
+      "size": 79691776
+    },
+    "android": {
+      "url": "https://play.google.com/store/apps/details?id=tr.com.ragoshell.app",
+      "label": "Google Play"
+    },
+    "ios": {
+      "url": "https://apps.apple.com/app/ragoshell/id0000000000",
+      "label": "App Store"
+    }
+  },
+  "artifacts": [
+    {
+      "name": "ragoshell-2.1.0-android-arm64.apk",
+      "platform": "android",
+      "arch": "arm64",
+      "format": "apk",
+      "primary": true,
+      "url": "https://dl.ragoshell.com.tr/releases/2.1.0/ragoshell-2.1.0-android-arm64.apk",
+      "sha256": "cf5b16a778af8380036ce59e7b0492370b249b11e8f07a51afac45037afee9d1",
+      "size": 52428800
+    },
+    {
+      "name": "ragoshell-2.1.0-linux-x64.AppImage",
+      "platform": "linux",
+      "arch": "x64",
+      "format": "AppImage",
+      "primary": true,
+      "url": "https://dl.ragoshell.com.tr/releases/2.1.0/ragoshell-2.1.0-linux-x64.AppImage",
+      "sha256": "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1",
+      "size": 79691776
+    },
+    {
+      "name": "ragoshell-2.1.0-linux-x64.tar.gz",
+      "platform": "linux",
+      "arch": "x64",
+      "format": "tar.gz",
+      "primary": false,
+      "url": "https://dl.ragoshell.com.tr/releases/2.1.0/ragoshell-2.1.0-linux-x64.tar.gz",
+      "sha256": "7ffe6c25b88a8797028630429006684523069099210772409281887324022555",
+      "size": 31457280
+    },
+    {
+      "name": "ragoshell-2.1.0-macos-arm64.dmg",
+      "platform": "macos",
+      "arch": "arm64",
+      "format": "dmg",
+      "primary": true,
+      "url": "https://dl.ragoshell.com.tr/releases/2.1.0/ragoshell-2.1.0-macos-arm64.dmg",
+      "sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+      "size": 73400320
+    },
+    {
+      "name": "ragoshell-2.1.0-macos-arm64.tar.gz",
+      "platform": "macos",
+      "arch": "arm64",
+      "format": "tar.gz",
+      "primary": false,
+      "url": "https://dl.ragoshell.com.tr/releases/2.1.0/ragoshell-2.1.0-macos-arm64.tar.gz",
+      "sha256": "3bc51062973c458d5a6f2d8d64a023246354ad7e064b1e4e009ec8a0699a3043",
+      "size": 71303168
+    },
+    {
+      "name": "ragoshell-2.1.0-windows-x64-setup.exe",
+      "platform": "windows",
+      "arch": "x64",
+      "format": "exe",
+      "primary": true,
+      "url": "https://dl.ragoshell.com.tr/releases/2.1.0/ragoshell-2.1.0-windows-x64-setup.exe",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 68157440
+    },
+    {
+      "name": "ragoshell-2.1.0-windows-x64.msi",
+      "platform": "windows",
+      "arch": "x64",
+      "format": "msi",
+      "primary": false,
+      "url": "https://dl.ragoshell.com.tr/releases/2.1.0/ragoshell-2.1.0-windows-x64.msi",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "size": 70254592
+    },
+    {
+      "name": "ragoshell-2.1.0-windows-x64.zip",
+      "platform": "windows",
+      "arch": "x64",
+      "format": "zip",
+      "primary": false,
+      "url": "https://dl.ragoshell.com.tr/releases/2.1.0/ragoshell-2.1.0-windows-x64.zip",
+      "sha256": "8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4",
+      "size": 75497472
+    }
+  ]
+}

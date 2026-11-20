@@ -1,0 +1,330 @@
+{
+    "database": "samples",
+    "entries": [
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "SyntaxError: Unexpected identifier 'error'",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "error"
+                    }
+                ]
+            },
+            "script": "syntax error here ("
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "ReferenceError: undefinedFunction is not defined",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "error"
+                    }
+                ]
+            },
+            "script": "undefinedFunction()"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "Error: boom",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "error"
+                    }
+                ]
+            },
+            "script": "throw new Error('boom')"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "TypeError: Cannot read properties of null (reading 'x')",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "error"
+                    }
+                ]
+            },
+            "script": "null.x"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "MongoServerError: unknown top level operator: $badop",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "error"
+                    }
+                ]
+            },
+            "script": "db.restaurants.find({$badop: 1}).toArray()"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "MongoServerError: unknown top level operator: $badop",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "error"
+                    }
+                ]
+            },
+            "script": "db.restaurants.find({$badop: 1})"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "MongoServerError: no such command: 'nosuchcommand'",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "error"
+                    }
+                ]
+            },
+            "script": "db.runCommand({nosuchcommand: 1})"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "MongoServerError: Unrecognized pipeline stage name: '$nosuchstage'",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "error"
+                    }
+                ]
+            },
+            "script": "db.restaurants.aggregate([{$nosuchstage: {}}])"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "MongoServerError: not running with --replSet",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "error"
+                    }
+                ]
+            },
+            "script": "rs.status()"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "MongoInvalidArgumentError: Update document requires atomic operators",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "error"
+                    }
+                ]
+            },
+            "script": "db.restaurants.updateOne({}, {a: 1})"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "MongoInvalidArgumentError: Replacement document must not contain atomic operators",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "error"
+                    }
+                ]
+            },
+            "script": "db.restaurants.replaceOne({}, {$set: {a: 1}})"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "TypeError: Cannot read properties of undefined (reading 'deeper')",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "error"
+                    }
+                ]
+            },
+            "script": "var a = 1;\nvar b = a.nope.deeper;"
+        }
+    ],
+    "group": "errors"
+}

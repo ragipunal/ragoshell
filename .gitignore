@@ -1,0 +1,130 @@
+# RagoShell-specific
+
+CMakeLists.txt.user*
+
+
+*.kate-swp
+*.swp
+
+/build
+/build2
+# Visual Studio CMake / WSL / remote build output
+/out/
+
+
+.idea/
+
+# Created by http://www.gitignore.io
+
+### C++ ###
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Compiled Dynamic libraries
+*.so
+*.so.*
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+### Linux ###
+*~
+
+# KDE directory preferences
+.directory
+
+
+### OSX ###
+.DS_Store
+.AppleDouble
+.LSOverride
+
+### Qt ###
+# C++ objects and libs
+
+*.slo
+*.lo
+*.o
+*.a
+*.la
+*.lai
+*.so
+*.dll
+*.dylib
+
+# Qt-es
+
+/.qmake.cache
+/.qmake.stash
+*.pro.user
+*.pro.user.*
+*.moc
+
+# QtCreator
+
+*.autosave
+*.creator.user
+
+
+### Windows ###
+# Windows image file caches
+Thumbs.db
+ehthumbs.db
+
+# Folder config file
+Desktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+.vscode/settings.json
+.vs/
+.claude/settings.local.json
+
+# Local MongoDB test environment (not committed)
+/dev/mongo-test/
+/dev/mongo-matrix/.fixtures/
+/dev/mongo-matrix/.runtime/
+/dev/mongo-matrix/.results/
+
+# vcpkg manifest-mode and CMake install output
+/vcpkg_installed/
+/install/*
+!/install/windows/
+!/install/linux/
+!/install/macosx/
+!/install/android/
+!/install/ios/
+/dist/
+ci/.env
+/services/release-pulse-api/data/
+/services/release-pulse-api/*.sqlite*
+
+# Local-only agent rules, internal Gitea workflows, and private commercial/ops docs
+/.agents/
+/.claude/
+/.cursor/
+/.gitea/
+/AGENTS.md
+/CLAUDE.md
+/docs/Roadmap.md
+/docs/PricingProposal.md
+/docs/Monetization.md
+/docs/PhasePrompts.md
+/docs/CleanStart.md
+/docs/MacOsWork.md
+/docs/TodoMac.md
+/docs/GitHubMirror.md
+/docs/DocsToSiteFlow.md

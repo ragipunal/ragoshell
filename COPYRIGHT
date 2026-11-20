@@ -1,0 +1,15 @@
+RagoShell, shell-centric cross-platform MongoDB management tool.
+
+Copyright RagoShell contributors.
+Based on the open-source Robomongo 1.4.4 codebase; copyright of the
+original work belongs to its original authors (2014-2021).
+
+RagoShell is released under the terms of the GNU General Public
+License, version 3. See the LICENSE file for the full GNU GPLv3 text
+and LICENSE.LGPLv3 for the GNU LGPLv3 text.
+
+RagoShell includes files and libraries written by third parties (including
+the Qt 6 Toolkit, QScintilla, Scintilla, MongoDB C/C++ Drivers, OpenSSL,
+libssh2, QJson, zlib, utf8proc, and DejaVu Sans) used under their
+respective open-source license agreements; see THIRD-PARTY-NOTICES.txt,
+src/third-party/, and the bundled licenses/ directory in binary packages.

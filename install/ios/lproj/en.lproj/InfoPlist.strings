@@ -1,0 +1,2 @@
+"NSLocalNetworkUsageDescription" = "RagoShell connects to MongoDB servers and SSH tunnel hosts on your local network.";
+"NSPhotoLibraryUsageDescription" = "RagoShell uses file picker access only when you choose scripts, documents, or certificates to import.";

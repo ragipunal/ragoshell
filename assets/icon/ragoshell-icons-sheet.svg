@@ -1,0 +1,396 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900">
+  <defs>
+    <!-- Background styling -->
+    <radialGradient id="sheetBg" cx="50%" cy="40%" r="80%">
+      <stop offset="0%" stop-color="#0b2419" />
+      <stop offset="60%" stop-color="#06160f" />
+      <stop offset="100%" stop-color="#020905" />
+    </radialGradient>
+
+    <!-- Subdued grid line pattern -->
+    <pattern id="cardGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#00be54" stroke-width="0.75" stroke-opacity="0.04" />
+    </pattern>
+
+    <!-- Linear stroke gradient for accent highlights -->
+    <linearGradient id="mintAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3bf592" />
+      <stop offset="100%" stop-color="#00be54" />
+    </linearGradient>
+
+    <!-- Tile border subtle highlight -->
+    <linearGradient id="tileBorder" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#22d672" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="#00be54" stop-opacity="0.06" />
+    </linearGradient>
+  </defs>
+
+  <!-- Dark near-black forest green background -->
+  <rect width="1200" height="900" fill="url(#sheetBg)" />
+  <rect width="1200" height="900" fill="url(#cardGrid)" />
+
+  <!-- Outer frame border with corner marks -->
+  <rect x="24" y="24" width="1152" height="852" rx="16" fill="none" stroke="#00be54" stroke-width="1" stroke-opacity="0.15" />
+  <path d="M 40,56 L 40,40 L 56,40" fill="none" stroke="#3bf592" stroke-width="1.5" stroke-opacity="0.4" />
+  <path d="M 1160,56 L 1160,40 L 1144,40" fill="none" stroke="#3bf592" stroke-width="1.5" stroke-opacity="0.4" />
+  <path d="M 40,844 L 40,860 L 56,860" fill="none" stroke="#3bf592" stroke-width="1.5" stroke-opacity="0.4" />
+  <path d="M 1160,844 L 1160,860 L 1144,860" fill="none" stroke="#3bf592" stroke-width="1.5" stroke-opacity="0.4" />
+
+  <!-- Sheet Header / Branding -->
+  <g transform="translate(60, 68)">
+    <!-- Tiny brand pill -->
+    <rect x="0" y="0" width="104" height="22" rx="11" fill="#00be54" fill-opacity="0.12" stroke="#00be54" stroke-width="1" stroke-opacity="0.3" />
+    <circle cx="12" cy="11" r="3.5" fill="#3bf592" />
+    <text x="24" y="15" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, sans-serif" font-size="10" font-weight="700" letter-spacing="1.5" fill="#3bf592">RagoShell</text>
+
+    <text x="120" y="16" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', Inter, sans-serif" font-size="18" font-weight="700" letter-spacing="0.5" fill="#ffffff">Connection &amp; Toolbar Icon System</text>
+    <text x="120" y="34" font-family="-apple-system, BlinkMacSystemFont, 'JetBrains Mono', Consolas, monospace" font-size="11" font-weight="400" fill="#75cfa3" fill-opacity="0.75">24x24dp Base Grid • 2px Stroke • Accent: #00be54 / #3bf592 • Highlights: #FFFFFF</text>
+  </g>
+
+  <!-- 4x3 Grid Layout Settings:
+       Columns at X = 75, 345, 615, 885 (width = 240, gap = 30)
+       Rows at Y = 140, 385, 630 (height = 215, gap = 30)
+  -->
+
+  <!-- ==========================================
+       ROW 1
+       ========================================== -->
+
+  <!-- 1. Database Server (Cylinder) -->
+  <g id="icon-server" transform="translate(75, 140)">
+    <rect width="240" height="215" rx="12" fill="#061d13" fill-opacity="0.55" stroke="url(#tileBorder)" stroke-width="1.2" />
+    <!-- Visual container for 64x64 icon centered at (120, 90) -->
+    <g transform="translate(120, 85)">
+      <!-- Server rack / cylinder tier -->
+      <ellipse cx="0" cy="-28" rx="26" ry="10" fill="none" stroke="#00be54" stroke-width="2" />
+      <ellipse cx="0" cy="-28" rx="26" ry="10" fill="#00be54" fill-opacity="0.08" />
+      <!-- Top highlight rim -->
+      <path d="M -16,-34 C -8,-37 8,-37 16,-34" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" />
+
+      <!-- Cylinder side walls & segment dividers -->
+      <path d="M -26,-28 L -26,24 C -26,30 0,34 0,34 C 0,34 26,30 26,24 L 26,-28" fill="none" stroke="#00be54" stroke-width="2" stroke-linejoin="round" />
+      
+      <!-- Tier 1 divider -->
+      <path d="M -26,-10 C -26,-4 0,0 0,0 C 0,0 26,-4 26,-10" fill="none" stroke="#00be54" stroke-width="2" />
+      <!-- Tier 2 divider -->
+      <path d="M -26,8 C -26,14 0,18 0,18 C 0,18 26,14 26,8" fill="none" stroke="#00be54" stroke-width="2" />
+      
+      <!-- Status lights / enterprise activity indicators -->
+      <circle cx="16" cy="-19" r="2" fill="#ffffff" />
+      <circle cx="16" cy="-1" r="2" fill="#3bf592" />
+      <circle cx="16" cy="17" r="2" fill="#3bf592" />
+      <line x1="-16" y1="-19" x2="6" y2="-19" stroke="#00be54" stroke-width="2" stroke-linecap="round" stroke-opacity="0.5" />
+      <line x1="-16" y1="-1" x2="6" y2="-1" stroke="#00be54" stroke-width="2" stroke-linecap="round" stroke-opacity="0.5" />
+      <line x1="-16" y1="17" x2="6" y2="17" stroke="#00be54" stroke-width="2" stroke-linecap="round" stroke-opacity="0.5" />
+    </g>
+    <!-- Label -->
+    <text x="120" y="165" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, sans-serif" font-size="12" font-weight="600" fill="#ffffff" text-anchor="middle">Database Server</text>
+    <text x="120" y="185" font-family="-apple-system, BlinkMacSystemFont, 'JetBrains Mono', Consolas, monospace" font-size="10.5" font-weight="500" fill="#75cfa3" text-anchor="middle">server.standalone</text>
+  </g>
+
+  <!-- 2. Connected Server (Cylinder + Check Badge) -->
+  <g id="icon-server-connected" transform="translate(345, 140)">
+    <rect width="240" height="215" rx="12" fill="#061d13" fill-opacity="0.55" stroke="url(#tileBorder)" stroke-width="1.2" />
+    <g transform="translate(120, 85)">
+      <!-- Server cylinder (compacted for badge) -->
+      <ellipse cx="-4" cy="-28" rx="24" ry="9" fill="#00be54" fill-opacity="0.08" stroke="#00be54" stroke-width="2" />
+      <path d="M -18,-33 C -10,-36 4,-36 12,-33" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" />
+      <path d="M -28,-28 L -28,24 C -28,29 -4,33 -4,33 C -4,33 10,31 16,28 L 16,10" fill="none" stroke="#00be54" stroke-width="2" stroke-linejoin="round" />
+      <path d="M 20,-28 L 20,-2" fill="none" stroke="#00be54" stroke-width="2" />
+      
+      <!-- Tier ribs -->
+      <path d="M -28,-10 C -28,-5 -4,-1 -4,-1 C 6,-1 14,-3 20,-7" fill="none" stroke="#00be54" stroke-width="2" />
+      <path d="M -28,8 C -28,13 -4,17 -4,17 C 2,17 8,16 12,14" fill="none" stroke="#00be54" stroke-width="2" />
+
+      <!-- Horizontal activity lines -->
+      <line x1="-18" y1="-19" x2="-2" y2="-19" stroke="#00be54" stroke-width="2" stroke-linecap="round" stroke-opacity="0.5" />
+      <line x1="-18" y1="-1" x2="-2" y2="-1" stroke="#00be54" stroke-width="2" stroke-linecap="round" stroke-opacity="0.5" />
+
+      <!-- Checkmark Badge in bottom-right corner -->
+      <g transform="translate(18, 16)">
+        <circle cx="0" cy="0" r="15" fill="#062215" stroke="#3bf592" stroke-width="2" />
+        <circle cx="0" cy="0" r="11" fill="#00be54" fill-opacity="0.25" />
+        <!-- Check glyph with white stroke -->
+        <polyline points="-6,0 -1,5 6,-4" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+      </g>
+    </g>
+    <text x="120" y="165" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, sans-serif" font-size="12" font-weight="600" fill="#ffffff" text-anchor="middle">Connected Server</text>
+    <text x="120" y="185" font-family="-apple-system, BlinkMacSystemFont, 'JetBrains Mono', Consolas, monospace" font-size="10.5" font-weight="500" fill="#75cfa3" text-anchor="middle">server.connected (online)</text>
+  </g>
+
+  <!-- 3. Disconnected Server (Cylinder + X Badge) -->
+  <g id="icon-server-disconnected" transform="translate(615, 140)">
+    <rect width="240" height="215" rx="12" fill="#061d13" fill-opacity="0.55" stroke="url(#tileBorder)" stroke-width="1.2" />
+    <g transform="translate(120, 85)">
+      <!-- Server cylinder (dimmed/dormant) -->
+      <ellipse cx="-4" cy="-28" rx="24" ry="9" fill="none" stroke="#00be54" stroke-width="2" stroke-dasharray="3 2" />
+      <path d="M -28,-28 L -28,24 C -28,29 -4,33 -4,33 C -4,33 10,31 16,28 L 16,10" fill="none" stroke="#00be54" stroke-width="2" stroke-dasharray="3 2" stroke-linejoin="round" />
+      <path d="M 20,-28 L 20,-2" fill="none" stroke="#00be54" stroke-width="2" stroke-dasharray="3 2" />
+      
+      <!-- Tier lines -->
+      <path d="M -28,-10 C -28,-5 -4,-1 -4,-1 C 6,-1 14,-3 20,-7" fill="none" stroke="#00be54" stroke-width="2" stroke-dasharray="3 2" />
+      <path d="M -28,8 C -28,13 -4,17 -4,17 C 2,17 8,16 12,14" fill="none" stroke="#00be54" stroke-width="2" stroke-dasharray="3 2" />
+
+      <!-- Offline indicator dash -->
+      <circle cx="-16" cy="-19" r="2" fill="#75cfa3" fill-opacity="0.4" />
+      <circle cx="-16" cy="-1" r="2" fill="#75cfa3" fill-opacity="0.4" />
+
+      <!-- X Badge in bottom-right corner -->
+      <g transform="translate(18, 16)">
+        <circle cx="0" cy="0" r="15" fill="#14080a" stroke="#e05252" stroke-width="2" />
+        <circle cx="0" cy="0" r="11" fill="#e05252" fill-opacity="0.2" />
+        <!-- White 'X' glyph with 2px stroke -->
+        <line x1="-4.5" y1="-4.5" x2="4.5" y2="4.5" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" />
+        <line x1="4.5" y1="-4.5" x2="-4.5" y2="4.5" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" />
+      </g>
+    </g>
+    <text x="120" y="165" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, sans-serif" font-size="12" font-weight="600" fill="#ffffff" text-anchor="middle">Disconnected Server</text>
+    <text x="120" y="185" font-family="-apple-system, BlinkMacSystemFont, 'JetBrains Mono', Consolas, monospace" font-size="10.5" font-weight="500" fill="#e07575" text-anchor="middle">server.offline (error)</text>
+  </g>
+
+  <!-- 4. Cloud / Replica Set Cluster (Three Interconnected Nodes) -->
+  <g id="icon-cluster" transform="translate(885, 140)">
+    <rect width="240" height="215" rx="12" fill="#061d13" fill-opacity="0.55" stroke="url(#tileBorder)" stroke-width="1.2" />
+    <g transform="translate(120, 85)">
+      <!-- Connecting enterprise network circuit traces -->
+      <polygon points="0,-22 -24,18 24,18" fill="none" stroke="#00be54" stroke-width="2" stroke-linejoin="round" />
+      
+      <!-- Central replica state badge / cross-sync -->
+      <circle cx="0" cy="5" r="4" fill="#00be54" fill-opacity="0.3" stroke="#00be54" stroke-width="1.5" />
+      <line x1="0" y1="-12" x2="0" y2="1" stroke="#3bf592" stroke-width="1.5" stroke-dasharray="2 2" />
+
+      <!-- Primary Node (Top): Larger with white crown highlight -->
+      <g transform="translate(0, -22)">
+        <circle cx="0" cy="0" r="12" fill="#05190f" stroke="#00be54" stroke-width="2" />
+        <circle cx="0" cy="0" r="6" fill="#3bf592" />
+        <!-- White highlight ring arc -->
+        <path d="M -8,-8 C -4,-11 4,-11 8,-8" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" />
+      </g>
+
+      <!-- Secondary Node 1 (Bottom Left) -->
+      <g transform="translate(-24, 18)">
+        <circle cx="0" cy="0" r="10" fill="#05190f" stroke="#00be54" stroke-width="2" />
+        <circle cx="0" cy="0" r="4.5" fill="#00be54" />
+        <path d="M -6,-6 C -3,-8 3,-8 6,-6" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" />
+      </g>
+
+      <!-- Secondary Node 2 (Bottom Right / Arbiter) -->
+      <g transform="translate(24, 18)">
+        <circle cx="0" cy="0" r="10" fill="#05190f" stroke="#00be54" stroke-width="2" />
+        <circle cx="0" cy="0" r="4.5" fill="#00be54" />
+        <path d="M -6,-6 C -3,-8 3,-8 6,-6" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" />
+      </g>
+    </g>
+    <text x="120" y="165" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, sans-serif" font-size="12" font-weight="600" fill="#ffffff" text-anchor="middle">Replica Set Cluster</text>
+    <text x="120" y="185" font-family="-apple-system, BlinkMacSystemFont, 'JetBrains Mono', Consolas, monospace" font-size="10.5" font-weight="500" fill="#75cfa3" text-anchor="middle">cluster.replica_nodes</text>
+  </g>
+
+  <!-- ==========================================
+       ROW 2
+       ========================================== -->
+
+  <!-- 5. Database (Classic DB Cylinder) -->
+  <g id="icon-database" transform="translate(75, 385)">
+    <rect width="240" height="215" rx="12" fill="#061d13" fill-opacity="0.55" stroke="url(#tileBorder)" stroke-width="1.2" />
+    <g transform="translate(120, 85)">
+      <!-- Top disc -->
+      <ellipse cx="0" cy="-24" rx="25" ry="9" fill="#00be54" fill-opacity="0.12" stroke="#00be54" stroke-width="2" />
+      <!-- White reflection highlight on top disc -->
+      <path d="M -15,-29 C -7,-32 7,-32 15,-29" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" />
+
+      <!-- Cylinder Body -->
+      <path d="M -25,-24 L -25,24 C -25,29 0,33 0,33 C 0,33 25,29 25,24 L 25,-24" fill="none" stroke="#00be54" stroke-width="2" stroke-linejoin="round" />
+
+      <!-- Middle disc division 1 -->
+      <path d="M -25,-8 C -25,-3 0,1 0,1 C 0,1 25,-3 25,-8" fill="none" stroke="#00be54" stroke-width="2" />
+      <path d="M -12,-11 C -4,-13 4,-13 12,-11" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.6" />
+
+      <!-- Middle disc division 2 -->
+      <path d="M -25,8 C -25,13 0,17 0,17 C 0,17 25,13 25,8" fill="none" stroke="#00be54" stroke-width="2" />
+
+      <!-- Vertical subtle spine accent -->
+      <line x1="0" y1="-15" x2="0" y2="33" stroke="#3bf592" stroke-width="1" stroke-dasharray="3 3" stroke-opacity="0.4" />
+    </g>
+    <text x="120" y="165" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, sans-serif" font-size="12" font-weight="600" fill="#ffffff" text-anchor="middle">Database</text>
+    <text x="120" y="185" font-family="-apple-system, BlinkMacSystemFont, 'JetBrains Mono', Consolas, monospace" font-size="10.5" font-weight="500" fill="#75cfa3" text-anchor="middle">db.catalogs</text>
+  </g>
+
+  <!-- 6. Collection (Stacked Documents / Layers) -->
+  <g id="icon-collection" transform="translate(345, 385)">
+    <rect width="240" height="215" rx="12" fill="#061d13" fill-opacity="0.55" stroke="url(#tileBorder)" stroke-width="1.2" />
+    <g transform="translate(120, 85)">
+      <!-- Bottom Layer 3 -->
+      <path d="M -28,14 L 0,26 L 28,14" fill="none" stroke="#00be54" stroke-width="2" stroke-linejoin="round" stroke-opacity="0.45" />
+
+      <!-- Middle Layer 2 -->
+      <path d="M -28,2 L 0,14 L 28,2" fill="none" stroke="#00be54" stroke-width="2" stroke-linejoin="round" stroke-opacity="0.75" />
+
+      <!-- Top Plate (Full Rhombus) -->
+      <polygon points="0,-18 28,-6 0,6 -28,-6" fill="#051c11" stroke="#00be54" stroke-width="2" stroke-linejoin="round" />
+      
+      <!-- Top surface white highlight rim -->
+      <path d="M -28,-6 L 0,-18 L 28,-6" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+
+      <!-- Document list lines engraved on top plate -->
+      <line x1="-12" y1="-8" x2="6" y2="0" stroke="#3bf592" stroke-width="2" stroke-linecap="round" />
+      <line x1="-6" y1="-3" x2="12" y2="5" stroke="#3bf592" stroke-width="2" stroke-linecap="round" stroke-opacity="0.6" />
+    </g>
+    <text x="120" y="165" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, sans-serif" font-size="12" font-weight="600" fill="#ffffff" text-anchor="middle">Collection</text>
+    <text x="120" y="185" font-family="-apple-system, BlinkMacSystemFont, 'JetBrains Mono', Consolas, monospace" font-size="10.5" font-weight="500" fill="#75cfa3" text-anchor="middle">collection.documents</text>
+  </g>
+
+  <!-- 7. Document (Single Page with JSON Braces {}) -->
+  <g id="icon-document" transform="translate(615, 385)">
+    <rect width="240" height="215" rx="12" fill="#061d13" fill-opacity="0.55" stroke="url(#tileBorder)" stroke-width="1.2" />
+    <g transform="translate(120, 85)">
+      <!-- Sheet contour with dog-eared folded top-right corner -->
+      <path d="M -18,-30 L 6,-30 L 22,-14 L 22,30 L -18,30 Z" fill="#051c11" stroke="#00be54" stroke-width="2" stroke-linejoin="round" />
+      <!-- Fold corner flap -->
+      <path d="M 6,-30 L 6,-14 L 22,-14" fill="#00be54" fill-opacity="0.2" stroke="#00be54" stroke-width="2" stroke-linejoin="round" />
+      
+      <!-- Top edge white accent -->
+      <line x1="-14" y1="-30" x2="3" y2="-30" stroke="#ffffff" stroke-width="2" stroke-linecap="round" />
+
+      <!-- JSON Curly Braces {} centered in document body -->
+      <!-- Left Brace { -->
+      <path d="M -6,-4 C -10,-4 -10,-1 -13,-1 C -10,-1 -10,2 -6,2" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="translate(-1, 0) scale(1.4)" />
+      <!-- Right Brace } -->
+      <path d="M 6,-4 C 10,-4 10,-1 13,-1 C 10,-1 10,2 6,2" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="translate(1, 0) scale(1.4)" />
+
+      <!-- JSON key/value dot inside -->
+      <circle cx="0" cy="7" r="1.5" fill="#3bf592" />
+    </g>
+    <text x="120" y="165" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, sans-serif" font-size="12" font-weight="600" fill="#ffffff" text-anchor="middle">Document (BSON)</text>
+    <text x="120" y="185" font-family="-apple-system, BlinkMacSystemFont, 'JetBrains Mono', Consolas, monospace" font-size="10.5" font-weight="500" fill="#75cfa3" text-anchor="middle">doc.json_entry</text>
+  </g>
+
+  <!-- 8. Index (Key with Index Table Rows) -->
+  <g id="icon-index" transform="translate(885, 385)">
+    <rect width="240" height="215" rx="12" fill="#061d13" fill-opacity="0.55" stroke="url(#tileBorder)" stroke-width="1.2" />
+    <g transform="translate(120, 85)">
+      <!-- Index table rows background -->
+      <g transform="translate(0, 4)">
+        <rect x="-24" y="-28" width="22" height="48" rx="3" fill="#051c11" stroke="#00be54" stroke-width="2" stroke-opacity="0.5" />
+        <line x1="-20" y1="-20" x2="-6" y2="-20" stroke="#3bf592" stroke-width="1.8" stroke-linecap="round" stroke-opacity="0.7" />
+        <line x1="-20" y1="-12" x2="-9" y2="-12" stroke="#00be54" stroke-width="1.8" stroke-linecap="round" stroke-opacity="0.7" />
+        <line x1="-20" y1="-4" x2="-6" y2="-4" stroke="#00be54" stroke-width="1.8" stroke-linecap="round" stroke-opacity="0.7" />
+        <line x1="-20" y1="4" x2="-11" y2="4" stroke="#00be54" stroke-width="1.8" stroke-linecap="round" stroke-opacity="0.7" />
+        <line x1="-20" y1="12" x2="-6" y2="12" stroke="#00be54" stroke-width="1.8" stroke-linecap="round" stroke-opacity="0.7" />
+      </g>
+
+      <!-- Key glyph overlayed with white highlight -->
+      <g transform="translate(8, -6) rotate(45)">
+        <!-- Key bow (head) -->
+        <circle cx="0" cy="-14" r="9" fill="#062215" stroke="#00be54" stroke-width="2" />
+        <circle cx="0" cy="-14" r="3.5" fill="none" stroke="#ffffff" stroke-width="1.8" />
+        <!-- Key stem -->
+        <line x1="0" y1="-5" x2="0" y2="24" stroke="#00be54" stroke-width="2.2" stroke-linecap="round" />
+        <path d="M 0,-14 C 4,-14 7,-11 7,-7" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" />
+        <!-- Key teeth -->
+        <line x1="0" y1="14" x2="6" y2="14" stroke="#00be54" stroke-width="2" stroke-linecap="round" />
+        <line x1="0" y1="21" x2="8" y2="21" stroke="#00be54" stroke-width="2" stroke-linecap="round" />
+      </g>
+    </g>
+    <text x="120" y="165" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, sans-serif" font-size="12" font-weight="600" fill="#ffffff" text-anchor="middle">Index</text>
+    <text x="120" y="185" font-family="-apple-system, BlinkMacSystemFont, 'JetBrains Mono', Consolas, monospace" font-size="10.5" font-weight="500" fill="#75cfa3" text-anchor="middle">index.btree_key</text>
+  </g>
+
+  <!-- ==========================================
+       ROW 3
+       ========================================== -->
+
+  <!-- 9. User (Person Glyph / Role Auth) -->
+  <g id="icon-user" transform="translate(75, 630)">
+    <rect width="240" height="215" rx="12" fill="#061d13" fill-opacity="0.55" stroke="url(#tileBorder)" stroke-width="1.2" />
+    <g transform="translate(120, 85)">
+      <!-- Head / Skull -->
+      <circle cx="0" cy="-14" r="12" fill="#051c11" stroke="#00be54" stroke-width="2" />
+      <path d="M -8,-18 C -4,-23 4,-23 8,-18" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" />
+
+      <!-- Shoulders / Torso -->
+      <path d="M -24,24 C -24,10 -12,4 0,4 C 12,4 24,10 24,24" fill="none" stroke="#00be54" stroke-width="2" stroke-linecap="round" />
+      
+      <!-- Security badge / keyhole crest in chest -->
+      <circle cx="0" cy="14" r="3" fill="#3bf592" />
+      <line x1="0" y1="17" x2="0" y2="21" stroke="#3bf592" stroke-width="1.8" stroke-linecap="round" />
+    </g>
+    <text x="120" y="165" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, sans-serif" font-size="12" font-weight="600" fill="#ffffff" text-anchor="middle">User / Auth Role</text>
+    <text x="120" y="185" font-family="-apple-system, BlinkMacSystemFont, 'JetBrains Mono', Consolas, monospace" font-size="10.5" font-weight="500" fill="#75cfa3" text-anchor="middle">auth.system_user</text>
+  </g>
+
+  <!-- 10. Function (fx Symbol / Stored Procedure) -->
+  <g id="icon-function" transform="translate(345, 630)">
+    <rect width="240" height="215" rx="12" fill="#061d13" fill-opacity="0.55" stroke="url(#tileBorder)" stroke-width="1.2" />
+    <g transform="translate(120, 85)">
+      <!-- Script badge plate -->
+      <rect x="-26" y="-26" width="52" height="52" rx="8" fill="#051c11" stroke="#00be54" stroke-width="2" stroke-opacity="0.35" />
+      <path d="M -22,-26 L 4,-26" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" />
+
+      <!-- Mathematical italic 'f' with flourish -->
+      <path d="M 1,-20 C -7,-20 -10,-14 -10,-4 L -10,18 C -10,24 -14,26 -17,26" fill="none" stroke="#00be54" stroke-width="2.6" stroke-linecap="round" />
+      <!-- 'f' horizontal crossbar with white tip -->
+      <line x1="-16" y1="-4" x2="-2" y2="-4" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" />
+
+      <!-- Subscript 'x' -->
+      <g transform="translate(10, 6)">
+        <line x1="-6" y1="-6" x2="6" y2="6" stroke="#3bf592" stroke-width="2.4" stroke-linecap="round" />
+        <line x1="6" y1="-6" x2="-6" y2="6" stroke="#3bf592" stroke-width="2.4" stroke-linecap="round" />
+      </g>
+    </g>
+    <text x="120" y="165" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, sans-serif" font-size="12" font-weight="600" fill="#ffffff" text-anchor="middle">Stored Function</text>
+    <text x="120" y="185" font-family="-apple-system, BlinkMacSystemFont, 'JetBrains Mono', Consolas, monospace" font-size="10.5" font-weight="500" fill="#75cfa3" text-anchor="middle">system.js.fx</text>
+  </g>
+
+  <!-- 11. Query Shell (Terminal Prompt >_) -->
+  <g id="icon-shell" transform="translate(615, 630)">
+    <rect width="240" height="215" rx="12" fill="#061d13" fill-opacity="0.55" stroke="url(#tileBorder)" stroke-width="1.2" />
+    <g transform="translate(120, 85)">
+      <!-- Terminal window bezel -->
+      <rect x="-28" y="-24" width="56" height="48" rx="6" fill="#051c11" stroke="#00be54" stroke-width="2" />
+      <!-- Window top title bar separator -->
+      <line x1="-28" y1="-12" x2="28" y2="-12" stroke="#00be54" stroke-width="1.5" stroke-opacity="0.5" />
+      <!-- White highlight edge on window top -->
+      <line x1="-22" y1="-24" x2="0" y2="-24" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" />
+      <!-- Mini window control dots -->
+      <circle cx="-21" cy="-18" r="1.5" fill="#3bf592" />
+      <circle cx="-16" cy="-18" r="1.5" fill="#00be54" opacity="0.6" />
+      <circle cx="-11" cy="-18" r="1.5" fill="#00be54" opacity="0.6" />
+
+      <!-- Prompt chevron '>' -->
+      <polyline points="-16,-2 -8,6 -16,14" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+
+      <!-- Cursor underscore '_' -->
+      <line x1="-2" y1="14" x2="14" y2="14" stroke="#3bf592" stroke-width="2.4" stroke-linecap="round" />
+    </g>
+    <text x="120" y="165" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, sans-serif" font-size="12" font-weight="600" fill="#ffffff" text-anchor="middle">Query Shell / mongosh</text>
+    <text x="120" y="185" font-family="-apple-system, BlinkMacSystemFont, 'JetBrains Mono', Consolas, monospace" font-size="10.5" font-weight="500" fill="#75cfa3" text-anchor="middle">terminal.query_cli</text>
+  </g>
+
+  <!-- 12. Plus-Sign (Add Connection / New) -->
+  <g id="icon-add" transform="translate(885, 630)">
+    <rect width="240" height="215" rx="12" fill="#061d13" fill-opacity="0.55" stroke="url(#tileBorder)" stroke-width="1.2" />
+    <g transform="translate(120, 85)">
+      <!-- Outer circular target ring -->
+      <circle cx="0" cy="0" r="26" fill="#051c11" stroke="#00be54" stroke-width="2" />
+      <circle cx="0" cy="0" r="26" fill="#00be54" fill-opacity="0.1" />
+
+      <!-- White highlight arc on top quadrant -->
+      <path d="M -18,-18 C -7,-26 7,-26 18,-18" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" />
+
+      <!-- Bold geometric plus icon -->
+      <line x1="-13" y1="0" x2="13" y2="0" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" />
+      <line x1="0" y1="-13" x2="0" y2="13" stroke="#3bf592" stroke-width="2.6" stroke-linecap="round" />
+      
+      <!-- Core intersection accent dot -->
+      <circle cx="0" cy="0" r="2" fill="#ffffff" />
+    </g>
+    <text x="120" y="165" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, sans-serif" font-size="12" font-weight="600" fill="#ffffff" text-anchor="middle">New Connection / Add</text>
+    <text x="120" y="185" font-family="-apple-system, BlinkMacSystemFont, 'JetBrains Mono', Consolas, monospace" font-size="10.5" font-weight="500" fill="#75cfa3" text-anchor="middle">action.create_entry</text>
+  </g>
+
+  <!-- Sheet Footer Specs / Metadata -->
+  <g transform="translate(60, 846)">
+    <text x="0" y="0" font-family="-apple-system, BlinkMacSystemFont, 'JetBrains Mono', Consolas, monospace" font-size="10.5" font-weight="400" fill="#75cfa3" fill-opacity="0.6">PALETTE: Forest Canvas #020905-#0b2419 | Primary Mint #00be54 | Glow Mint #3bf592 | Light White #FFFFFF | Red #e05252</text>
+    <text x="1080" y="0" font-family="-apple-system, BlinkMacSystemFont, 'JetBrains Mono', Consolas, monospace" font-size="10.5" font-weight="500" fill="#3bf592" text-anchor="end">RagoShell DESIGN SYSTEM v1.0</text>
+  </g>
+</svg>

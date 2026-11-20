@@ -1,0 +1,103 @@
+name: Bug Report
+description: Report a reproducible defect in the RagoShell desktop/mobile client, embedded shell, or MCP server.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > **Security & Credential Warning**
+        > - **Do NOT report security vulnerabilities here.** Follow [`SECURITY.md`](https://github.com/ragipunal/ragoshell/blob/main/SECURITY.md) for private disclosure.
+        > - **Never paste passwords, connection URIs containing credentials, SSH private keys, TLS client keys, or AI API tokens.** Redact hostnames, IPs, and secrets before submitting.
+
+  - type: input
+    id: version
+    attributes:
+      label: RagoShell Version & Package
+      description: Exact version (see Help → About) or git commit SHA, plus how it was installed (e.g. `.exe`, `.msi`, `.zip`, `.dmg`, `.AppImage`, `.tar.gz`, `.apk`, Xcode, or source build).
+      placeholder: "2.1.0 (macOS .dmg)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      description: Operating system family where the issue occurs.
+      options:
+        - Windows (x64)
+        - macOS (arm64)
+        - Linux (x64 — Wayland / X11)
+        - iPadOS / iOS (arm64)
+        - Android (arm64 / x86_64 emulator)
+    validations:
+      required: true
+
+  - type: input
+    id: os_details
+    attributes:
+      label: OS Version & Display Environment
+      description: Exact OS release (and Wayland/X11 compositor on Linux, or device/simulator model on mobile).
+      placeholder: "macOS 15.4 / Ubuntu 24.04 (Wayland) / iPadOS 18.2 / Android 15"
+    validations:
+      required: true
+
+  - type: input
+    id: mongodb_version
+    attributes:
+      label: MongoDB Server Version
+      description: Version and topology of the target MongoDB server (write `N/A` if the bug occurs without connecting).
+      placeholder: "MongoDB 7.0.14 replica set (or MongoDB 4.0.28 standalone / N/A)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: connection_type
+    attributes:
+      label: Connection Type
+      description: How RagoShell connects when the bug happens.
+      options:
+        - Direct (standalone)
+        - Replica Set
+        - DNS Seedlist (mongodb+srv://)
+        - SSH Tunnel
+        - TLS / SSL (CA / X.509 / PEM)
+        - SSH Tunnel + TLS / SSL
+        - Not connected / Local UI or MCP (ragoshell-mcp)
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce, Expected & Actual Behavior
+      description: Minimal step-by-step instructions (and sample non-sensitive shell script or BSON document if relevant).
+      value: |
+        1.
+        2.
+        3.
+
+        **Expected behavior:**
+
+        **Actual behavior:**
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Log Output (Redacted)
+      description: Optional lines from `ragoshell.log` (`Help → Open Log Folder` on desktop; see `docs/Platforms.md` §5 on mobile). Scrub any hostnames or sensitive strings first.
+      render: text
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: safety_checks
+    attributes:
+      label: Pre-Submission Checks
+      options:
+        - label: I have removed all passwords, connection URIs with credentials, SSH/TLS private keys, and API tokens from this ticket.
+          required: true
+        - label: This is not an undisclosed security vulnerability (security reports follow SECURITY.md).
+          required: true

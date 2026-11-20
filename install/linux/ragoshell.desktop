@@ -1,0 +1,26 @@
+[Desktop Entry]
+Type=Application
+Name=RagoShell
+GenericName=MongoDB IDE
+Comment=A modern, shell-centric MongoDB GUI
+Comment[ar]=واجهة MongoDB حديثة تركّز على الشل
+Comment[az]=Müasir, shell mərkəzli MongoDB interfeysi
+Comment[de]=Eine moderne, Shell-zentrierte MongoDB-Oberfläche
+Comment[es]=Una interfaz moderna de MongoDB centrada en el shell
+Comment[fr]=Une interface MongoDB moderne centrée sur le shell
+Comment[hi]=आधुनिक, शेल-केंद्रित MongoDB इंटरफ़ेस
+Comment[ja]=シェル中心のモダンな MongoDB GUI
+Comment[kk]=Shell-ке негізделген заманауи MongoDB интерфейсі
+Comment[ky]=Shell негизиндеги заманбап MongoDB интерфейси
+Comment[pt_BR]=Uma interface moderna do MongoDB centrada no shell
+Comment[ru]=Современный графический клиент MongoDB с упором на shell
+Comment[tr]=Modern, shell odaklı bir MongoDB arayüzü
+Comment[uz]=Shell asosidagi zamonaviy MongoDB interfeysi
+Comment[zh_CN]=以 Shell 为核心的现代 MongoDB 图形界面
+Exec=ragoshell
+Icon=ragoshell
+StartupWMClass=ragoshell
+StartupNotify=true
+Terminal=false
+Categories=Development;Database;
+Keywords=MongoDB;database;shell;

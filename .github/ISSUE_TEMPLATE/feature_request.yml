@@ -1,0 +1,52 @@
+name: Feature Request
+description: Propose an enhancement or workflow improvement for RagoShell or ragoshell-mcp.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping improve **RagoShell**! Before filing, check [`README.md`](https://github.com/ragipunal/ragoshell/blob/main/README.md) and [`docs/Platforms.md`](https://github.com/ragipunal/ragoshell/blob/main/docs/Platforms.md) to see whether the feature is already supported or planned.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement / Use Case
+      description: What database administration, query, or automation workflow is currently missing or difficult?
+      placeholder: "When inspecting a collection with ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the behavior, UI/keyboard interaction, shell API, or MCP tool change you envision.
+      placeholder: "Add an option in ..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: target_platforms
+    attributes:
+      label: Target Platforms
+      description: Select all platforms or components this proposal applies to.
+      multiple: true
+      options:
+        - All supported platforms (Desktop & Mobile)
+        - Windows (x64)
+        - macOS (arm64)
+        - Linux (x64)
+        - iPadOS / iOS (arm64)
+        - Android (arm64)
+        - MCP Server (ragoshell-mcp)
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives & Compatibility Notes
+      description: Any current shell workarounds, MongoDB version considerations (4.0–8.0), or mobile touch-layout constraints?
+    validations:
+      required: false

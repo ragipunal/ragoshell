@@ -1,0 +1,16 @@
+<RCC>
+    <!-- Images shared by C++ (window/tray icon) and QML. QML files are
+         compiled into the QML module by qt_add_qml_module. -->
+    <qresource prefix="/qml">
+        <file alias="welcome_splash.png">resources/welcome_splash.png</file>
+        <file alias="app_icon.png">resources/app_icon.png</file>
+    </qresource>
+    <!-- Open-source license texts and third-party notices embedded in the binary so
+         Help -> Open-Source Licenses works on every platform (including Android and iOS). -->
+    <qresource prefix="/licenses">
+        <file alias="LICENSE">../../LICENSE</file>
+        <file alias="LICENSE.LGPLv3">../../LICENSE.LGPLv3</file>
+        <file alias="COPYRIGHT">../../COPYRIGHT</file>
+        <file alias="THIRD-PARTY-NOTICES.txt">../../THIRD-PARTY-NOTICES.txt</file>
+    </qresource>
+</RCC>

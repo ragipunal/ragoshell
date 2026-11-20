@@ -1,0 +1,28 @@
+if(SYSTEM_LINUX OR SYSTEM_MACOSX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
+elseif(SYSTEM_WINDOWS)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_UNICODE -DUNICODE -DWIN32 -D_WIN32 -D_CRT_SECURE_NO_WARNINGS -DBOOST_ALL_NO_LIB")
+
+    # Do not show some warnings. We turned off the same warnings as MongoDB do
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4355 /wd4800 /wd4267 /wd4244 /wd4290 /wd4068 /wd4351")
+
+    # The /MP option can reduce the total time to compile the source files. This option
+    # causes the compiler to create one or more copies of itself, each in a separate process.
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+    set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+
+    set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} psapi.lib bcrypt.lib Iphlpapi.lib dbghelp.lib ws2_32.lib winmm.lib version.lib")
+endif()
+
+# Brand display values come from cmake/RagoShellDefaults.cmake (docs/Brand.md).
+set(PROJECT_NAME "${RAGO_PRODUCT_NAME}")
+set(PROJECT_NAME_TITLE ${PROJECT_NAME})
+set(PROJECT_DOMAIN "${RAGO_DOMAIN}")
+set(PROJECT_COMPANYNAME "${RAGO_PRODUCT_NAME}")
+set(PROJECT_COPYRIGHT "Copyright (C) 2025 ${PROJECT_COMPANYNAME} All Rights Reserved.")
+set(PROJECT_COMPANYNAME_DOMAIN "${RAGO_PRODUCT_URL}")
+set(PROJECT_GITHUB_FORK "github.com/${RAGO_GITHUB_OWNER}/${RAGO_PRODUCT_ID}")
+set(PROJECT_GITHUB_ISSUES "github.com/${RAGO_GITHUB_OWNER}/${RAGO_PRODUCT_ID}/issues")
+
+string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWERCASE)

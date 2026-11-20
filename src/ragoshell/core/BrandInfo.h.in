@@ -1,0 +1,26 @@
+#pragma once
+
+// Generated from BrandInfo.h.in by CMake (docs/Brand.md).
+// Display / packaging brand — one source with cmake/RagoShellDefaults.cmake.
+
+namespace RagoShell
+{
+namespace BrandInfo
+{
+    constexpr const char *productName = "@RAGO_PRODUCT_NAME@";
+    constexpr const char *productId = "@RAGO_PRODUCT_ID@";
+    constexpr const char *bundleId = "@RAGO_BUNDLE_ID@";
+    constexpr const char *domain = "@RAGO_DOMAIN@";
+    constexpr const char *productUrl = "@RAGO_PRODUCT_URL@";
+    constexpr const char *donateUrl = "@RAGO_DONATE_URL@";
+    constexpr const char *apiUrl = "@RAGO_API_URL@";
+    constexpr const char *portalUrl = "@RAGO_PORTAL_URL@";
+    constexpr const char *releasesManifestUrl = "@RAGO_RELEASES_MANIFEST_URL@";
+    constexpr const char *privacyUrl = "@RAGO_PRIVACY_URL@";
+    constexpr const char *termsUrl = "@RAGO_TERMS_URL@";
+    constexpr const char *sourceRepoUrl = "@RAGO_SOURCE_REPO_URL@";
+    constexpr const char *minisignPubkey = "@RAGO_MINISIGN_PUBKEY@";
+    constexpr const char *entitlementPubkeys = "@RAGO_ENTITLEMENT_PUBKEYS@";
+    constexpr bool isStoreBuild = @RAGO_STORE_BUILD_BOOL@;
+}
+}

@@ -1,0 +1,2 @@
+"NSLocalNetworkUsageDescription" = "RagoShell 会连接到您局域网中的 MongoDB 服务器和 SSH 隧道主机。";
+"NSPhotoLibraryUsageDescription" = "仅当您选择要导入的脚本、文档或证书时，RagoShell 才会使用文件选择器访问权限。";

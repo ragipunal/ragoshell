@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 800" width="1600" height="800">
+  <defs>
+    <!-- Deep dark-green background gradient (2:1 wide landscape) -->
+    <radialGradient id="splashBg" cx="50%" cy="45%" r="75%" fx="50%" fy="40%">
+      <stop offset="0%" stop-color="#0f2e21" />
+      <stop offset="45%" stop-color="#091f16" />
+      <stop offset="85%" stop-color="#040f0a" />
+      <stop offset="100%" stop-color="#020805" />
+    </radialGradient>
+
+    <!-- Subtle ambient glow centered behind the flower emblem -->
+    <radialGradient id="centerAura" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1ae575" stop-opacity="0.18" />
+      <stop offset="50%" stop-color="#00be54" stop-opacity="0.06" />
+      <stop offset="100%" stop-color="#040f0a" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Flower Petal Gradient: emerald to vibrant mint green matching app icon -->
+    <linearGradient id="petalGradSplash" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#017a33" />
+      <stop offset="40%" stop-color="#00b852" />
+      <stop offset="100%" stop-color="#3bf592" />
+    </linearGradient>
+
+    <!-- Flower core subtle radial glow -->
+    <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#80ffbf" stop-opacity="0.5" />
+      <stop offset="100%" stop-color="#028639" stop-opacity="0.0" />
+    </radialGradient>
+
+    <!-- Soft drop shadow under flower emblem -->
+    <filter id="flowerElevation" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#000000" flood-opacity="0.6" />
+    </filter>
+
+    <!-- Text subtle elevation shadow -->
+    <filter id="textGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#000000" flood-opacity="0.5" />
+    </filter>
+
+    <!-- Mint accent line gradient -->
+    <linearGradient id="dividerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3bf592" stop-opacity="0" />
+      <stop offset="25%" stop-color="#3bf592" stop-opacity="0.75" />
+      <stop offset="50%" stop-color="#6affb5" stop-opacity="0.9" />
+      <stop offset="75%" stop-color="#3bf592" stop-opacity="0.75" />
+      <stop offset="100%" stop-color="#3bf592" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Very subtle architectural grid lines for corporate developer feel -->
+    <pattern id="subtleGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#22d672" stroke-width="0.75" stroke-opacity="0.025" />
+    </pattern>
+  </defs>
+
+  <!-- Background Base: 2:1 Wide Deep Forest-Green Canvas -->
+  <rect width="1600" height="800" fill="url(#splashBg)" />
+
+  <!-- Subtle developer grid texture -->
+  <rect width="1600" height="800" fill="url(#subtleGrid)" />
+
+  <!-- Ambient focal glow behind the flower -->
+  <ellipse cx="800" cy="310" rx="420" ry="320" fill="url(#centerAura)" />
+
+  <!-- Centerpiece: Large Geometric 5-Petal Mango Flower Emblem -->
+  <!-- Positioned with center at (800, 290) -->
+  <g filter="url(#flowerElevation)">
+    <g transform="translate(800, 290)">
+
+      <!-- Petal 1: 0 deg (Top) -->
+      <g transform="rotate(0)">
+        <path d="M 0,-140 C 26,-105 40,-50 0,0 C -40,-50 -26,-105 0,-140 Z" fill="url(#petalGradSplash)" />
+        <!-- Subtle inner facet highlight for precision enterprise aesthetic -->
+        <path d="M 0,-140 C 26,-105 40,-50 0,0 L 0,-140 Z" fill="#ffffff" opacity="0.14" />
+        <path d="M 0,-140 L 0,0" stroke="#ffffff" stroke-width="0.8" stroke-opacity="0.25" />
+      </g>
+
+      <!-- Petal 2: 72 deg (Top Right) -->
+      <g transform="rotate(72)">
+        <path d="M 0,-140 C 26,-105 40,-50 0,0 C -40,-50 -26,-105 0,-140 Z" fill="url(#petalGradSplash)" />
+        <path d="M 0,-140 C 26,-105 40,-50 0,0 L 0,-140 Z" fill="#ffffff" opacity="0.14" />
+        <path d="M 0,-140 L 0,0" stroke="#ffffff" stroke-width="0.8" stroke-opacity="0.25" />
+      </g>
+
+      <!-- Petal 3: 144 deg (Bottom Right) -->
+      <g transform="rotate(144)">
+        <path d="M 0,-140 C 26,-105 40,-50 0,0 C -40,-50 -26,-105 0,-140 Z" fill="url(#petalGradSplash)" />
+        <path d="M 0,-140 C 26,-105 40,-50 0,0 L 0,-140 Z" fill="#ffffff" opacity="0.14" />
+        <path d="M 0,-140 L 0,0" stroke="#ffffff" stroke-width="0.8" stroke-opacity="0.25" />
+      </g>
+
+      <!-- Petal 4: 216 deg (Bottom Left) -->
+      <g transform="rotate(216)">
+        <path d="M 0,-140 C 26,-105 40,-50 0,0 C -44,-50 -26,-105 0,-140 Z" fill="url(#petalGradSplash)" />
+        <path d="M 0,-140 C 26,-105 40,-50 0,0 L 0,-140 Z" fill="#ffffff" opacity="0.14" />
+        <path d="M 0,-140 L 0,0" stroke="#ffffff" stroke-width="0.8" stroke-opacity="0.25" />
+      </g>
+
+      <!-- Petal 5: 288 deg (Top Left) -->
+      <g transform="rotate(288)">
+        <path d="M 0,-140 C 26,-105 40,-50 0,0 C -40,-50 -26,-105 0,-140 Z" fill="url(#petalGradSplash)" />
+        <path d="M 0,-140 C 26,-105 40,-50 0,0 L 0,-140 Z" fill="#ffffff" opacity="0.14" />
+        <path d="M 0,-140 L 0,0" stroke="#ffffff" stroke-width="0.8" stroke-opacity="0.25" />
+      </g>
+
+      <!-- Center Stamen / Blossom Core -->
+      <circle cx="0" cy="0" r="42" fill="#04180f" opacity="0.55" />
+      <circle cx="0" cy="0" r="28" fill="url(#coreGlow)" />
+      <circle cx="0" cy="0" r="14" fill="#022a18" />
+      <circle cx="0" cy="0" r="6" fill="#3bf592" opacity="0.9" />
+    </g>
+  </g>
+
+  <!-- Typography & Brand Hierarchy -->
+  <g filter="url(#textGlow)">
+    <!-- Wordmark: "RagoShell" (CamelCase, never capitals: docs/Brand.md) in bold grotesque sans-serif, two tones, generous letter spacing -->
+    <text x="800" y="525"
+          font-family="system-ui, -apple-system, 'SF Pro Display', 'Inter', 'Montserrat', 'Segoe UI', Arial, sans-serif"
+          font-size="64"
+          font-weight="800"
+          letter-spacing="5"
+          fill="#ffffff"
+          text-anchor="middle"><tspan fill="#ffffff">Rago</tspan><tspan fill="#00be54">Shell</tspan></text>
+
+    <!-- Thin Mint-Green Divider Line -->
+    <rect x="680" y="562" width="240" height="2" rx="1" fill="url(#dividerGrad)" />
+
+    <!-- Tagline: "MongoDB IDE" in light muted mint-green -->
+    <text x="800" y="605"
+          font-family="system-ui, -apple-system, 'SF Pro Text', 'Inter', 'JetBrains Mono', 'Segoe UI', monospace, sans-serif"
+          font-size="19"
+          font-weight="500"
+          letter-spacing="8"
+          fill="#8ae6b3"
+          fill-opacity="0.85"
+          text-anchor="middle">MONGODB IDE</text>
+  </g>
+
+  <!-- Subtle corner registration marks (Enterprise precision branding touch) -->
+  <path d="M 40,60 L 40,40 L 60,40" fill="none" stroke="#22d672" stroke-width="1.5" stroke-opacity="0.25" />
+  <path d="M 1560,60 L 1560,40 L 1540,40" fill="none" stroke="#22d672" stroke-width="1.5" stroke-opacity="0.25" />
+  <path d="M 40,740 L 40,760 L 60,760" fill="none" stroke="#22d672" stroke-width="1.5" stroke-opacity="0.25" />
+  <path d="M 1560,740 L 1560,760 L 1540,760" fill="none" stroke="#22d672" stroke-width="1.5" stroke-opacity="0.25" />
+</svg>

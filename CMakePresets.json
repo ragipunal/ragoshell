@@ -1,0 +1,311 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 25,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Visual Studio 18 2026",
+      "architecture": "x64",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "installDir": "${sourceDir}/install/${presetName}",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-windows",
+        "CMAKE_POLICY_VERSION_MINIMUM": "3.5",
+        "CMAKE_PREFIX_PATH": "C:/Qt/6.12.0/msvc2022_64"
+      }
+    },
+    {
+      "name": "windows",
+      "displayName": "Windows x64 (Visual Studio 18)",
+      "inherits": "base"
+    },
+    {
+      "name": "windows-ninja",
+      "displayName": "Windows x64 Ninja (requires vcvars environment)",
+      "inherits": "base",
+      "generator": "Ninja Multi-Config",
+      "binaryDir": "${sourceDir}/build/windows-ninja",
+      "environment": {
+        "PATH": "C:/Program Files/Microsoft Visual Studio/18/Enterprise/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja;$penv{PATH}"
+      }
+    },
+    {
+      "name": "wasm-single",
+      "displayName": "WebAssembly single-thread (Emscripten + Qt 6.12 wasm_singlethread)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/wasm-single",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "CMAKE_PREFIX_PATH": "$env{QT_WASM_PATH}/lib/cmake",
+        "CMAKE_FIND_ROOT_PATH_MODE_PACKAGE": "BOTH",
+        "VCPKG_TARGET_TRIPLET": "wasm32-emscripten",
+        "VCPKG_OVERLAY_PORTS": "${sourceDir}/vcpkg-overlays/ports",
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/vcpkg-overlays/triplets",
+        "QT_HOST_PATH": "$env{Qt6_DIR}",
+        "CMAKE_POLICY_VERSION_MINIMUM": "3.5",
+        "CMAKE_SIZEOF_VOID_P": "4",
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
+      }
+    },
+    {
+      "name": "wasm-multi",
+      "displayName": "WebAssembly multithread (Emscripten + Qt 6.12 wasm_multithread, pthreads)",
+      "inherits": "wasm-single",
+      "binaryDir": "${sourceDir}/build/wasm-multi",
+      "cacheVariables": {
+        "CMAKE_THREAD_LIBS_INIT": "-lpthread"
+      }
+    },
+    {
+      "name": "android-arm64",
+      "displayName": "Android arm64 phones & tablets (Windows host; Qt 6.12 for Android, min API 28 / target API 37)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/android-arm64",
+      "installDir": "${sourceDir}/install/android-arm64",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_TOOLCHAIN_FILE": "C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "C:/Qt/6.12.0/android_arm64_v8a/lib/cmake/Qt6/qt.toolchain.cmake",
+        "VCPKG_TARGET_TRIPLET": "arm64-android",
+        "VCPKG_OVERLAY_PORTS": "${sourceDir}/vcpkg-overlays/ports",
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/vcpkg-overlays/triplets",
+        "CMAKE_POLICY_VERSION_MINIMUM": "3.5",
+        "QT_HOST_PATH": "C:/Qt/6.12.0/msvc2022_64",
+        "QT_ANDROID_ABIS": "arm64-v8a",
+        "ANDROID_PLATFORM": "android-28",
+        "RAGO_ANDROID_MIN_SDK": "28",
+        "RAGO_ANDROID_TARGET_SDK": "37",
+        "ANDROID_SDK_ROOT": "$env{LOCALAPPDATA}/Android/Sdk",
+        "ANDROID_NDK_ROOT": "$env{LOCALAPPDATA}/Android/Sdk/ndk/30.0.16248370"
+      },
+      "environment": {
+        "ANDROID_NDK_HOME": "$env{LOCALAPPDATA}/Android/Sdk/ndk/30.0.16248370"
+      }
+    },
+    {
+      "name": "android-arm64-release",
+      "displayName": "Android arm64 phones & tablets, Release",
+      "inherits": "android-arm64",
+      "binaryDir": "${sourceDir}/build/android-arm64-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "android-x86_64",
+      "displayName": "Android x86_64 (the emulator on a Windows host; not shipped)",
+      "inherits": "android-arm64",
+      "binaryDir": "${sourceDir}/build/android-x86_64",
+      "installDir": "${sourceDir}/install/android-x86_64",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "C:/Qt/6.12.0/android_x86_64/lib/cmake/Qt6/qt.toolchain.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-android",
+        "QT_ANDROID_ABIS": "x86_64"
+      }
+    },
+    {
+      "name": "android-arm64-macos",
+      "displayName": "Android arm64 phones & tablets (macOS host; Qt 6.12 for Android, min API 28 / target API 37)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/android-arm64-macos",
+      "installDir": "${sourceDir}/install/android-arm64-macos",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "$env{Qt6_DIR_ANDROID}/lib/cmake/Qt6/qt.toolchain.cmake",
+        "VCPKG_TARGET_TRIPLET": "arm64-android",
+        "VCPKG_OVERLAY_PORTS": "${sourceDir}/vcpkg-overlays/ports",
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/vcpkg-overlays/triplets",
+        "CMAKE_POLICY_VERSION_MINIMUM": "3.5",
+        "QT_HOST_PATH": "$env{Qt6_DIR}",
+        "QT_ANDROID_ABIS": "arm64-v8a",
+        "ANDROID_PLATFORM": "android-28",
+        "RAGO_ANDROID_MIN_SDK": "28",
+        "RAGO_ANDROID_TARGET_SDK": "37",
+        "ANDROID_SDK_ROOT": "$env{HOME}/Library/Android/sdk",
+        "ANDROID_NDK_ROOT": "$env{HOME}/Library/Android/sdk/ndk/30.0.16248370"
+      },
+      "environment": {
+        "ANDROID_NDK_HOME": "$env{HOME}/Library/Android/sdk/ndk/30.0.16248370"
+      }
+    },
+    {
+      "name": "android-arm64-macos-release",
+      "displayName": "Android arm64 phones & tablets (macOS host), Release",
+      "inherits": "android-arm64-macos",
+      "binaryDir": "${sourceDir}/build/android-arm64-macos-release",
+      "installDir": "${sourceDir}/install/android-arm64-macos-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "android-arm64-linux",
+      "displayName": "Android arm64 phones & tablets (Linux host; Qt 6 for Android, min API 28 / target API 37)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/android-arm64-linux",
+      "installDir": "${sourceDir}/install/android-arm64-linux",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "$env{Qt6_DIR_ANDROID}/lib/cmake/Qt6/qt.toolchain.cmake",
+        "VCPKG_TARGET_TRIPLET": "arm64-android",
+        "VCPKG_OVERLAY_PORTS": "${sourceDir}/vcpkg-overlays/ports",
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/vcpkg-overlays/triplets",
+        "CMAKE_POLICY_VERSION_MINIMUM": "3.5",
+        "QT_HOST_PATH": "$env{Qt6_DIR}",
+        "QT_ANDROID_ABIS": "arm64-v8a",
+        "ANDROID_PLATFORM": "android-28",
+        "RAGO_ANDROID_MIN_SDK": "28",
+        "RAGO_ANDROID_TARGET_SDK": "37",
+        "ANDROID_SDK_ROOT": "$env{ANDROID_SDK_ROOT}",
+        "ANDROID_NDK_ROOT": "$env{ANDROID_NDK_ROOT}"
+      },
+      "environment": {
+        "ANDROID_NDK_HOME": "$env{ANDROID_NDK_ROOT}"
+      }
+    },
+    {
+      "name": "ios",
+      "displayName": "iOS & iPadOS universal (macOS host: Xcode, Qt 6.12 for iOS, min iOS 18.0 / latest SDK)",
+      "generator": "Xcode",
+      "binaryDir": "${sourceDir}/build/ios",
+      "installDir": "${sourceDir}/install/ios",
+      "cacheVariables": {
+        "CMAKE_SYSTEM_NAME": "iOS",
+        "CMAKE_OSX_ARCHITECTURES": "arm64",
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "18.0",
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "$env{Qt6_DIR_IOS}/lib/cmake/Qt6/qt.toolchain.cmake",
+        "VCPKG_TARGET_TRIPLET": "arm64-ios",
+        "VCPKG_OVERLAY_PORTS": "${sourceDir}/vcpkg-overlays/ports",
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/vcpkg-overlays/triplets",
+        "CMAKE_POLICY_VERSION_MINIMUM": "3.5",
+        "QT_HOST_PATH": "$env{Qt6_DIR}"
+      }
+    },
+    {
+      "name": "unix-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "installDir": "${sourceDir}/install/${presetName}",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "CMAKE_POLICY_VERSION_MINIMUM": "3.5"
+      }
+    },
+    {
+      "name": "linux-debug",
+      "displayName": "Linux x64 Debug (requires VCPKG_ROOT + Qt6_DIR env)",
+      "inherits": "unix-base",
+      "binaryDir": "${sourceDir}/build/linux-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "VCPKG_TARGET_TRIPLET": "x64-linux",
+        "CMAKE_PREFIX_PATH": "$env{Qt6_DIR}"
+      }
+    },
+    {
+      "name": "linux-release",
+      "displayName": "Linux x64 Release",
+      "inherits": "linux-debug",
+      "binaryDir": "${sourceDir}/build/linux-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "macos-debug",
+      "displayName": "macOS arm64 Debug (min macOS 14.4; requires VCPKG_ROOT + Qt6_DIR env)",
+      "inherits": "unix-base",
+      "binaryDir": "${sourceDir}/build/macos-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "14.4",
+        "VCPKG_TARGET_TRIPLET": "arm64-osx",
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/vcpkg-overlays/triplets",
+        "CMAKE_PREFIX_PATH": "$env{Qt6_DIR}"
+      }
+    },
+    {
+      "name": "macos-release",
+      "displayName": "macOS arm64 Release",
+      "inherits": "macos-debug",
+      "binaryDir": "${sourceDir}/build/macos-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "android-arm64-debug",
+      "configurePreset": "android-arm64"
+    },
+    {
+      "name": "android-arm64-release",
+      "configurePreset": "android-arm64-release"
+    },
+    {
+      "name": "android-x86_64-debug",
+      "configurePreset": "android-x86_64"
+    },
+    {
+      "name": "android-arm64-macos-debug",
+      "configurePreset": "android-arm64-macos"
+    },
+    {
+      "name": "android-arm64-macos-release",
+      "configurePreset": "android-arm64-macos-release"
+    },
+    {
+      "name": "android-arm64-linux",
+      "configurePreset": "android-arm64-linux"
+    },
+    {
+      "name": "ios-debug",
+      "configurePreset": "ios",
+      "configuration": "Debug"
+    },
+    {
+      "name": "ios-release",
+      "configurePreset": "ios",
+      "configuration": "Release"
+    },
+    {
+      "name": "windows-debug",
+      "configurePreset": "windows",
+      "configuration": "Debug"
+    },
+    {
+      "name": "windows-release",
+      "configurePreset": "windows",
+      "configuration": "Release"
+    },
+    {
+      "name": "linux-debug",
+      "configurePreset": "linux-debug"
+    },
+    {
+      "name": "linux-release",
+      "configurePreset": "linux-release"
+    },
+    {
+      "name": "macos-debug",
+      "configurePreset": "macos-debug"
+    },
+    {
+      "name": "macos-release",
+      "configurePreset": "macos-release"
+    }
+  ]
+}

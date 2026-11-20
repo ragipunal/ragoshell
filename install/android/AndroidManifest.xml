@@ -1,0 +1,96 @@
+<?xml version="1.0"?>
+<!--
+  RagoShell for Android phones and tablets (docs/Platforms.md). Based on Qt's template
+  (<Qt>/src/android/templates/AndroidManifest.xml); the %%INSERT_...%% markers are filled in
+  by androiddeployqt from the target's QT_ANDROID_* properties (src/ragoshell-app/CMakeLists.txt).
+  SDK bounds (minSdk = 28 / Android 9.0, targetSdk = 37 / Android 17, no maxSdkVersion cap per
+  Google Play policy) are emitted into build.gradle via QT_ANDROID_MIN_SDK_VERSION and
+  QT_ANDROID_TARGET_SDK_VERSION rather than a deprecated <uses-sdk> tag here.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.qtproject.example"
+    android:installLocation="auto"
+    android:versionCode="-- %%INSERT_VERSION_CODE%% --"
+    android:versionName="-- %%INSERT_VERSION_NAME%% --">
+    <!-- %%INSERT_PERMISSIONS -->
+    <!-- %%INSERT_FEATURES -->
+
+    <!-- Network access for MongoDB TCP/TLS connections, SSH tunnels, and AI HTTPS endpoints. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Reachability and metered-network checks via QNetworkInformation (BackgroundMonitor.cpp). -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <!-- Android 17 (API 37) asks the user before an app reaches the local network (MongoDB or SSH
+         hosts on RFC1918 / link-local / .local); requested at run time in LocalNetworkPermission.cpp. -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
+    <!-- Android 9.0 (API 28) legacy external storage fallback. Capping WRITE_EXTERNAL_STORAGE at API 28
+         also overrides Qt6Core's unbounded module permission in androiddeployqt; Android 10+ (API 29+)
+         uses Scoped Storage and Storage Access Framework content:// URIs exclusively. -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
+    <!-- Keep Wi-Fi and touchscreen optional so Ethernet tablets and Chromebooks remain eligible on Google Play. -->
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.wifi"
+        android:required="false" />
+
+    <supports-screens
+        android:anyDensity="true"
+        android:largeScreens="true"
+        android:normalScreens="true"
+        android:smallScreens="true"
+        android:xlargeScreens="true" />
+
+    <!-- allowBackup="false": saved connections and the key store entry must not be copied to cloud backups. -->
+    <application
+        android:name="org.qtproject.qt.android.bindings.QtApplication"
+        android:hardwareAccelerated="true"
+        android:allowBackup="false"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:label="-- %%INSERT_APP_NAME%% --"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:enableOnBackInvokedCallback="true">
+        <!-- resizeableActivity: split screen and free-form windows; configChanges (Qt's list) keep the
+             activity alive on rotation and resize; adjustResize: the on-screen keyboard shrinks the window. -->
+        <activity
+            android:name="org.qtproject.qt.android.bindings.QtActivity"
+            android:configChanges="orientation|uiMode|screenLayout|screenSize|smallestScreenSize|layoutDirection|locale|fontScale|keyboard|keyboardHidden|navigation|mcc|mnc|density"
+            android:label="-- %%INSERT_APP_NAME%% --"
+            android:launchMode="singleTop"
+            android:resizeableActivity="true"
+            android:screenOrientation="unspecified"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.app.lib_name"
+                android:value="-- %%INSERT_APP_LIB_NAME%% --" />
+
+            <meta-data
+                android:name="android.app.arguments"
+                android:value="-- %%INSERT_APP_ARGUMENTS%% --" />
+        </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.qtprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/qtprovider_paths"/>
+        </provider>
+    </application>
+</manifest>

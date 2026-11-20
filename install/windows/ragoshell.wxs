@@ -1,0 +1,142 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <!-- ProductName, AppExe and ProductUrl come from -d (ci/build-windows.ps1 reads cmake/RagoShellDefaults.cmake).
+       UpgradeCode never changes: it is how an installed version is replaced in place by a newer one. -->
+  <Package Name="$(var.ProductName)"
+           Manufacturer="$(var.ProductName)"
+           Version="$(var.MsiVersion)"
+           UpgradeCode="D8B53E64-7A2F-4E91-9C4D-6F81A20E3B57"
+           Language="1033"
+           Codepage="1252"
+           Scope="perMachine"
+           InstallerVersion="500"
+           Compressed="yes">
+
+    <!-- Automatically replace previous versions (or rebuilt same-version packages) in-place.
+         The user's settings folder in %USERPROFILE% is outside MSI management and always preserved. -->
+    <MajorUpgrade AllowSameVersionUpgrades="yes"
+                  Schedule="afterInstallInitialize"
+                  DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Icon Id="ProductIcon.exe" SourceFile="$(var.IconFile)" />
+    <Property Id="ARPPRODUCTICON" Value="ProductIcon.exe" />
+    <Property Id="ARPURLINFOABOUT" Value="$(var.ProductUrl)" />
+
+    <!-- Remember custom installation directory across upgrades -->
+    <Property Id="INSTALLFOLDER">
+      <RegistrySearch Id="PreviousInstallFolderSearch"
+                      Root="HKLM"
+                      Key="Software\$(var.ProductName)"
+                      Name="InstallLocation"
+                      Type="raw" />
+    </Property>
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="$(var.ProductName)" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="$(var.ProductName)" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder" />
+    <StandardDirectory Id="System64Folder" />
+
+    <ComponentGroup Id="ProductFiles" Directory="INSTALLFOLDER">
+      <Component Id="MainQmlExecutable" Bitness="always64">
+        <File Id="ProductQmlExe"
+              Source="$(var.StageDir)\$(var.AppExe)"
+              KeyPath="yes" />
+        <RegistryValue Root="HKLM"
+                       Key="Software\$(var.ProductName)"
+                       Name="InstallLocation"
+                       Type="string"
+                       Value="[INSTALLFOLDER]" />
+      </Component>
+
+      <Files Include="$(var.StageDir)\**">
+        <Exclude Files="$(var.StageDir)\$(var.AppExe)" />
+      </Files>
+    </ComponentGroup>
+
+    <!-- Start Menu & Desktop shortcuts pointing to the QML frontend ($(var.AppExe)) -->
+    <ComponentGroup Id="ProductShortcuts">
+      <Component Id="ApplicationShortcuts"
+                 Directory="ApplicationProgramsFolder"
+                 Guid="7A6E29D4-83C0-4D2B-9A14-31E8F4509B12">
+        <Shortcut Id="StartMenuShortcut"
+                  Name="$(var.ProductName)"
+                  Description="$(var.ProductName) - MongoDB Management Tool"
+                  Target="[INSTALLFOLDER]$(var.AppExe)"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Icon="ProductIcon.exe" />
+        <Shortcut Id="DesktopShortcut"
+                  Directory="DesktopFolder"
+                  Name="$(var.ProductName)"
+                  Description="$(var.ProductName) - MongoDB Management Tool"
+                  Target="[INSTALLFOLDER]$(var.AppExe)"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Icon="ProductIcon.exe" />
+        <RemoveFolder Id="CleanApplicationProgramsFolder"
+                      Directory="ApplicationProgramsFolder"
+                      On="uninstall" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\$(var.ProductName)"
+                       Name="ShortcutsInstalled"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <Feature Id="MainFeature" Title="$(var.ProductName)" Level="1">
+      <ComponentGroupRef Id="ProductFiles" />
+      <ComponentGroupRef Id="ProductShortcuts" />
+    </Feature>
+
+    <!-- Installer UI + optional launch on exit -->
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.LicenseRtf)" />
+    <WixVariable Id="WixUIDialogBmp" Value="$(var.DialogBmp)" />
+    <WixVariable Id="WixUIBannerBmp" Value="$(var.BannerBmp)" />
+
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch $(var.ProductName)" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
+
+    <CustomAction Id="StopRunningApp"
+                  Directory="System64Folder"
+                  ExeCommand="&quot;[System64Folder]taskkill.exe&quot; /F /T /IM &quot;$(var.AppExe)&quot;"
+                  Execute="immediate"
+                  Return="ignore" />
+
+    <CustomAction Id="StopRunningMcp"
+                  Directory="System64Folder"
+                  ExeCommand="&quot;[System64Folder]taskkill.exe&quot; /F /T /IM &quot;$(var.McpExe)&quot;"
+                  Execute="immediate"
+                  Return="ignore" />
+
+    <InstallExecuteSequence>
+      <Custom Action="StopRunningMcp" Before="InstallValidate" />
+      <Custom Action="StopRunningApp" Before="InstallValidate" />
+    </InstallExecuteSequence>
+
+    <CustomAction Id="LaunchApplication"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="[INSTALLFOLDER]$(var.AppExe)"
+                  Execute="immediate"
+                  Impersonate="yes"
+                  Return="asyncNoWait" />
+
+    <UI>
+      <Publish Dialog="ExitDialog"
+               Control="Finish"
+               Event="DoAction"
+               Value="LaunchApplication"
+               Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed" />
+    </UI>
+
+  </Package>
+</Wix>

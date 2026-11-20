@@ -1,0 +1,38 @@
+{
+  "name": "ragoshell",
+  "version-string": "2.1.0",
+  "builtin-baseline": "4f973280dd95e3902b3410933fb2ce108bb29d1d",
+  "dependencies": [
+    "argon2",
+    "mongo-cxx-driver",
+    {
+      "name": "mongo-c-driver",
+      "features": [
+        "openssl"
+      ],
+      "platform": "windows | ios | osx"
+    },
+    "openssl",
+    {
+      "name": "libssh2",
+      "default-features": false,
+      "features": [
+        "openssl"
+      ]
+    }
+  ],
+  "overrides": [
+    {
+      "name": "mongo-cxx-driver",
+      "version": "4.0.0"
+    },
+    {
+      "name": "mongo-c-driver",
+      "version": "1.30.7"
+    },
+    {
+      "name": "libbson",
+      "version": "1.30.7"
+    }
+  ]
+}

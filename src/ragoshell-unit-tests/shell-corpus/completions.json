@@ -1,0 +1,955 @@
+{
+    "database": "rago_parity_c",
+    "entries": [
+        {
+            "items": [
+                "db",
+                "rs",
+                "sh",
+                "show dbs",
+                "show databases",
+                "show collections",
+                "show tables",
+                "show users",
+                "show roles",
+                "show profile",
+                "show logs",
+                "show log",
+                "use ",
+                "ObjectId(",
+                "ISODate(",
+                "NumberLong(",
+                "NumberInt(",
+                "NumberDecimal(",
+                "Timestamp(",
+                "UUID(",
+                "BinData(",
+                "HexData(",
+                "MinKey()",
+                "MaxKey()",
+                "DBRef(",
+                "EJSON",
+                "console",
+                "print(",
+                "printjson("
+            ],
+            "prefix": ""
+        },
+        {
+            "items": [
+                "db"
+            ],
+            "prefix": "d"
+        },
+        {
+            "items": [
+                "db"
+            ],
+            "prefix": "db"
+        },
+        {
+            "items": [
+                "db.getCollection('it\\'s')",
+                "db.getCollection('my-coll')",
+                "db.plain",
+                "db.getCollection(",
+                "db.getCollectionNames()",
+                "db.getCollectionInfos()",
+                "db.createCollection(",
+                "db.createView(",
+                "db.getSiblingDB(",
+                "db.getName()",
+                "db.getMongo()",
+                "db.system",
+                "db.stats()",
+                "db.runCommand(",
+                "db.adminCommand(",
+                "db.serverStatus()",
+                "db.serverBuildInfo()",
+                "db.hostInfo()",
+                "db.version()",
+                "db.hello()",
+                "db.isMaster()",
+                "db.listCommands()",
+                "db.currentOp()",
+                "db.killOp(",
+                "db.connPoolStats()",
+                "db.getFeatureCompatibilityVersion()",
+                "db.printCollectionStats()",
+                "db.getProfilingStatus()",
+                "db.setProfilingLevel(",
+                "db.getUsers()",
+                "db.getUser(",
+                "db.createUser(",
+                "db.updateUser(",
+                "db.changeUserPassword(",
+                "db.dropUser(",
+                "db.dropAllUsers()",
+                "db.grantRolesToUser(",
+                "db.revokeRolesFromUser(",
+                "db.getRoles()",
+                "db.dropDatabase()",
+                "db.repairDatabase()"
+            ],
+            "prefix": "db."
+        },
+        {
+            "items": [
+                "db.plain",
+                "db.printCollectionStats()"
+            ],
+            "prefix": "db.p"
+        },
+        {
+            "items": [
+                "db.getCollection('my-coll')"
+            ],
+            "prefix": "db.my"
+        },
+        {
+            "items": [
+                "db.getCollection('it\\'s')"
+            ],
+            "prefix": "db.it"
+        },
+        {
+            "items": [
+                "db.getCollection('it\\'s')",
+                "db.getCollection('my-coll')",
+                "db.getCollection(",
+                "db.getCollectionNames()",
+                "db.getCollectionInfos()",
+                "db.getSiblingDB(",
+                "db.getName()",
+                "db.getMongo()",
+                "db.getFeatureCompatibilityVersion()",
+                "db.getProfilingStatus()",
+                "db.getUsers()",
+                "db.getUser(",
+                "db.getRoles()"
+            ],
+            "prefix": "db.get"
+        },
+        {
+            "items": [
+                "db.getCollection('it\\'s')",
+                "db.getCollection('my-coll')",
+                "db.getCollection(",
+                "db.getCollectionNames()",
+                "db.getCollectionInfos()"
+            ],
+            "prefix": "db.getCo"
+        },
+        {
+            "items": [
+                "db.stats()"
+            ],
+            "prefix": "db.stat"
+        },
+        {
+            "items": [
+                "db.system",
+                "db.stats()",
+                "db.serverStatus()",
+                "db.serverBuildInfo()",
+                "db.setProfilingLevel("
+            ],
+            "prefix": "db.s"
+        },
+        {
+            "items": [
+                "db.plain"
+            ],
+            "prefix": "db.plain"
+        },
+        {
+            "items": [
+                "db.plain.find({})",
+                "db.plain.findOne({})",
+                "db.plain.aggregate([])",
+                "db.plain.countDocuments({})",
+                "db.plain.estimatedDocumentCount()",
+                "db.plain.count({})",
+                "db.plain.distinct(",
+                "db.plain.insertOne({})",
+                "db.plain.insertMany([])",
+                "db.plain.updateOne(",
+                "db.plain.updateMany(",
+                "db.plain.replaceOne(",
+                "db.plain.deleteOne(",
+                "db.plain.deleteMany(",
+                "db.plain.findOneAndUpdate(",
+                "db.plain.findOneAndReplace(",
+                "db.plain.findOneAndDelete(",
+                "db.plain.findAndModify(",
+                "db.plain.bulkWrite([])",
+                "db.plain.insert(",
+                "db.plain.update(",
+                "db.plain.save(",
+                "db.plain.remove(",
+                "db.plain.getIndexes()",
+                "db.plain.getIndexSpecs()",
+                "db.plain.getIndexKeys()",
+                "db.plain.createIndex(",
+                "db.plain.createIndexes([])",
+                "db.plain.ensureIndex(",
+                "db.plain.dropIndex(",
+                "db.plain.dropIndexes()",
+                "db.plain.hideIndex(",
+                "db.plain.unhideIndex(",
+                "db.plain.reIndex()",
+                "db.plain.explain()",
+                "db.plain.stats()",
+                "db.plain.latencyStats()",
+                "db.plain.storageSize()",
+                "db.plain.totalIndexSize()",
+                "db.plain.dataSize()",
+                "db.plain.totalSize()",
+                "db.plain.isCapped()",
+                "db.plain.validate()",
+                "db.plain.compact()",
+                "db.plain.renameCollection(",
+                "db.plain.convertToCapped(",
+                "db.plain.analyzeShardKey(",
+                "db.plain.getShardDistribution()",
+                "db.plain.getShardVersion()",
+                "db.plain.getName()",
+                "db.plain.getFullName()",
+                "db.plain.getDB()",
+                "db.plain.drop()"
+            ],
+            "prefix": "db.plain."
+        },
+        {
+            "items": [
+                "db.plain.find({})",
+                "db.plain.findOne({})",
+                "db.plain.findOneAndUpdate(",
+                "db.plain.findOneAndReplace(",
+                "db.plain.findOneAndDelete(",
+                "db.plain.findAndModify("
+            ],
+            "prefix": "db.plain.fi"
+        },
+        {
+            "items": [],
+            "prefix": "db.plain.zzz"
+        },
+        {
+            "items": [
+                "db.getCollection('my-coll').find({})",
+                "db.getCollection('my-coll').findOne({})",
+                "db.getCollection('my-coll').aggregate([])",
+                "db.getCollection('my-coll').countDocuments({})",
+                "db.getCollection('my-coll').estimatedDocumentCount()",
+                "db.getCollection('my-coll').count({})",
+                "db.getCollection('my-coll').distinct(",
+                "db.getCollection('my-coll').insertOne({})",
+                "db.getCollection('my-coll').insertMany([])",
+                "db.getCollection('my-coll').updateOne(",
+                "db.getCollection('my-coll').updateMany(",
+                "db.getCollection('my-coll').replaceOne(",
+                "db.getCollection('my-coll').deleteOne(",
+                "db.getCollection('my-coll').deleteMany(",
+                "db.getCollection('my-coll').findOneAndUpdate(",
+                "db.getCollection('my-coll').findOneAndReplace(",
+                "db.getCollection('my-coll').findOneAndDelete(",
+                "db.getCollection('my-coll').findAndModify(",
+                "db.getCollection('my-coll').bulkWrite([])",
+                "db.getCollection('my-coll').insert(",
+                "db.getCollection('my-coll').update(",
+                "db.getCollection('my-coll').save(",
+                "db.getCollection('my-coll').remove(",
+                "db.getCollection('my-coll').getIndexes()",
+                "db.getCollection('my-coll').getIndexSpecs()",
+                "db.getCollection('my-coll').getIndexKeys()",
+                "db.getCollection('my-coll').createIndex(",
+                "db.getCollection('my-coll').createIndexes([])",
+                "db.getCollection('my-coll').ensureIndex(",
+                "db.getCollection('my-coll').dropIndex(",
+                "db.getCollection('my-coll').dropIndexes()",
+                "db.getCollection('my-coll').hideIndex(",
+                "db.getCollection('my-coll').unhideIndex(",
+                "db.getCollection('my-coll').reIndex()",
+                "db.getCollection('my-coll').explain()",
+                "db.getCollection('my-coll').stats()",
+                "db.getCollection('my-coll').latencyStats()",
+                "db.getCollection('my-coll').storageSize()",
+                "db.getCollection('my-coll').totalIndexSize()",
+                "db.getCollection('my-coll').dataSize()",
+                "db.getCollection('my-coll').totalSize()",
+                "db.getCollection('my-coll').isCapped()",
+                "db.getCollection('my-coll').validate()",
+                "db.getCollection('my-coll').compact()",
+                "db.getCollection('my-coll').renameCollection(",
+                "db.getCollection('my-coll').convertToCapped(",
+                "db.getCollection('my-coll').analyzeShardKey(",
+                "db.getCollection('my-coll').getShardDistribution()",
+                "db.getCollection('my-coll').getShardVersion()",
+                "db.getCollection('my-coll').getName()",
+                "db.getCollection('my-coll').getFullName()",
+                "db.getCollection('my-coll').getDB()",
+                "db.getCollection('my-coll').drop()"
+            ],
+            "prefix": "db.getCollection('my-coll')."
+        },
+        {
+            "items": [
+                "db.getCollection(\"plain\").aggregate([])"
+            ],
+            "prefix": "db.getCollection(\"plain\").ag"
+        },
+        {
+            "items": [
+                "db.getCollection( 'plain' ).find({})",
+                "db.getCollection( 'plain' ).findOne({})",
+                "db.getCollection( 'plain' ).aggregate([])",
+                "db.getCollection( 'plain' ).countDocuments({})",
+                "db.getCollection( 'plain' ).estimatedDocumentCount()",
+                "db.getCollection( 'plain' ).count({})",
+                "db.getCollection( 'plain' ).distinct(",
+                "db.getCollection( 'plain' ).insertOne({})",
+                "db.getCollection( 'plain' ).insertMany([])",
+                "db.getCollection( 'plain' ).updateOne(",
+                "db.getCollection( 'plain' ).updateMany(",
+                "db.getCollection( 'plain' ).replaceOne(",
+                "db.getCollection( 'plain' ).deleteOne(",
+                "db.getCollection( 'plain' ).deleteMany(",
+                "db.getCollection( 'plain' ).findOneAndUpdate(",
+                "db.getCollection( 'plain' ).findOneAndReplace(",
+                "db.getCollection( 'plain' ).findOneAndDelete(",
+                "db.getCollection( 'plain' ).findAndModify(",
+                "db.getCollection( 'plain' ).bulkWrite([])",
+                "db.getCollection( 'plain' ).insert(",
+                "db.getCollection( 'plain' ).update(",
+                "db.getCollection( 'plain' ).save(",
+                "db.getCollection( 'plain' ).remove(",
+                "db.getCollection( 'plain' ).getIndexes()",
+                "db.getCollection( 'plain' ).getIndexSpecs()",
+                "db.getCollection( 'plain' ).getIndexKeys()",
+                "db.getCollection( 'plain' ).createIndex(",
+                "db.getCollection( 'plain' ).createIndexes([])",
+                "db.getCollection( 'plain' ).ensureIndex(",
+                "db.getCollection( 'plain' ).dropIndex(",
+                "db.getCollection( 'plain' ).dropIndexes()",
+                "db.getCollection( 'plain' ).hideIndex(",
+                "db.getCollection( 'plain' ).unhideIndex(",
+                "db.getCollection( 'plain' ).reIndex()",
+                "db.getCollection( 'plain' ).explain()",
+                "db.getCollection( 'plain' ).stats()",
+                "db.getCollection( 'plain' ).latencyStats()",
+                "db.getCollection( 'plain' ).storageSize()",
+                "db.getCollection( 'plain' ).totalIndexSize()",
+                "db.getCollection( 'plain' ).dataSize()",
+                "db.getCollection( 'plain' ).totalSize()",
+                "db.getCollection( 'plain' ).isCapped()",
+                "db.getCollection( 'plain' ).validate()",
+                "db.getCollection( 'plain' ).compact()",
+                "db.getCollection( 'plain' ).renameCollection(",
+                "db.getCollection( 'plain' ).convertToCapped(",
+                "db.getCollection( 'plain' ).analyzeShardKey(",
+                "db.getCollection( 'plain' ).getShardDistribution()",
+                "db.getCollection( 'plain' ).getShardVersion()",
+                "db.getCollection( 'plain' ).getName()",
+                "db.getCollection( 'plain' ).getFullName()",
+                "db.getCollection( 'plain' ).getDB()",
+                "db.getCollection( 'plain' ).drop()"
+            ],
+            "prefix": "db.getCollection( 'plain' )."
+        },
+        {
+            "items": [
+                "db.nosuch.find({})",
+                "db.nosuch.findOne({})",
+                "db.nosuch.aggregate([])",
+                "db.nosuch.countDocuments({})",
+                "db.nosuch.estimatedDocumentCount()",
+                "db.nosuch.count({})",
+                "db.nosuch.distinct(",
+                "db.nosuch.insertOne({})",
+                "db.nosuch.insertMany([])",
+                "db.nosuch.updateOne(",
+                "db.nosuch.updateMany(",
+                "db.nosuch.replaceOne(",
+                "db.nosuch.deleteOne(",
+                "db.nosuch.deleteMany(",
+                "db.nosuch.findOneAndUpdate(",
+                "db.nosuch.findOneAndReplace(",
+                "db.nosuch.findOneAndDelete(",
+                "db.nosuch.findAndModify(",
+                "db.nosuch.bulkWrite([])",
+                "db.nosuch.insert(",
+                "db.nosuch.update(",
+                "db.nosuch.save(",
+                "db.nosuch.remove(",
+                "db.nosuch.getIndexes()",
+                "db.nosuch.getIndexSpecs()",
+                "db.nosuch.getIndexKeys()",
+                "db.nosuch.createIndex(",
+                "db.nosuch.createIndexes([])",
+                "db.nosuch.ensureIndex(",
+                "db.nosuch.dropIndex(",
+                "db.nosuch.dropIndexes()",
+                "db.nosuch.hideIndex(",
+                "db.nosuch.unhideIndex(",
+                "db.nosuch.reIndex()",
+                "db.nosuch.explain()",
+                "db.nosuch.stats()",
+                "db.nosuch.latencyStats()",
+                "db.nosuch.storageSize()",
+                "db.nosuch.totalIndexSize()",
+                "db.nosuch.dataSize()",
+                "db.nosuch.totalSize()",
+                "db.nosuch.isCapped()",
+                "db.nosuch.validate()",
+                "db.nosuch.compact()",
+                "db.nosuch.renameCollection(",
+                "db.nosuch.convertToCapped(",
+                "db.nosuch.analyzeShardKey(",
+                "db.nosuch.getShardDistribution()",
+                "db.nosuch.getShardVersion()",
+                "db.nosuch.getName()",
+                "db.nosuch.getFullName()",
+                "db.nosuch.getDB()",
+                "db.nosuch.drop()"
+            ],
+            "prefix": "db.nosuch."
+        },
+        {
+            "items": [
+                "$match",
+                "$group",
+                "$project",
+                "$sort",
+                "$limit",
+                "$skip",
+                "$lookup",
+                "$unwind",
+                "$addFields",
+                "$set",
+                "$unset",
+                "$count",
+                "$facet",
+                "$replaceRoot",
+                "$replaceWith",
+                "$bucket",
+                "$bucketAuto",
+                "$sortByCount",
+                "$sample",
+                "$unionWith",
+                "$setWindowFields",
+                "$densify",
+                "$fill",
+                "$redact",
+                "$geoNear",
+                "$graphLookup",
+                "$merge",
+                "$out",
+                "$collStats",
+                "$indexStats",
+                "$search",
+                "$vectorSearch",
+                "$inc",
+                "$push",
+                "$pull",
+                "$addToSet",
+                "$pop",
+                "$pullAll",
+                "$min",
+                "$max",
+                "$mul",
+                "$rename",
+                "$currentDate",
+                "$setOnInsert",
+                "$bit",
+                "$eq",
+                "$ne",
+                "$gt",
+                "$gte",
+                "$lt",
+                "$lte",
+                "$in",
+                "$nin",
+                "$exists",
+                "$type",
+                "$regex",
+                "$options",
+                "$not",
+                "$elemMatch",
+                "$all",
+                "$size",
+                "$mod",
+                "$bitsAllClear",
+                "$bitsAllSet",
+                "$bitsAnyClear",
+                "$bitsAnySet",
+                "$geoWithin",
+                "$geoIntersects",
+                "$near",
+                "$nearSphere",
+                "$and",
+                "$or",
+                "$nor",
+                "$expr",
+                "$jsonSchema",
+                "$text",
+                "$where",
+                "$comment",
+                "$sum",
+                "$avg",
+                "$first",
+                "$last",
+                "$topN",
+                "$bottomN",
+                "$maxN",
+                "$minN",
+                "$median",
+                "$percentile",
+                "$stdDevPop",
+                "$stdDevSamp",
+                "$cond",
+                "$ifNull",
+                "$switch",
+                "$concat",
+                "$toLower",
+                "$toUpper",
+                "$trim",
+                "$split",
+                "$filter",
+                "$map",
+                "$reduce",
+                "$arrayElemAt",
+                "$mergeObjects",
+                "$getField",
+                "$dateToString",
+                "$dateTrunc",
+                "$dateAdd",
+                "$dateDiff"
+            ],
+            "prefix": "$"
+        },
+        {
+            "items": [
+                "$match",
+                "$max",
+                "$maxN",
+                "$map"
+            ],
+            "prefix": "$ma"
+        },
+        {
+            "items": [
+                "$gt",
+                "$gte"
+            ],
+            "prefix": "$gt"
+        },
+        {
+            "items": [],
+            "prefix": "$zzz"
+        },
+        {
+            "items": [
+                "$dateToString",
+                "$dateTrunc"
+            ],
+            "prefix": "$dateT"
+        },
+        {
+            "items": [
+                "rs.status()",
+                "rs.conf()",
+                "rs.config()",
+                "rs.hello()",
+                "rs.isMaster()",
+                "rs.secondaryOk()",
+                "rs.slaveOk()"
+            ],
+            "prefix": "rs."
+        },
+        {
+            "items": [
+                "rs.status()"
+            ],
+            "prefix": "rs.st"
+        },
+        {
+            "items": [],
+            "prefix": "rs.x"
+        },
+        {
+            "items": [
+                "sh",
+                "show dbs",
+                "show databases",
+                "show collections",
+                "show tables",
+                "show users",
+                "show roles",
+                "show profile",
+                "show logs",
+                "show log"
+            ],
+            "prefix": "sh"
+        },
+        {
+            "items": [
+                "sh",
+                "show dbs",
+                "show databases",
+                "show collections",
+                "show tables",
+                "show users",
+                "show roles",
+                "show profile",
+                "show logs",
+                "show log"
+            ],
+            "prefix": "s"
+        },
+        {
+            "items": [
+                "show dbs",
+                "show databases",
+                "show collections",
+                "show tables",
+                "show users",
+                "show roles",
+                "show profile",
+                "show logs",
+                "show log"
+            ],
+            "prefix": "show "
+        },
+        {
+            "items": [
+                "show dbs",
+                "show databases"
+            ],
+            "prefix": "show d"
+        },
+        {
+            "items": [
+                "use "
+            ],
+            "prefix": "use "
+        },
+        {
+            "items": [
+                "use "
+            ],
+            "prefix": "u"
+        },
+        {
+            "items": [
+                "ObjectId("
+            ],
+            "prefix": "O"
+        },
+        {
+            "items": [
+                "ObjectId("
+            ],
+            "prefix": "ObjectI"
+        },
+        {
+            "items": [
+                "NumberLong(",
+                "NumberInt(",
+                "NumberDecimal("
+            ],
+            "prefix": "Number"
+        },
+        {
+            "items": [
+                "NumberLong("
+            ],
+            "prefix": "NumberL"
+        },
+        {
+            "items": [
+                "ISODate("
+            ],
+            "prefix": "ISO"
+        },
+        {
+            "items": [
+                "Timestamp("
+            ],
+            "prefix": "Timest"
+        },
+        {
+            "items": [
+                "UUID("
+            ],
+            "prefix": "UUID"
+        },
+        {
+            "items": [
+                "BinData("
+            ],
+            "prefix": "BinD"
+        },
+        {
+            "items": [
+                "print(",
+                "printjson("
+            ],
+            "prefix": "pri"
+        },
+        {
+            "items": [
+                "printjson("
+            ],
+            "prefix": "printj"
+        },
+        {
+            "items": [],
+            "prefix": "fin"
+        },
+        {
+            "items": [],
+            "prefix": "find"
+        },
+        {
+            "items": [],
+            "prefix": "agg"
+        },
+        {
+            "items": [],
+            "prefix": "drop"
+        },
+        {
+            "items": [],
+            "prefix": "e"
+        },
+        {
+            "items": [],
+            "prefix": "x"
+        },
+        {
+            "items": [],
+            "prefix": "ISODate("
+        },
+        {
+            "items": [],
+            "prefix": "ObjectId("
+        },
+        {
+            "items": [],
+            "prefix": "db.plain.find({})"
+        },
+        {
+            "items": [
+                "db.plain.find({}).sort({})",
+                "db.plain.find({}).limit(",
+                "db.plain.find({}).skip(",
+                "db.plain.find({}).projection({})",
+                "db.plain.find({}).hint(",
+                "db.plain.find({}).collation({})",
+                "db.plain.find({}).batchSize(",
+                "db.plain.find({}).maxTimeMS(",
+                "db.plain.find({}).pretty()",
+                "db.plain.find({}).readPref(",
+                "db.plain.find({}).toArray()",
+                "db.plain.find({}).count()",
+                "db.plain.find({}).size()",
+                "db.plain.find({}).itcount()",
+                "db.plain.find({}).forEach(",
+                "db.plain.find({}).map(",
+                "db.plain.find({}).hasNext()",
+                "db.plain.find({}).next()",
+                "db.plain.find({}).explain()",
+                "db.plain.find({}).close()"
+            ],
+            "prefix": "db.plain.find({})."
+        },
+        {
+            "items": [
+                "db.plain.find({}).sort({})"
+            ],
+            "prefix": "db.plain.find({}).so"
+        },
+        {
+            "items": [
+                "db.getCollection('my-coll').find({a: 1}).limit(5).sort({})",
+                "db.getCollection('my-coll').find({a: 1}).limit(5).limit(",
+                "db.getCollection('my-coll').find({a: 1}).limit(5).skip(",
+                "db.getCollection('my-coll').find({a: 1}).limit(5).projection({})",
+                "db.getCollection('my-coll').find({a: 1}).limit(5).hint(",
+                "db.getCollection('my-coll').find({a: 1}).limit(5).collation({})",
+                "db.getCollection('my-coll').find({a: 1}).limit(5).batchSize(",
+                "db.getCollection('my-coll').find({a: 1}).limit(5).maxTimeMS(",
+                "db.getCollection('my-coll').find({a: 1}).limit(5).pretty()",
+                "db.getCollection('my-coll').find({a: 1}).limit(5).readPref(",
+                "db.getCollection('my-coll').find({a: 1}).limit(5).toArray()",
+                "db.getCollection('my-coll').find({a: 1}).limit(5).count()",
+                "db.getCollection('my-coll').find({a: 1}).limit(5).size()",
+                "db.getCollection('my-coll').find({a: 1}).limit(5).itcount()",
+                "db.getCollection('my-coll').find({a: 1}).limit(5).forEach(",
+                "db.getCollection('my-coll').find({a: 1}).limit(5).map(",
+                "db.getCollection('my-coll').find({a: 1}).limit(5).hasNext()",
+                "db.getCollection('my-coll').find({a: 1}).limit(5).next()",
+                "db.getCollection('my-coll').find({a: 1}).limit(5).explain()",
+                "db.getCollection('my-coll').find({a: 1}).limit(5).close()"
+            ],
+            "prefix": "db.getCollection('my-coll').find({a: 1}).limit(5)."
+        },
+        {
+            "items": [
+                "db.plain.aggregate([]).toArray()",
+                "db.plain.aggregate([]).pretty()",
+                "db.plain.aggregate([]).forEach(",
+                "db.plain.aggregate([]).map(",
+                "db.plain.aggregate([]).itcount()",
+                "db.plain.aggregate([]).hasNext()",
+                "db.plain.aggregate([]).next()",
+                "db.plain.aggregate([]).explain()",
+                "db.plain.aggregate([]).close()"
+            ],
+            "prefix": "db.plain.aggregate([])."
+        },
+        {
+            "items": [
+                "db.plain.explain().find({})",
+                "db.plain.explain().findOne({})",
+                "db.plain.explain().aggregate([])",
+                "db.plain.explain().count({})",
+                "db.plain.explain().distinct(",
+                "db.plain.explain().remove("
+            ],
+            "prefix": "db.plain.explain()."
+        },
+        {
+            "items": [
+                "db.system.users",
+                "db.system.roles",
+                "db.system.profile",
+                "db.system.views",
+                "db.system.js"
+            ],
+            "prefix": "db.system."
+        },
+        {
+            "items": [
+                "db.getMongo().getDBNames()",
+                "db.getMongo().getDBs()",
+                "db.getMongo().host",
+                "db.getMongo().setReadPref(",
+                "db.getMongo().setSlaveOk()"
+            ],
+            "prefix": "db.getMongo()."
+        },
+        {
+            "items": [
+                "sh.status()",
+                "sh.getBalancerState()"
+            ],
+            "prefix": "sh."
+        },
+        {
+            "items": [
+                "EJSON.stringify(",
+                "EJSON.parse(",
+                "EJSON.serialize(",
+                "EJSON.deserialize("
+            ],
+            "prefix": "EJSON."
+        },
+        {
+            "items": [
+                "db.plain.aggregate([{ $match",
+                "db.plain.aggregate([{ $group",
+                "db.plain.aggregate([{ $project",
+                "db.plain.aggregate([{ $sort",
+                "db.plain.aggregate([{ $limit",
+                "db.plain.aggregate([{ $skip",
+                "db.plain.aggregate([{ $lookup",
+                "db.plain.aggregate([{ $unwind",
+                "db.plain.aggregate([{ $addFields",
+                "db.plain.aggregate([{ $set",
+                "db.plain.aggregate([{ $unset",
+                "db.plain.aggregate([{ $count",
+                "db.plain.aggregate([{ $facet",
+                "db.plain.aggregate([{ $replaceRoot",
+                "db.plain.aggregate([{ $replaceWith",
+                "db.plain.aggregate([{ $bucket",
+                "db.plain.aggregate([{ $bucketAuto",
+                "db.plain.aggregate([{ $sortByCount",
+                "db.plain.aggregate([{ $sample",
+                "db.plain.aggregate([{ $unionWith",
+                "db.plain.aggregate([{ $setWindowFields",
+                "db.plain.aggregate([{ $densify",
+                "db.plain.aggregate([{ $fill",
+                "db.plain.aggregate([{ $redact",
+                "db.plain.aggregate([{ $geoNear",
+                "db.plain.aggregate([{ $graphLookup",
+                "db.plain.aggregate([{ $merge",
+                "db.plain.aggregate([{ $out",
+                "db.plain.aggregate([{ $collStats",
+                "db.plain.aggregate([{ $indexStats",
+                "db.plain.aggregate([{ $search",
+                "db.plain.aggregate([{ $vectorSearch"
+            ],
+            "prefix": "db.plain.aggregate([{ $"
+        },
+        {
+            "items": [
+                "db.plain.updateOne({}, { $set",
+                "db.plain.updateOne({}, { $unset",
+                "db.plain.updateOne({}, { $inc",
+                "db.plain.updateOne({}, { $push",
+                "db.plain.updateOne({}, { $pull",
+                "db.plain.updateOne({}, { $addToSet",
+                "db.plain.updateOne({}, { $pop",
+                "db.plain.updateOne({}, { $pullAll",
+                "db.plain.updateOne({}, { $min",
+                "db.plain.updateOne({}, { $max",
+                "db.plain.updateOne({}, { $mul",
+                "db.plain.updateOne({}, { $rename",
+                "db.plain.updateOne({}, { $currentDate",
+                "db.plain.updateOne({}, { $setOnInsert",
+                "db.plain.updateOne({}, { $bit"
+            ],
+            "prefix": "db.plain.updateOne({}, { $"
+        },
+        {
+            "items": [
+                "db.plain.find({ a: { $eq",
+                "db.plain.find({ a: { $ne",
+                "db.plain.find({ a: { $gt",
+                "db.plain.find({ a: { $gte",
+                "db.plain.find({ a: { $lt",
+                "db.plain.find({ a: { $lte",
+                "db.plain.find({ a: { $in",
+                "db.plain.find({ a: { $nin",
+                "db.plain.find({ a: { $exists",
+                "db.plain.find({ a: { $type",
+                "db.plain.find({ a: { $regex",
+                "db.plain.find({ a: { $options",
+                "db.plain.find({ a: { $not",
+                "db.plain.find({ a: { $elemMatch",
+                "db.plain.find({ a: { $all",
+                "db.plain.find({ a: { $size",
+                "db.plain.find({ a: { $mod",
+                "db.plain.find({ a: { $bitsAllClear",
+                "db.plain.find({ a: { $bitsAllSet",
+                "db.plain.find({ a: { $bitsAnyClear",
+                "db.plain.find({ a: { $bitsAnySet",
+                "db.plain.find({ a: { $geoWithin",
+                "db.plain.find({ a: { $geoIntersects",
+                "db.plain.find({ a: { $near",
+                "db.plain.find({ a: { $nearSphere"
+            ],
+            "prefix": "db.plain.find({ a: { $"
+        },
+        {
+            "items": [],
+            "prefix": "12."
+        },
+        {
+            "items": [],
+            "prefix": "// db."
+        }
+    ]
+}

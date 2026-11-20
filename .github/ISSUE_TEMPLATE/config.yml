@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a Security Vulnerability (SECURITY.md)
+    url: https://github.com/ragipunal/ragoshell/blob/main/SECURITY.md
+    about: Do NOT open a public issue for security vulnerabilities. Read our 90-day Coordinated Vulnerability Disclosure policy in SECURITY.md.
+  - name: GitHub Private Vulnerability Reporting
+    url: https://github.com/ragipunal/ragoshell/security/advisories/new
+    about: Submit a private vulnerability report via GitHub Security Advisories or check https://ragoshell.com.tr/.well-known/security.txt.
+  - name: Documentation & Platform Guides
+    url: https://ragoshell.com.tr/docs/
+    about: Read documentation for the embedded JavaScript shell, read-only MCP server, and desktop/mobile platforms before opening an issue.

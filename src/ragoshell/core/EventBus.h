@@ -1,0 +1,72 @@
+#pragma once
+
+#include <QObject>
+#include <QEvent>
+#include <QMutex>
+#include <QPointer>
+#include <QRecursiveMutex>
+#include <vector>
+
+namespace RagoShell
+{
+    class Event;
+    class EventWrapper;
+    class EventBusDispatcher;
+    struct EventBusSubscriber;
+
+    /**
+     * @brief The EventBus class
+     * @threadsafe
+     */
+    class EventBus : public QObject
+    {
+        Q_OBJECT
+
+    public:
+        typedef std::pair<QEvent::Type, EventBusSubscriber *> EventTypeAndSubscriber;
+        typedef std::pair<QThread *, QPointer<EventBusDispatcher>> ThreadAndDispatcher;
+
+        EventBus();
+        ~EventBus();
+
+        /**
+         * @brief Publishes specified event.
+         * @param sender - object, that emits this event
+         */
+        void publish(Event *event);
+
+        /**
+         * @brief Sends 'event' to 'receiver'.
+         */
+        void send(QObject *receiver, Event *event);
+
+        /**
+         * @brief Sends 'event' to list of 'receivers'.
+         */
+        void send(QList<QObject *> receivers, Event *event);
+
+        /**
+         * @brief Subscribes 'receiver' to event of specified 'type'.
+         * Optionally you can specify exact send
+         */
+        void subscribe(QObject *receiver, QEvent::Type type, QObject *sender = NULL);
+
+    public Q_SLOTS:
+        void unsubscibe(QObject *receiver);
+
+    private:
+        /**
+         * @brief Returns dispatcher for specified thread. If there is no dispatcher
+         * for this thread registered, new dispatcher will be created and moved
+         * to 'thread' thread.
+         */
+        EventBusDispatcher *dispatcher(QThread *thread);
+
+        void sendEvent(EventBusDispatcher *dispatcher, EventWrapper *wrapper);
+
+    private:
+        QRecursiveMutex _lock;
+        std::vector<EventTypeAndSubscriber> _subscribersByEventType;
+        std::vector<ThreadAndDispatcher> _dispatchersByThread;
+    };
+}

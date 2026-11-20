@@ -1,0 +1,18 @@
+# Build context for src/ragoshell-web-gateway/docker/Dockerfile (G10).
+# Keep secrets, local state and heavy build trees out of the daemon context.
+.git/
+build/
+!build/wasm-single/src/ragoshell-app/ragoshell.html
+!build/wasm-single/src/ragoshell-app/ragoshell.js
+!build/wasm-single/src/ragoshell-app/ragoshell.wasm
+!build/wasm-single/src/ragoshell-app/ragoshell.wasm.br
+!build/wasm-single/src/ragoshell-app/qtloader.js
+!build/wasm-single/src/ragoshell-app/qtlogo.svg
+.env
+.env.*
+*.pem
+*.key
+secrets/
+node_modules/
+*.log
+.DS_Store

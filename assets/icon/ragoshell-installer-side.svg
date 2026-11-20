@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 164 314" width="164" height="314">
+  <!-- The side panel of the Windows installers (install/windows/nsis-sidebar.bmp, wix-dialog.bmp), 164x314.
+       Same artwork as ragoshell-welcome-splash.svg, stacked for a tall panel. dev/icons/make-icons.sh renders it. -->
+  <defs>
+    <radialGradient id="sideBg" cx="50%" cy="38%" r="80%" fx="50%" fy="34%">
+      <stop offset="0%" stop-color="#0f2e21" />
+      <stop offset="45%" stop-color="#091f16" />
+      <stop offset="85%" stop-color="#040f0a" />
+      <stop offset="100%" stop-color="#020805" />
+    </radialGradient>
+    <radialGradient id="sideAura" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1ae575" stop-opacity="0.2" />
+      <stop offset="50%" stop-color="#00be54" stop-opacity="0.07" />
+      <stop offset="100%" stop-color="#040f0a" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="sidePetal" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#017a33" />
+      <stop offset="40%" stop-color="#00b852" />
+      <stop offset="100%" stop-color="#3bf592" />
+    </linearGradient>
+    <radialGradient id="sideCore" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#80ffbf" stop-opacity="0.5" />
+      <stop offset="100%" stop-color="#028639" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="sideRule" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3bf592" stop-opacity="0" />
+      <stop offset="25%" stop-color="#3bf592" stop-opacity="0.75" />
+      <stop offset="50%" stop-color="#6affb5" stop-opacity="0.9" />
+      <stop offset="75%" stop-color="#3bf592" stop-opacity="0.75" />
+      <stop offset="100%" stop-color="#3bf592" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+
+  <rect width="164" height="314" fill="url(#sideBg)" />
+  <ellipse cx="82" cy="108" rx="78" ry="70" fill="url(#sideAura)" />
+
+  <!-- The five-petal flower of the app icon -->
+  <g transform="translate(82, 108) scale(0.34)">
+    <g transform="rotate(0)">
+      <path d="M 0,-140 C 26,-105 40,-50 0,0 C -40,-50 -26,-105 0,-140 Z" fill="url(#sidePetal)" />
+      <path d="M 0,-140 C 26,-105 40,-50 0,0 L 0,-140 Z" fill="#ffffff" opacity="0.14" />
+    </g>
+    <g transform="rotate(72)">
+      <path d="M 0,-140 C 26,-105 40,-50 0,0 C -40,-50 -26,-105 0,-140 Z" fill="url(#sidePetal)" />
+      <path d="M 0,-140 C 26,-105 40,-50 0,0 L 0,-140 Z" fill="#ffffff" opacity="0.14" />
+    </g>
+    <g transform="rotate(144)">
+      <path d="M 0,-140 C 26,-105 40,-50 0,0 C -40,-50 -26,-105 0,-140 Z" fill="url(#sidePetal)" />
+      <path d="M 0,-140 C 26,-105 40,-50 0,0 L 0,-140 Z" fill="#ffffff" opacity="0.14" />
+    </g>
+    <g transform="rotate(216)">
+      <path d="M 0,-140 C 26,-105 40,-50 0,0 C -40,-50 -26,-105 0,-140 Z" fill="url(#sidePetal)" />
+      <path d="M 0,-140 C 26,-105 40,-50 0,0 L 0,-140 Z" fill="#ffffff" opacity="0.14" />
+    </g>
+    <g transform="rotate(288)">
+      <path d="M 0,-140 C 26,-105 40,-50 0,0 C -40,-50 -26,-105 0,-140 Z" fill="url(#sidePetal)" />
+      <path d="M 0,-140 C 26,-105 40,-50 0,0 L 0,-140 Z" fill="#ffffff" opacity="0.14" />
+    </g>
+    <circle cx="0" cy="0" r="42" fill="#04180f" opacity="0.55" />
+    <circle cx="0" cy="0" r="28" fill="url(#sideCore)" />
+    <circle cx="0" cy="0" r="14" fill="#022a18" />
+    <circle cx="0" cy="0" r="6" fill="#3bf592" opacity="0.9" />
+  </g>
+
+  <!-- Wordmark: one typeface, two tones; "Rago" and "Shell" touch (docs/Brand.md) -->
+  <text x="82" y="192"
+        font-family="system-ui, -apple-system, 'SF Pro Display', 'Inter', 'Montserrat', 'Segoe UI', Arial, sans-serif"
+        font-size="25" font-weight="800" letter-spacing="-0.3" text-anchor="middle"><tspan fill="#ffffff">Rago</tspan><tspan fill="#00be54">Shell</tspan></text>
+  <rect x="47" y="208" width="70" height="1" fill="url(#sideRule)" />
+  <text x="82" y="226"
+        font-family="system-ui, -apple-system, 'SF Pro Text', 'Inter', 'JetBrains Mono', 'Segoe UI', monospace, sans-serif"
+        font-size="8" font-weight="500" letter-spacing="2.6" fill="#8ae6b3" fill-opacity="0.85" text-anchor="middle">MONGODB IDE</text>
+
+  <!-- Corner registration marks -->
+  <path d="M 10,18 L 10,10 L 18,10" fill="none" stroke="#22d672" stroke-width="0.8" stroke-opacity="0.3" />
+  <path d="M 154,18 L 154,10 L 146,10" fill="none" stroke="#22d672" stroke-width="0.8" stroke-opacity="0.3" />
+  <path d="M 10,296 L 10,304 L 18,304" fill="none" stroke="#22d672" stroke-width="0.8" stroke-opacity="0.3" />
+  <path d="M 154,296 L 154,304 L 146,304" fill="none" stroke="#22d672" stroke-width="0.8" stroke-opacity="0.3" />
+</svg>

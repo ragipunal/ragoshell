@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>tr.com.ragoshell.app</id>
+  <name>RagoShell</name>
+  <summary>A modern, shell-centric MongoDB GUI</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+  <developer id="tr.com.ragoshell">
+    <name>RagoShell Contributors</name>
+  </developer>
+
+  <description>
+    <p>
+      RagoShell is an open-source MongoDB client built around an embedded JavaScript shell. It runs the shell inside the application without an external Node.js runtime, combines tree, table, and text result views, and provides schema-aware editor completions across collections.
+    </p>
+    <p>
+      Desktop packages also include ragoshell-mcp, an optional local read-only Model Context Protocol (MCP) server over stdio for explicitly allowed saved connections.
+    </p>
+    <p>
+      MongoDB is a registered trademark of MongoDB, Inc. RagoShell is not affiliated with or endorsed by MongoDB, Inc.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">ragoshell.desktop</launchable>
+
+  <url type="homepage">https://ragoshell.com.tr</url>
+  <url type="bugtracker">https://github.com/ragipunal/ragoshell/issues</url>
+  <url type="vcs-browser">https://github.com/ragipunal/ragoshell</url>
+
+  <provides>
+    <binary>ragoshell</binary>
+    <binary>ragoshell-mcp</binary>
+  </provides>
+
+  <categories>
+    <category>Development</category>
+    <category>Database</category>
+  </categories>
+
+  <keywords>
+    <keyword>mongodb</keyword>
+    <keyword>database</keyword>
+    <keyword>shell</keyword>
+  </keywords>
+
+  <content_rating type="oars-1.1" />
+
+  <releases>
+    <release version="2.1.0" date="2026-11-01" />
+    <release version="2.0.0" date="2026-10-29" />
+  </releases>
+</component>

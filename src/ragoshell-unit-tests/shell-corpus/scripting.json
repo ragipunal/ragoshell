@@ -1,0 +1,912 @@
+{
+    "database": "samples",
+    "entries": [
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "10",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "var a = 5; var b = a * 2; b"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "10",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "var a = 5;\nvar b = a * 2;\nb"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "42",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "function f(n) { return n * 2 }\nf(21)"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "7",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "class A { m() { return 7 } }\nnew A().m()"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "[2,4,6]",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "[1,2,3].map(x => x * 2)"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                            {
+                                "a": 1
+                            }
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "{\"a\":1}",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "custom"
+                    }
+                ]
+            },
+            "script": "({a: 1})"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "\"text\"",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "'text'"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "42",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "42"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "null",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "null"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "undefined"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "true",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "true"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "[]",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "[]"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                            {
+                                "a": 1
+                            },
+                            {
+                                "a": 2
+                            }
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "[{\"a\":1},{\"a\":2}]",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "custom"
+                    }
+                ]
+            },
+            "script": "[{a: 1}, {a: 2}]"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "[1,{\"a\":1}]",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "[1, {a: 1}]"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": 50,
+                        "collection": "restaurants",
+                        "db": "samples",
+                        "documents": [
+                            {
+                                "_id": {
+                                    "$oid": "6ada7d441bcace55d9a1e147"
+                                },
+                                "address": {
+                                    "building": "251",
+                                    "coord": [
+                                        -73.9775552,
+                                        40.7432016
+                                    ],
+                                    "street": "East   31 Street",
+                                    "zipcode": "10016"
+                                },
+                                "borough": "Manhattan",
+                                "cuisine": "Italian",
+                                "grades": [
+                                    {
+                                        "date": {
+                                            "$date": "2014-04-22T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 13
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2013-06-19T00:00:00Z"
+                                        },
+                                        "grade": "C",
+                                        "score": 32
+                                    },
+                                    {
+                                        "date": {
+                                            "$date": "2012-05-22T00:00:00Z"
+                                        },
+                                        "grade": "A",
+                                        "score": 12
+                                    }
+                                ],
+                                "name": "Marchis Restaurant",
+                                "restaurant_id": "40364668"
+                            }
+                        ],
+                        "fields": {
+                        },
+                        "limit": 1,
+                        "options": null,
+                        "output": "",
+                        "pipeline": null,
+                        "query": {
+                            "cuisine": "Italian"
+                        },
+                        "skip": 0,
+                        "type": "query"
+                    },
+                    {
+                        "aggrCollection": "",
+                        "batchSize": 50,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": 1,
+                        "options": null,
+                        "output": "25359",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": 0,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "db.restaurants.find({cuisine:'Italian'}).limit(1).sort({_id:1})\ndb.restaurants.count()"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "\"switched to db samples\"",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "use samples"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "[]",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "show users"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "[2021,\"2021-05-06T07:08:09.123Z\"]",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "var d = ISODate('2021-05-06T07:08:09.123Z'); [d.getUTCFullYear(), d.toISOString()]"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "\"{\\\"a\\\":[1,2]}\"",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "JSON.stringify({a: [1, 2]})"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "5",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "Math.max(1, 5, 3)"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "\"{\\\"d\\\":{\\\"$date\\\":\\\"1970-01-01T00:00:00Z\\\"},\\\"n\\\":5}\"",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "EJSON.stringify({d: new Date(0), n: NumberLong(5)})"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "5",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "x = 5"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "\"object\"",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "typeof db"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "\"function\"",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "typeof ObjectId"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "\"507f1f77bcf86cd799439011\"",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "ObjectId('507f1f77bcf86cd799439011').toString()"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "\"2012-10-17T21:13:27.000Z\"",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "ObjectId('507f1f77bcf86cd799439011').getTimestamp().toISOString()"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "499500",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "var s = 0; for (var i = 0; i < 1000; i++) { s += i } s"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "// only a comment"
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": ""
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": "   "
+        },
+        {
+            "run": {
+                "error": false,
+                "errorMessage": "",
+                "items": [
+                    {
+                        "aggrCollection": "",
+                        "batchSize": -858993460,
+                        "collection": "",
+                        "db": "",
+                        "documents": [
+                        ],
+                        "fields": {
+                        },
+                        "limit": -858993460,
+                        "options": null,
+                        "output": "",
+                        "pipeline": null,
+                        "query": {
+                        },
+                        "skip": -858993460,
+                        "type": "text"
+                    }
+                ]
+            },
+            "script": ";"
+        }
+    ],
+    "group": "scripting"
+}

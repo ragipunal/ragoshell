@@ -1,0 +1,2 @@
+"NSLocalNetworkUsageDescription" = "يتصل RagoShell بخوادم MongoDB ومضيفي أنفاق SSH على شبكتك المحلية.";
+"NSPhotoLibraryUsageDescription" = "يستخدم RagoShell الوصول عبر منتقي الملفات فقط عند اختيارك نصوصاً برمجية أو مستندات أو شهادات لاستيرادها.";

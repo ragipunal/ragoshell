@@ -1,0 +1,181 @@
+# RagoShell live MongoDB compatibility matrix (dev/mongo-matrix/README.md).
+#
+# One MongoDB version at a time: every service runs ${MONGO_IMAGE} (run-matrix.sh loops over the versions), so each
+# connection type (SCRAM / TLS / X.509 / strict mTLS / replica set / sharded / SSH) is exercised on each version.
+# mongod-run.sh maps the --tls* options to --ssl* for MongoDB 4.0. Certificates, keys and the keyfile are generated
+# into ./.fixtures by generate-fixtures.sh (git-ignored). All data lives in tmpfs; every port binds to 127.0.0.1.
+#
+#   MONGO_IMAGE=mongo:8.0 docker compose -f dev/mongo-matrix/docker-compose.yml --profile standalone up -d
+name: rago-test-matrix
+
+networks:
+  matrix-net:
+    driver: bridge
+
+x-mongo: &mongo
+  image: ${MONGO_IMAGE:-mongo:8.0}
+  platform: ${MONGO_PLATFORM:-linux/amd64}
+  volumes:
+    - ./.fixtures:/fixtures:ro
+    - ./mongod-run.sh:/matrix/mongod-run.sh:ro
+  tmpfs:
+    - /data/db:mode=1777
+    - /data/configdb:mode=1777
+    - /tmp:mode=1777
+
+# Servers with "--tlsMode allowTLS --tlsAllowConnectionsWithoutCertificates" answer plain, TLS, mTLS and X.509
+# clients on the same port.
+services:
+  # ---------------------------------------------------------------------------
+  # Standalone, no authentication (127.0.0.1:37039)
+  # ---------------------------------------------------------------------------
+  mongo-noauth:
+    <<: *mongo
+    networks: [matrix-net]
+    profiles: ["standalone"]
+    ports: ["127.0.0.1:37039:27017"]
+    entrypoint: ["sh", "/matrix/mongod-run.sh", "mongod", "--bind_ip_all"]
+
+  # ---------------------------------------------------------------------------
+  # Standalone with --auth and allowTLS (127.0.0.1:37040): SCRAM-SHA-1/256, authSource, restricted users,
+  # TLS, X.509, user management, collections/indexes/shell/monitor ("version" suite). Also the main SSH target.
+  # ---------------------------------------------------------------------------
+  mongo-std:
+    <<: *mongo
+    networks: [matrix-net]
+    profiles: ["standalone"]
+    ports: ["127.0.0.1:37040:27017"]
+    entrypoint: ["sh", "/matrix/mongod-run.sh", "mongod", "--auth", "--bind_ip_all",
+                 "--tlsMode", "allowTLS", "--tlsCertificateKeyFile", "/tmp/server.pem",
+                 "--tlsCAFile", "/fixtures/ca.crt", "--tlsAllowConnectionsWithoutCertificates"]
+
+  # ---------------------------------------------------------------------------
+  # Strict mutual TLS: requireTLS + mandatory client certificate (127.0.0.1:37090)
+  # ---------------------------------------------------------------------------
+  mongo-mtls:
+    <<: *mongo
+    networks: [matrix-net]
+    profiles: ["standalone"]
+    ports: ["127.0.0.1:37090:27017"]
+    entrypoint: ["sh", "/matrix/mongod-run.sh", "mongod", "--auth", "--bind_ip_all",
+                 "--tlsMode", "requireTLS", "--tlsCertificateKeyFile", "/tmp/server.pem",
+                 "--tlsCAFile", "/fixtures/ca.crt"]
+
+  # ---------------------------------------------------------------------------
+  # 3-member replica set rs0 (127.0.0.1:37117-37119). The members share one network namespace so that the
+  # member names (localhost:3711x) are the same inside the containers and on the host.
+  # ---------------------------------------------------------------------------
+  mongo-rs1:
+    <<: *mongo
+    networks: [matrix-net]
+    profiles: ["rs"]
+    ports:
+      - "127.0.0.1:37117:37117"
+      - "127.0.0.1:37118:37118"
+      - "127.0.0.1:37119:37119"
+    entrypoint: ["sh", "/matrix/mongod-run.sh", "mongod", "--replSet", "rs0", "--port", "37117",
+                 "--bind_ip_all", "--keyFile", "/tmp/mongo-keyfile",
+                 "--tlsMode", "allowTLS", "--tlsCertificateKeyFile", "/tmp/server.pem",
+                 "--tlsCAFile", "/fixtures/ca.crt", "--tlsAllowConnectionsWithoutCertificates"]
+
+  mongo-rs2:
+    <<: *mongo
+    profiles: ["rs"]
+    network_mode: "service:mongo-rs1"
+    depends_on: [mongo-rs1]
+    entrypoint: ["sh", "/matrix/mongod-run.sh", "mongod", "--replSet", "rs0", "--port", "37118",
+                 "--bind_ip_all", "--keyFile", "/tmp/mongo-keyfile",
+                 "--tlsMode", "allowTLS", "--tlsCertificateKeyFile", "/tmp/server.pem",
+                 "--tlsCAFile", "/fixtures/ca.crt", "--tlsAllowConnectionsWithoutCertificates"]
+
+  mongo-rs3:
+    <<: *mongo
+    profiles: ["rs"]
+    network_mode: "service:mongo-rs1"
+    depends_on: [mongo-rs1]
+    entrypoint: ["sh", "/matrix/mongod-run.sh", "mongod", "--replSet", "rs0", "--port", "37119",
+                 "--bind_ip_all", "--keyFile", "/tmp/mongo-keyfile",
+                 "--tlsMode", "allowTLS", "--tlsCertificateKeyFile", "/tmp/server.pem",
+                 "--tlsCAFile", "/fixtures/ca.crt", "--tlsAllowConnectionsWithoutCertificates"]
+
+  # ---------------------------------------------------------------------------
+  # Sharded cluster: config RS cfg0 + shard RS shard0 + mongos router (127.0.0.1:37217)
+  # ---------------------------------------------------------------------------
+  mongo-cfg:
+    <<: *mongo
+    networks: [matrix-net]
+    profiles: ["sharded"]
+    entrypoint: ["sh", "/matrix/mongod-run.sh", "mongod", "--configsvr", "--replSet", "cfg0", "--port", "27019",
+                 "--dbpath", "/data/configdb", "--bind_ip_all", "--keyFile", "/tmp/mongo-keyfile"]
+
+  mongo-shard:
+    <<: *mongo
+    networks: [matrix-net]
+    profiles: ["sharded"]
+    entrypoint: ["sh", "/matrix/mongod-run.sh", "mongod", "--shardsvr", "--replSet", "shard0", "--port", "27018",
+                 "--bind_ip_all", "--keyFile", "/tmp/mongo-keyfile"]
+
+  mongos:
+    <<: *mongo
+    networks: [matrix-net]
+    profiles: ["sharded"]
+    depends_on: [mongo-cfg, mongo-shard]
+    ports: ["127.0.0.1:37217:27017"]
+    entrypoint: ["sh", "/matrix/mongod-run.sh", "mongos", "--configdb", "cfg0/mongo-cfg:27019", "--port", "27017",
+                 "--bind_ip_all", "--keyFile", "/tmp/mongo-keyfile",
+                 "--tlsMode", "allowTLS", "--tlsCertificateKeyFile", "/tmp/server.pem",
+                 "--tlsCAFile", "/fixtures/ca.crt", "--tlsAllowConnectionsWithoutCertificates"]
+
+  # ---------------------------------------------------------------------------
+  # SSH bastion (127.0.0.1:32222): password, Ed25519, encrypted Ed25519 and RSA keys; forwards to the
+  # matrix network (mongo-noauth, mongo-std, mongo-mtls, mongos)
+  # ---------------------------------------------------------------------------
+  ssh-bastion:
+    image: ${SSH_BASTION_IMAGE:-alpine:3.20}
+    profiles: ["ssh"]
+    networks: [matrix-net]
+    ports: ["127.0.0.1:32222:2222"]
+    volumes:
+      - ./.fixtures/ssh:/fixtures/ssh:ro
+    tmpfs:
+      - /tmp:mode=1777
+      - /run:mode=1777
+    entrypoint:
+      - sh
+      - -ec
+      - |
+        if ! command -v sshd >/dev/null 2>&1 && [ ! -x /usr/sbin/sshd ]; then
+          apk add --no-cache openssh-server >/dev/null
+        fi
+        mkdir -p /run/sshd /tmp/sshd /tmp/rago_ssh_user/.ssh
+        if command -v adduser >/dev/null 2>&1 && adduser --help 2>&1 | grep -q BusyBox; then
+          adduser -D -h /tmp/rago_ssh_user -s /bin/sh rago_ssh_user 2>/dev/null || true
+        else
+          useradd -d /tmp/rago_ssh_user -s /bin/sh rago_ssh_user 2>/dev/null || true
+        fi
+        echo "rago_ssh_user:ragoSshSecret2026" | chpasswd
+        cp /fixtures/ssh/authorized_keys /tmp/rago_ssh_user/.ssh/authorized_keys
+        chown -R rago_ssh_user /tmp/rago_ssh_user
+        chmod 700 /tmp/rago_ssh_user /tmp/rago_ssh_user/.ssh
+        chmod 600 /tmp/rago_ssh_user/.ssh/authorized_keys
+        cp /fixtures/ssh/ssh_host_ed25519_key /tmp/sshd/ssh_host_ed25519_key
+        cp /fixtures/ssh/ssh_host_rsa_key /tmp/sshd/ssh_host_rsa_key
+        chmod 600 /tmp/sshd/ssh_host_ed25519_key /tmp/sshd/ssh_host_rsa_key
+        cat > /tmp/sshd/sshd_config <<'SSHEOF'
+        Port 2222
+        ListenAddress 0.0.0.0
+        HostKey /tmp/sshd/ssh_host_ed25519_key
+        HostKey /tmp/sshd/ssh_host_rsa_key
+        PasswordAuthentication yes
+        KbdInteractiveAuthentication no
+        PubkeyAuthentication yes
+        AuthorizedKeysFile /tmp/rago_ssh_user/.ssh/authorized_keys
+        StrictModes no
+        AllowTcpForwarding yes
+        GatewayPorts no
+        PermitRootLogin no
+        UseDNS no
+        PidFile /tmp/sshd/sshd.pid
+        Subsystem sftp internal-sftp
+        SSHEOF
+        exec /usr/sbin/sshd -D -e -f /tmp/sshd/sshd_config

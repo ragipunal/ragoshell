@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" width="1200" height="360">
+  <defs>
+    <!-- Emblem Background: Deep dark forest green / black-green squircle -->
+    <linearGradient id="emblemBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0c2319" />
+      <stop offset="100%" stop-color="#05140e" />
+    </linearGradient>
+
+    <!-- Subtle inner border for emblem -->
+    <linearGradient id="emblemBorder" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1ae575" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#00a344" stop-opacity="0.12" />
+    </linearGradient>
+
+    <!-- Flower Petal Gradient: Emerald to vibrant mint green matching app icon -->
+    <linearGradient id="emblemPetalGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#028639" />
+      <stop offset="45%" stop-color="#00be54" />
+      <stop offset="100%" stop-color="#34f28b" />
+    </linearGradient>
+
+    <!-- Flower core glow -->
+    <radialGradient id="emblemCoreGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#7affb8" stop-opacity="0.45" />
+      <stop offset="100%" stop-color="#028639" stop-opacity="0.0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Clean pure white background -->
+  <rect width="1200" height="360" fill="#ffffff" />
+
+  <!-- ============================================================
+       LEFT: APP EMBLEM (Exact reproduction of the RagoShell app icon)
+       Dimensions: 200x200, placed at x=80, y=80 (centered vertically)
+       ============================================================ -->
+  <g transform="translate(80, 80)">
+    <!-- Base App Icon: Dark-green squircle with rx=46 -->
+    <rect x="0" y="0" width="200" height="200" rx="46" fill="url(#emblemBg)" />
+    <!-- Crisp inner border rim -->
+    <rect x="2" y="2" width="196" height="196" rx="44" fill="none" stroke="url(#emblemBorder)" stroke-width="1.5" />
+
+    <!-- Stylized Geometric 5-Petal Mango Flower Emblem centered at (100, 104) -->
+    <!-- Scale factor = 200/512 = ~0.39 -->
+    <g transform="translate(100, 104) scale(0.39)">
+      <!-- Petal 1: 0 deg (Top) -->
+      <g transform="rotate(0)">
+        <path d="M 0,-160 C 30,-120 46,-58 0,0 C -46,-58 -30,-120 0,-160 Z" fill="url(#emblemPetalGrad)" />
+        <path d="M 0,-160 C 30,-120 46,-58 0,0 L 0,-160 Z" fill="#ffffff" opacity="0.14" />
+      </g>
+
+      <!-- Petal 2: 72 deg (Top Right) -->
+      <g transform="rotate(72)">
+        <path d="M 0,-160 C 30,-120 46,-58 0,0 C -46,-58 -30,-120 0,-160 Z" fill="url(#emblemPetalGrad)" />
+        <path d="M 0,-160 C 30,-120 46,-58 0,0 L 0,-160 Z" fill="#ffffff" opacity="0.14" />
+      </g>
+
+      <!-- Petal 3: 144 deg (Bottom Right) -->
+      <g transform="rotate(144)">
+        <path d="M 0,-160 C 30,-120 46,-58 0,0 C -46,-58 -30,-120 0,-160 Z" fill="url(#emblemPetalGrad)" />
+        <path d="M 0,-160 C 30,-120 46,-58 0,0 L 0,-160 Z" fill="#ffffff" opacity="0.14" />
+      </g>
+
+      <!-- Petal 4: 216 deg (Bottom Left) -->
+      <g transform="rotate(216)">
+        <path d="M 0,-160 C 30,-120 46,-58 0,0 C -46,-58 -30,-120 0,-160 Z" fill="url(#emblemPetalGrad)" />
+        <path d="M 0,-160 C 30,-120 46,-58 0,0 L 0,-160 Z" fill="#ffffff" opacity="0.14" />
+      </g>
+
+      <!-- Petal 5: 288 deg (Top Left) -->
+      <g transform="rotate(288)">
+        <path d="M 0,-160 C 30,-120 46,-58 0,0 C -46,-58 -30,-120 0,-160 Z" fill="url(#emblemPetalGrad)" />
+        <path d="M 0,-160 C 30,-120 46,-58 0,0 L 0,-160 Z" fill="#ffffff" opacity="0.14" />
+      </g>
+
+      <!-- Center Blossom Disc -->
+      <circle cx="0" cy="0" r="46" fill="#04180f" opacity="0.58" />
+      <circle cx="0" cy="0" r="32" fill="url(#emblemCoreGlow)" />
+      <circle cx="0" cy="0" r="15" fill="#022a18" />
+      <circle cx="0" cy="0" r="6.5" fill="#3bf592" opacity="0.95" />
+    </g>
+  </g>
+
+  <!-- ============================================================
+       RIGHT: BRAND WORDMARK & TAGLINE LOCKUP
+       Emblem ends at x = 280.
+       Spacing gap = 64px -> Wordmark starts at x = 344.
+       Baseline for primary wordmark: y = 196
+       ============================================================ -->
+  <g transform="translate(344, 0)">
+    <!-- Primary Wordmark: "RagoShell" in modern geometric grotesque sans-serif, one typeface, two tones -->
+    <text y="196"
+          font-family="system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Montserrat', 'Segoe UI', Arial, sans-serif"
+          font-size="96"
+          font-weight="800"
+          letter-spacing="-1.5">
+      <!-- "Rago" in dark forest green, "Shell" in vibrant emerald green; the tspans touch, a gap would read "Rago Shell" -->
+      <tspan fill="#0c2319">Rago</tspan><tspan fill="#00be54">Shell</tspan>
+    </text>
+
+    <!-- Thin baseline tagline: "MONGODB IDE" in muted gray-green small caps -->
+    <text y="246"
+          font-family="system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'JetBrains Mono', 'Segoe UI', monospace, sans-serif"
+          font-size="22"
+          font-weight="600"
+          letter-spacing="9"
+          fill="#527967">MONGODB IDE</text>
+  </g>
+</svg>

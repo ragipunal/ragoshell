@@ -1,0 +1,2 @@
+"NSLocalNetworkUsageDescription" = "RagoShell आपके लोकल नेटवर्क पर MongoDB सर्वरों और SSH टनल होस्ट से कनेक्ट करता है।";
+"NSPhotoLibraryUsageDescription" = "RagoShell फ़ाइल पिकर एक्सेस का उपयोग केवल तब करता है जब आप आयात करने के लिए स्क्रिप्ट, दस्तावेज़ या प्रमाणपत्र चुनते हैं।";

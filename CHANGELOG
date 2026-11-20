@@ -1,0 +1,107 @@
+RagoShell changelog
+===================
+
+RagoShell 2.1.0
+---------------
+- Keyboard shortcuts are written for the platform and shown only where they work: the Command key (⌘) on a Mac and an
+  iPad, Ctrl elsewhere, and on a phone or tablet only while a hardware keyboard is attached (a tablet no longer
+  says "Ctrl+L"); the Welcome texts name the gesture on a touch screen
+- Control sizes follow the device: desktop, tablet (smaller than before) and phone columns; two-column forms stack on
+  narrow screens, tab bars and toolbars no longer cover or cut their buttons (toolbars scroll sideways), the Test
+  Connection bar holds its button, and dialogs, the shell tab and the Server Monitor fit a 360 dp phone; the tab
+  strip shows every tab in Arabic
+- New application icons for every platform (Windows, macOS Big Sur grid, Linux icon theme, Android adaptive and
+  themed, iPad light / dark / tinted), all made from one artwork by `dev/icons/make-icons.sh`
+- The JavaScript shell runs inside the app (Qt's JavaScript engine) on every platform and the app no longer
+  needs a Node.js process for it; the shell works on Android tablets and on the iPad. What changes for you:
+  a server result can be used in the same statement (`for (...) { var d = db.c.findOne(...); ... }` and
+  `db.c.countDocuments({}) > 0` work as in the old mongo shell), `NumberLong` keeps every digit, a `print`
+  statement no longer shows an extra `1`, Stop also ends a long server operation (killOp) and the shell
+  timeout stops a script that loops. Output formats, the startup script and autocomplete are unchanged.
+  The packages no longer contain Node.js (about 77 MB less), a shell tab needs a tenth of the memory and
+  connects about three times as fast, and the old Node shell, its `--shell-backend` switch and
+  `src/rago-shell/` are removed
+- Log file: ragoshell.log in the settings folder's logs/ directory (5 MB,
+  one rotated file) with the app's log lines and all Qt messages;
+  Help -> Open Log Folder opens it
+- The window layout (splitter sizes, log panel, explorer) is saved a second
+  after it changes, so a crash or forced shutdown keeps it
+- Unsaved script text of shell tabs is kept as drafts; after a crash or a
+  forced shutdown File -> Recover Unsaved Scripts (offered at startup) opens
+  them in new tabs, connecting only when you click
+- The key that encrypts saved passwords and API keys moves into the operating
+  system key store (Windows Credential Manager, macOS Keychain, Linux Secret
+  Service) on first start and the key file is removed; without a key store the
+  file stays, with a warning in Preferences. An older RagoShell started
+  afterwards cannot read the saved passwords
+- SSH tunnels check the server's host key against ssh/known_hosts: a new key
+  asks for confirmation (SHA256 fingerprint), a changed key is refused
+  unless you choose Trust New Key
+- SSH tunnels work again: libssh2 1.11.1 (vcpkg) replaces the in-tree 1.9.0,
+  which failed every handshake with OpenSSL 3
+- Importing and exporting collections reads and writes in batches: memory
+  use no longer grows with the file (CSV export reads the collection twice)
+- The page size is limited to 1000 documents
+- The background schema analysis waits while the network is metered
+  (Preferences switch, on by default) and, on tablets, while the app is not in
+  front
+- After the network comes back or the computer wakes the open connections are
+  checked by themselves; errors in that time go to the status bar
+- Interface density (Preferences): Automatic, Compact or Touch sizes for
+  buttons, fields and menu items; the window can be as narrow as 480 px (the
+  explorer folds away, the Welcome page and toolbar adapt); result cells open
+  their menu on press-and-hold with a finger; F10 also answers to Alt+Shift+O
+- The connection dialog offers only the authentication mechanisms the build
+  supports
+- Preferences shows where the API key of the AI assistant comes from
+- RAGOSHELL_CONFIG_DIR now also moves the query history and the schema
+  catalog
+- Groundwork for Android tablets (not released): build presets for Android
+  and iPadOS, the key for saved passwords is protected by the Android
+  Keystore, and the app asks for the local network permission that Android 17
+  requires before connecting to a server on the LAN
+- Dialogs follow the on-screen keyboard on tablets: they size and center themselves in the space the
+  keyboard leaves, and the connection and preferences forms scroll to the field you are typing in
+- The "Load ~/.mongorc.js" switch is replaced by a "Startup script" box in Preferences
+  (JavaScript that runs before every query in a shell tab); a switched-on old setting copies
+  your ~/.mongorc.js into the box once. Nothing reads files from the home folder any more
+- Shell tabs have an action strip above the editor (Format, History, Snippets, Export, Query
+  Bar, Find and a menu) that adapts to the width of the tab
+- New top bar: one row with a search field (the command palette), New Connection,
+  Monitor, a theme button and a "more" menu; the menu bar and the row of buttons are
+  gone (every command is in the command palette); the same on every platform
+- Command palette (Ctrl+K, or Tools -> Command Palette): search every command, saved
+  connection and loaded database or collection; recently used commands come first and
+  unavailable commands say what they need
+- Icons that use Unicode symbols no longer show as empty boxes on Android
+  (a symbol font is bundled in the mobile builds; three rarely supported
+  symbols were replaced everywhere)
+
+RagoShell 2.0.0
+---------------
+First RagoShell release. Rebranded continuation of the open-source
+Robomongo 1.4.4 codebase with a modernized toolchain:
+
+- Qt 6.12 and CMake presets / vcpkg manifest mode
+- Qt Quick (QML) user interface (ragoshell) on a GUI-free core
+  library; the Qt Widgets UI has been removed (last commit with it is
+  tagged widgets-final)
+- Official mongo-cxx-driver 4.0.0 (bsoncxx/mongocxx) replacing legacy
+  mongo:: driver APIs
+- JavaScript shell moved to a bundled Node.js helper (src/rago-shell,
+  mongodb@6.16 driver) over a JSON line protocol; a real node/node.exe is
+  shipped inside packages, no separate Node.js install required
+- Lighter startup: QtWebEngine welcome tab replaced by a lightweight
+  network implementation
+- Bounded output log to prevent memory growth in long sessions
+- mongoexport path no longer hard-coded; searched next to the app or
+  on PATH
+- Config directory is ~/.ragoshell/
+- Server compatibility: MongoDB 3.6 - 7.x (4.0 verified)
+- Local CI packaging scripts for Windows x64, Linux x64, macOS arm64
+- 15 UI languages (English, Hindi, Chinese (Simplified), Spanish, Portuguese
+  (Brazil), Russian, German, French, Japanese, Arabic, Turkish, Azerbaijani,
+  Kazakh, Kyrgyz, Uzbek) with a language picker in Preferences (live switch,
+  default follows the OS), right-to-left layout for Arabic, plural forms and
+  per-language fallback fonts; translations are machine drafts awaiting
+  native review (docs/Localization.md)

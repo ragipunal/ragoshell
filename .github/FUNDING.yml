@@ -1,0 +1,14 @@
+# GitHub Sponsor button configuration (see DONATE.md).
+#
+# SECURITY POLICY:
+# Keep platform handles commented out until the maintainer registers and verifies each
+# official account. Uncommenting an unclaimed username could route supporters to a squatted handle.
+
+# github: [ragipunal]
+# buy_me_a_coffee: ragoshell
+# polar: ragoshell
+# patreon: ragoshell
+
+custom:
+  - "https://github.com/ragipunal/ragoshell/blob/main/DONATE.md"
+  - "https://ragoshell.com.tr"

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- RagoShell for iPhone and iPad (docs/Platforms.md). -->
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>hi</string>
+		<string>zh-Hans</string>
+		<string>es</string>
+		<string>pt-BR</string>
+		<string>ru</string>
+		<string>de</string>
+		<string>fr</string>
+		<string>ja</string>
+		<string>ar</string>
+		<string>tr</string>
+		<string>az</string>
+		<string>kk</string>
+		<string>ky</string>
+		<string>uz</string>
+	</array>
+	<key>CFBundleAllowMixedLocalizations</key>
+	<true/>
+	<key>CFBundleExecutable</key>
+	<string>${MACOSX_BUNDLE_EXECUTABLE_NAME}</string>
+	<key>CFBundleIdentifier</key>
+	<string>${MACOSX_BUNDLE_GUI_IDENTIFIER}</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>${MACOSX_BUNDLE_BUNDLE_NAME}</string>
+	<key>CFBundleDisplayName</key>
+	<string>${MACOSX_BUNDLE_BUNDLE_NAME}</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>${MACOSX_BUNDLE_SHORT_VERSION_STRING}</string>
+	<key>CFBundleVersion</key>
+	<string>${MACOSX_BUNDLE_BUNDLE_VERSION}</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>MinimumOSVersion</key>
+	<string>${CMAKE_OSX_DEPLOYMENT_TARGET}</string>
+
+	<!-- Universal app: iPhone (1) and iPad (2). -->
+	<key>UIDeviceFamily</key>
+	<array>
+		<integer>1</integer>
+		<integer>2</integer>
+	</array>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>arm64</string>
+	</array>
+
+	<!-- Split View, Slide Over and Stage Manager need the app to accept any window size. -->
+	<key>UIRequiresFullScreen</key>
+	<false/>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+
+	<!-- Launch screen without a storyboard (iOS 14 and later): the system background colour. -->
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>LaunchBackground</string>
+	</dict>
+
+	<!-- Connections to MongoDB servers and SSH tunnel hosts on the local network (iOS 14 and later). -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>RagoShell connects to MongoDB servers and SSH tunnel hosts on your local network.</string>
+
+	<!-- Required by App Store Connect (ITMS-90683) because Qt's static iOS platform plugin
+	     (QIOSIntegrationPlugin / qiosfiledialog.mm) links Photos.framework for file dialogs. -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>RagoShell uses file picker access only when you choose scripts, documents, or certificates to import.</string>
+
+	<!-- Keep strict HTTPS/TLS mandatory for public internet endpoints while allowing local LAN/loopback
+	     HTTP endpoints (such as a local AI gateway) without weakening global ATS protection. -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+
+	<!-- Exported files show in the Files app. -->
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+
+	<!-- TLS and SSH only use the operating system's standard encryption libraries and OpenSSL for
+	     connecting; export compliance is answered as "uses encryption, exempt (standard algorithms only)". -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+</dict>
+</plist>
