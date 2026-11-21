@@ -267,6 +267,25 @@ jobs:
         with:
           node-version: 22
 
+      - name: Install NSIS and WiX v5
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not (Get-Command makensis -ErrorAction SilentlyContinue) -and -not (Test-Path "${env:ProgramFiles(x86)}\NSIS\makensis.exe")) {
+            choco install nsis -y --no-progress
+            if ($LASTEXITCODE -ne 0) { throw "Failed to install NSIS ($LASTEXITCODE)" }
+          }
+          if (Test-Path "${env:ProgramFiles(x86)}\NSIS") {
+            "${env:ProgramFiles(x86)}\NSIS" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          }
+          dotnet tool update --global wix --version 5.0.2
+          if ($LASTEXITCODE -ne 0) { throw "Failed to install WiX v5 CLI ($LASTEXITCODE)" }
+          $wixDir = Join-Path $env:USERPROFILE '.dotnet\tools'
+          $wixExe = Join-Path $wixDir 'wix.exe'
+          & $wixExe extension add -g WixToolset.UI.wixext/5.0.2
+          if ($LASTEXITCODE -ne 0) { throw "Failed to install WixToolset.UI.wixext ($LASTEXITCODE)" }
+          $wixDir | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
       - name: Install Qt 6
         uses: jurplel/install-qt-action@v4
         with:
@@ -358,6 +377,11 @@ jobs:
           AZURE_CLIENT_SECRET: ${{ github.event_name != 'pull_request' && secrets.AZURE_CLIENT_SECRET || '' }}
         run: |
           .\ci\build-windows.ps1 -Config Release -Version "$env:CI_BUILD_VERSION"
+          foreach ($pattern in @('dist/ragoshell-*-windows-x64.zip', 'dist/ragoshell-*-windows-x64-setup.exe', 'dist/ragoshell-*-windows-x64.msi')) {
+            if (-not (Get-Item $pattern -ErrorAction SilentlyContinue)) {
+              throw "Expected Windows release artifact missing: $pattern"
+            }
+          }
 
       - name: Upload Windows Artifacts
         uses: actions/upload-artifact@v7
@@ -368,7 +392,7 @@ jobs:
             dist/ragoshell-*-windows-x64.zip
             dist/ragoshell-*-windows-x64-setup.exe
             dist/ragoshell-*-windows-x64.msi
-          if-no-files-found: warn
+          if-no-files-found: error
 
   android:
     name: Android arm64 APK & AAB
