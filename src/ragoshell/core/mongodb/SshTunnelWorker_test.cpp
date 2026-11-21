@@ -750,7 +750,7 @@ TEST_F(SshTunnelWorkerTest, exponential_backoff_attempt_limit_and_recovery_after
 
     ctrl.triggerNetworkDrop("link down");
     ASSERT_TRUE(waitUntil([&]() {
-        return worker.state() == SshTunnelWorker::State::Exhausted;
+        return worker.state() == SshTunnelWorker::State::Exhausted && permFailedCount.load() == 1;
     }));
 
     // 1 initial connect + 4 reconnect attempts = 5 total setups, with 3 sleeps between the 4 attempts.
