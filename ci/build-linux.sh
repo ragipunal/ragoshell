@@ -24,7 +24,7 @@ readonly APPIMAGETOOL_URL="https://github.com/AppImage/appimagetool/releases/dow
 readonly APPIMAGETOOL_SHA256="ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0"
 
 # The brand has one source (cmake/RagoShellDefaults.cmake, docs/Brand.md); file names and metadata read it from there.
-brand() { sed -n "s/^set($1 \"\\(.*\\)\")\$/\\1/p" "$root/cmake/RagoShellDefaults.cmake"; }
+brand() { sed -n "s/^[[:space:]]*set($1 \"\\(.*\\)\")\$/\\1/p" "$root/cmake/RagoShellDefaults.cmake"; }
 cmake_ver() { sed -n "s/^set($1 \"\\(.*\\)\")\$/\\1/p" "$root/CMakeLists.txt"; }
 
 product_id="$(brand RAGO_PRODUCT_ID)"

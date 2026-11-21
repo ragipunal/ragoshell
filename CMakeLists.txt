@@ -75,11 +75,10 @@ endif()
 # Search for dependencies
 find_package(Threading REQUIRED)    # Wrapper arround CMake "Threads" module
 # Widgets, PrintSupport and Core5Compat are for QScintilla (the shell editor).
-# QtHttpServer exists only on listening-capable platforms — the Emscripten
-# toolchain has neither it nor QTcpServer, so it must never be requested
-# (or the web-gateway subdir built) under the wasm preset.
+# QtHttpServer is only used by ragoshell-web-gateway on desktop platforms —
+# mobile targets (Android/iOS) and Emscripten do not build web-gateway.
 set(QT_COMPONENTS_HTTPSERVER "")
-if(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+if(NOT SYSTEM_MOBILE AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     set(QT_COMPONENTS_HTTPSERVER HttpServer)
 endif()
 if(RAGO_GATEWAY_ONLY)

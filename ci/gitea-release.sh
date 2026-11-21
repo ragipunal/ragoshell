@@ -18,7 +18,7 @@ set -euo pipefail
 set +x
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
-brand() { sed -n "s/^set($1 \"\\(.*\\)\")\$/\\1/p" "$root/cmake/RagoShellDefaults.cmake"; }
+brand() { sed -n "s/^[[:space:]]*set($1 \"\\(.*\\)\")\$/\\1/p" "$root/cmake/RagoShellDefaults.cmake"; }
 product_id="$(brand RAGO_PRODUCT_ID)"
 product_name="$(brand RAGO_PRODUCT_NAME)"
 

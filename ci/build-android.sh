@@ -20,7 +20,7 @@ set +x
 root="$(cd "$(dirname "$0")/.." && pwd)"
 
 # The brand has one source (cmake/RagoShellDefaults.cmake, docs/Brand.md); file names and identifiers read it from there.
-brand() { sed -n "s/^set($1 \"\\(.*\\)\")\$/\\1/p" "$root/cmake/RagoShellDefaults.cmake"; }
+brand() { sed -n "s/^[[:space:]]*set($1 \"\\(.*\\)\")\$/\\1/p" "$root/cmake/RagoShellDefaults.cmake"; }
 cmake_ver() { sed -n "s/^set($1 \"\\(.*\\)\")\$/\\1/p" "$root/CMakeLists.txt"; }
 cmake_cache_default() { sed -n "s/^[[:space:]]*set($1 \"\\([^\"]*\\)\".*/\\1/p" "$root/CMakeLists.txt" | head -n 1; }
 product_id="$(brand RAGO_PRODUCT_ID)"

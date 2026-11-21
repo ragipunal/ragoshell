@@ -11,7 +11,7 @@ on:
       qt_version:
         description: 'Qt version to install (e.g. 6.8.2 or 6.12.0)'
         required: false
-        default: '6.8.2'
+        default: '6.12.0'
       release_version:
         description: 'Optional release version override (e.g. 2.1.0)'
         required: false
@@ -35,7 +35,7 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' && github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/v') }}
 
 env:
-  QT_DEFAULT_VERSION: '6.8.2'
+  QT_DEFAULT_VERSION: '6.12.0'
   CI_BUILD_VERSION: ${{ inputs.release_version || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || '' }}
 
 jobs:
@@ -98,7 +98,7 @@ jobs:
             mv -f "${osv_bin}.tmp" "$osv_bin"
           fi
 
-          "$osv_bin" scan source --lockfile=vcpkg.json --lockfile="$sbom_out"
+          "$osv_bin" scan source --lockfile="$sbom_out"
 
   linux:
     name: Linux x64 (Build, Tests & QML)
@@ -129,16 +129,15 @@ jobs:
             libxcb-xinerama0 libxcb-randr0 libxcb-sync1 libxcb-xkb1
 
       - name: Install Qt 6
-        uses: jurplel/install-qt-action@v3
+        uses: jurplel/install-qt-action@v4
         with:
           version: ${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
           host: linux
           target: desktop
-          arch: gcc_64
-          modules: 'qt5compat qtimageformats'
+          modules: 'qt5compat qtimageformats qtwebsockets qthttpserver'
           dir: ${{ runner.temp }}/Qt
           cache: true
-          cache-key-prefix: qt-linux-v2-${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
+          cache-key-prefix: qt-linux-v3-${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
 
       - name: Cache Linux AppImage packaging tools
         uses: actions/cache@v4
@@ -164,6 +163,7 @@ jobs:
 
       - name: Build, Test & Package (ci/build-linux.sh)
         env:
+          Qt6_DIR: ${{ env.QT_ROOT_DIR }}
           APPIMAGE_EXTRACT_AND_RUN: '1'
         run: |
           chmod +x ci/build-linux.sh
@@ -200,15 +200,16 @@ jobs:
           brew install ninja cmake pkg-config autoconf automake libtool
 
       - name: Install Qt 6
-        uses: jurplel/install-qt-action@v3
+        uses: jurplel/install-qt-action@v4
         with:
           version: ${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
           host: mac
           target: desktop
           arch: clang_64
+          modules: 'qt5compat qtimageformats qtwebsockets qthttpserver'
           dir: ${{ runner.temp }}/Qt
           cache: true
-          cache-key-prefix: qt-macos-${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
+          cache-key-prefix: qt-macos-v2-${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
 
       - name: Setup vcpkg binary cache
         uses: actions/cache@v4
@@ -226,6 +227,7 @@ jobs:
 
       - name: Build, Test & Package (ci/build-macos.sh)
         env:
+          Qt6_DIR: ${{ env.QT_ROOT_DIR }}
           RAGO_MAC_SIGN_ID: ${{ github.event_name != 'pull_request' && (secrets.RAGO_MAC_SIGN_ID || secrets.APPLE_DEVELOPER_ID) || '' }}
           RAGO_MAC_CERT_P12_BASE64: ${{ github.event_name != 'pull_request' && (secrets.RAGO_MAC_CERT_P12_BASE64 || secrets.APPLE_CERT_P12_BASE64) || '' }}
           RAGO_MAC_CERT_PASSWORD: ${{ github.event_name != 'pull_request' && (secrets.RAGO_MAC_CERT_PASSWORD || secrets.APPLE_CERT_PASSWORD) || '' }}
@@ -262,15 +264,16 @@ jobs:
           node-version: 22
 
       - name: Install Qt 6
-        uses: jurplel/install-qt-action@v3
+        uses: jurplel/install-qt-action@v4
         with:
           version: ${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
           host: windows
           target: desktop
           arch: win64_msvc2022_64
+          modules: 'qt5compat qtimageformats qtwebsockets qthttpserver'
           dir: ${{ runner.temp }}/Qt
           cache: true
-          cache-key-prefix: qt-windows-${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
+          cache-key-prefix: qt-windows-v2-${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
 
       - name: Setup vcpkg binary cache
         uses: actions/cache@v4
@@ -279,6 +282,33 @@ jobs:
           key: vcpkg-windows-${{ hashFiles('vcpkg.json', 'vcpkg-overlays/**') }}
           restore-keys: |
             vcpkg-windows-
+
+      - name: Setup vcpkg
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $vcpkgJson = Get-Content -Raw vcpkg.json | ConvertFrom-Json
+          $baseline = $vcpkgJson.'builtin-baseline'
+          $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
+          if ($vcpkgRoot -and (Test-Path $vcpkgRoot)) {
+            git -C $vcpkgRoot cat-file -e "$baseline^{commit}" 2>$null
+            if ($LASTEXITCODE -ne 0) {
+              git -C $vcpkgRoot fetch --depth=1 origin $baseline
+              if ($LASTEXITCODE -ne 0) {
+                git -C $vcpkgRoot fetch origin
+                if ($LASTEXITCODE -ne 0) {
+                  throw "Failed to fetch vcpkg baseline $baseline into $vcpkgRoot"
+                }
+              }
+            }
+          } else {
+            $vcpkgRoot = Join-Path $env:RUNNER_TEMP 'vcpkg'
+            git clone https://github.com/microsoft/vcpkg.git $vcpkgRoot
+            if ($LASTEXITCODE -ne 0) { throw 'Failed to clone microsoft/vcpkg' }
+            & "$vcpkgRoot\bootstrap-vcpkg.bat" -disableMetrics
+            if ($LASTEXITCODE -ne 0) { throw 'Failed to bootstrap vcpkg' }
+          }
+          "VCPKG_ROOT=$vcpkgRoot" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Setup Azure Trusted Signing client (optional)
         if: github.event_name != 'pull_request'
@@ -308,6 +338,7 @@ jobs:
       - name: Build, Test & Package (ci/build-windows.ps1)
         shell: pwsh
         env:
+          Qt6_DIR: ${{ env.QT_ROOT_DIR }}
           VCPKG_DEFAULT_BINARY_CACHE: ${{ runner.temp }}/vcpkg-cache
           RAGO_WIN_SIGN_PFX_BASE64: ${{ github.event_name != 'pull_request' && (secrets.RAGO_WIN_SIGN_PFX_BASE64 || secrets.WINDOWS_CERT_BASE64) || '' }}
           RAGO_WIN_SIGN_PASSWORD: ${{ github.event_name != 'pull_request' && (secrets.RAGO_WIN_SIGN_PASSWORD || secrets.WINDOWS_CERT_PASSWORD) || '' }}
@@ -348,17 +379,31 @@ jobs:
         with:
           node-version: 22
 
-      - name: Setup Java 17
+      - name: Setup Java 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
       - name: Setup Android NDK
         uses: nttld/setup-ndk@v1
         with:
           ndk-version: r27c
           link-to-sdk: true
+
+      - name: Install Android SDK Platform 37 & Build-Tools
+        run: |
+          set -euo pipefail
+          sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          sdkmgr=""
+          if [ -x "$sdk_root/cmdline-tools/latest/bin/sdkmanager" ]; then
+            sdkmgr="$sdk_root/cmdline-tools/latest/bin/sdkmanager"
+          elif [ -d "$sdk_root/cmdline-tools" ]; then
+            sdkmgr="$(find "$sdk_root/cmdline-tools" -maxdepth 3 -name sdkmanager -type f 2>/dev/null | sort -V | tail -n 1 || true)"
+          fi
+          [ -x "$sdkmgr" ] || { echo "error: sdkmanager not found under $sdk_root" >&2; exit 1; }
+          yes | "$sdkmgr" --licenses >/dev/null || true
+          "$sdkmgr" "platforms;android-37.0" "build-tools;37.0.0"
 
       - name: Install system dependencies
         run: |
@@ -367,26 +412,29 @@ jobs:
             build-essential ninja-build cmake pkg-config autoconf automake libtool llvm unzip zip
 
       - name: Install Qt 6 Host
-        uses: jurplel/install-qt-action@v3
+        id: qt-host
+        uses: jurplel/install-qt-action@v4
         with:
           version: ${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
           host: linux
           target: desktop
-          arch: gcc_64
           dir: ${{ runner.temp }}/QtHost
+          set-env: false
           cache: true
-          cache-key-prefix: qt-host-${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
+          cache-key-prefix: qt-host-v2-${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
 
       - name: Install Qt 6 Android
-        uses: jurplel/install-qt-action@v3
+        id: qt-android
+        uses: jurplel/install-qt-action@v4
         with:
           version: ${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
-          host: linux
           target: android
           arch: android_arm64_v8a
+          modules: 'qt5compat qtimageformats qtwebsockets'
           dir: ${{ runner.temp }}/QtAndroid
+          set-env: false
           cache: true
-          cache-key-prefix: qt-android-${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
+          cache-key-prefix: qt-android-v2-${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
 
       - name: Setup vcpkg binary cache
         uses: actions/cache@v4
@@ -404,8 +452,8 @@ jobs:
 
       - name: Build, Sign & Verify Android APK + AAB (ci/build-android.sh)
         env:
-          Qt6_DIR: ${{ runner.temp }}/QtHost
-          Qt6_DIR_ANDROID: ${{ runner.temp }}/QtAndroid
+          Qt6_DIR: ${{ steps.qt-host.outputs.qt-root-dir }}
+          Qt6_DIR_ANDROID: ${{ steps.qt-android.outputs.qt-root-dir }}
           RAGO_ANDROID_REQUIRE_SIGNING: ${{ ((startsWith(github.ref, 'refs/tags/v') && vars.RELEASE_DRY_RUN != '1') || (github.event_name == 'workflow_dispatch' && inputs.publish_release == true && inputs.dry_run_release != true)) && '1' || '0' }}
           RAGO_ANDROID_KEYSTORE_BASE64: ${{ github.event_name != 'pull_request' && (secrets.RAGO_ANDROID_KEYSTORE_BASE64 || secrets.ANDROID_KEYSTORE_BASE64) || '' }}
           RAGO_ANDROID_KEYSTORE_PASS: ${{ github.event_name != 'pull_request' && (secrets.RAGO_ANDROID_KEYSTORE_PASS || secrets.ANDROID_KEYSTORE_PASSWORD) || '' }}
