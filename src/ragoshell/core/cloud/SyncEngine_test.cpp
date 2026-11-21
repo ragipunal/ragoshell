@@ -656,13 +656,19 @@ TEST(SyncEngineTest, BlobLimitAppliesToCiphertextNotBase64Body)
     f.engine->setCollections({QStringLiteral("preferences")}, false);
     ASSERT_TRUE(f.runSync());
     ASSERT_TRUE(f.vault.rows.contains(QStringLiteral("preferences")));
-    const int ctSize = f.vault.rows[QStringLiteral("preferences")].ciphertext.size();
 
-    // Room for the ciphertext (+10 %), far below its base64 JSON body (+33 % and framing).
-    f.vault.maxBlobBytes = ctSize + ctSize / 10;
+    // Populate doc_updated_at + doc_device (runner hostname + OS) before measuring ctSize,
+    // since revision 1 carries doc_updated_at = 0 and an empty doc_device.
     f.settings->setLineNumbers(!f.settings->lineNumbers());
     ASSERT_TRUE(f.runSync());
-    EXPECT_EQ(f.vault.rows[QStringLiteral("preferences")].revision, 2);
+    ASSERT_EQ(f.vault.rows[QStringLiteral("preferences")].revision, 2);
+    const int ctSize = f.vault.rows[QStringLiteral("preferences")].ciphertext.size();
+
+    // Room for the stabilized ciphertext (+16 B), far below its base64 JSON body (+33 % and framing).
+    f.vault.maxBlobBytes = ctSize + 16;
+    f.settings->setLineNumbers(!f.settings->lineNumbers());
+    ASSERT_TRUE(f.runSync());
+    EXPECT_EQ(f.vault.rows[QStringLiteral("preferences")].revision, 3);
     EXPECT_EQ(f.engine->collectionStatus().value(QStringLiteral("preferences")).toMap()
                   .value(QStringLiteral("status")).toString(),
               QStringLiteral("ok"));
