@@ -61,9 +61,11 @@ RagoDialog {
 
             RagoBadge { text: assistant.database + "." + assistant.collection }
             Label {
+                //: AI assistant header: provider · model · host the request goes to.
                 text: !assistant.ready ? qsTr("off")
                       : assistant.providerName + " · "
                         + (assistant.activeModel.length > 0 ? assistant.activeModel : assistant.model)
+                        + (assistant.endpointHost.length > 0 ? " · " + qsTr("sends to %1").arg(assistant.endpointHost) : "")
                 font.pixelSize: 12
                 color: Theme.disabledTextColor
             }
@@ -109,11 +111,11 @@ RagoDialog {
                     Layout.fillWidth: true
                     wrapMode: Text.WordWrap
                     color: Theme.textColor
-                    text: qsTr("The AI assistant is off or has no API key for %1. When it is on, Generate "
+                    text: qsTr("The AI assistant is off or not set up for %1. When it is on, Generate "
                                + "sends your request and this collection's field names and types (no "
                                + "document values unless you allow them) to the selected provider's API "
-                               + "(Anthropic Claude or Google Gemini). Turn it on and add an API key in "
-                               + "Preferences.").arg(assistant.providerName)
+                               + "(Anthropic Claude, Google Gemini, an OpenAI-compatible server or Ollama). Turn it "
+                               + "on and set it up in Preferences.").arg(assistant.providerName)
                 }
                 RagoPillButton {
                     text: qsTr("Preferences…")
@@ -176,6 +178,7 @@ RagoDialog {
                 required property string modelData
                 Layout.fillWidth: true
                 text: "⚠ " + modelData
+                textFormat: Text.PlainText
                 wrapMode: Text.WordWrap
                 font.pixelSize: 12
                 color: Theme.warningColor
@@ -208,7 +211,9 @@ RagoDialog {
 
             Label {
                 Layout.fillWidth: true
+                // Model and server text: never rich text (an <img> would load).
                 text: assistant.error
+                textFormat: Text.PlainText
                 wrapMode: Text.WordWrap
                 color: Theme.dangerColor
             }
@@ -236,6 +241,7 @@ RagoDialog {
             visible: assistant.explanation.length > 0 && assistant.error.length === 0
             Layout.fillWidth: true
             text: assistant.explanation
+            textFormat: Text.PlainText
             wrapMode: Text.WordWrap
             color: Theme.textColor
         }

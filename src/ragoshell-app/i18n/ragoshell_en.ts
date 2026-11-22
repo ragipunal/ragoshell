@@ -59,6 +59,17 @@
     </message>
 </context>
 <context>
+    <name>RagoShell::AiModelCatalog</name>
+    <message numerus="yes">
+        <source>Connected. %n model(s) available.</source>
+        <extracomment>Preferences › AI › Test connection succeeded.</extracomment>
+        <translation>
+            <numerusform>Connected. %n model available.</numerusform>
+            <numerusform>Connected. %n models available.</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
     <name>RagoShell::QmlBackend</name>
     <message numerus="yes">
         <source>%1: %n database(s)</source>

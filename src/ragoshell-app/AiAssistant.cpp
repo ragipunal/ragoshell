@@ -3,6 +3,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QTimer>
 #include <QUrl>
 
 #include "ragoshell/core/AppRegistry.h"
@@ -13,7 +14,6 @@
 #include "ragoshell/core/utils/SchemaService.h"
 #include "ragoshell-app/QmlBackend.h"
 #include "ragoshell-app/QmlSingleton.h"
-#include "ragoshell-app/CloudService.h"
 
 namespace RagoShell
 {
@@ -24,7 +24,6 @@ namespace RagoShell
     {
         constexpr int kSampleSize = 1000;
         constexpr int kSampleMaxTimeMs = 30000;
-        constexpr int kRequestTimeoutMs = 120000;
         constexpr int kModelListTimeoutMs = 30000;
         constexpr int kMaxModelsPerRequest = 3;
         // Longer waits are not offered as a Retry countdown.
@@ -48,12 +47,116 @@ namespace RagoShell
                    || failure == Failure::Overloaded || failure == Failure::ModelUnavailable;
         }
 
-        QString savedOrEnvironmentKey(Provider provider)
+        QString savedBaseUrl(Provider provider)
         {
             SettingsManager *s = settings();
-            const QString saved = s ? s->aiApiKey(AiQueryAssistant::providerId(provider)) : QString();
-            return saved.isEmpty() ? AiQueryAssistant::apiKeyFromEnvironment(provider) : saved;
+            return s ? s->aiBaseUrl(AiQueryAssistant::providerId(provider)) : QString();
         }
+
+        int timeoutMs(Provider provider)
+        {
+            SettingsManager *s = settings();
+            return 1000 * (s ? s->aiTimeoutSec(AiQueryAssistant::providerId(provider))
+                             : AiQueryAssistant::defaultTimeoutSec(provider));
+        }
+
+        QString savedOrEnvironmentKey(Provider provider)
+        {
+            if (!AiQueryAssistant::usesApiKey(provider))
+                return {};
+            SettingsManager *s = settings();
+            const QString saved = s ? s->aiApiKey(AiQueryAssistant::providerId(provider)) : QString();
+            return saved.isEmpty() ? AiQueryAssistant::apiKeyFromEnvironment(provider, savedBaseUrl(provider)) : saved;
+        }
+
+        // Never follow a redirect: the key header (and a POST body) would go
+        // along to the other server (docs: T6).
+        void noRedirects(QNetworkRequest &request)
+        {
+            request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::ManualRedirectPolicy);
+        }
+
+        // A limit on the whole request (not QNetworkRequest's transfer
+        // timeout, which restarts with every byte, so a server sending slowly
+        // could keep it open). The finished handler sees "timedOut" and the
+        // limit in "limitSec", also when the cut happened mid-body.
+        void deadline(QNetworkReply *reply, int ms)
+        {
+            reply->setProperty("limitSec", ms / 1000);
+            auto *timer = new QTimer(reply);
+            timer->setSingleShot(true);
+            QObject::connect(timer, &QTimer::timeout, reply, [reply]() {
+                reply->setProperty("timedOut", true);
+                reply->abort();
+            });
+            timer->start(ms);
+        }
+
+        bool timedOut(const QNetworkReply *reply)
+        {
+            return reply->property("timedOut").toBool() || reply->error() == QNetworkReply::TimeoutError;
+        }
+
+        // Stops reading a response past max bytes (docs: T4); the finished
+        // handler sees the "tooLarge" property.
+        void limitResponse(QNetworkReply *reply, qint64 max)
+        {
+            QObject::connect(reply, &QNetworkReply::downloadProgress, reply, [reply, max](qint64 received, qint64) {
+                if (received > max && !reply->property("tooLarge").toBool()) {
+                    reply->setProperty("tooLarge", true);
+                    reply->abort();
+                }
+            });
+        }
+    }
+
+    bool aiAllowsPrivateHttp()
+    {
+#if defined(Q_OS_ANDROID) || defined(Q_OS_WASM)
+        return false;
+#else
+        return true;
+#endif
+    }
+
+    QString aiUnreachableHint(Provider provider)
+    {
+        QStringList hints;
+        if (provider == Provider::Ollama)
+            hints << AiAssistant::tr("Is Ollama running? Start the Ollama app, or run \"ollama serve\" in a terminal.");
+#ifdef Q_OS_WASM
+        if (AiQueryAssistant::usesOpenAiApi(provider))
+            hints << AiAssistant::tr("In the browser the server must also allow this page (CORS): for Ollama set "
+                                     "OLLAMA_ORIGINS to this page's address; in LM Studio turn on CORS in the server "
+                                     "settings.");
+#endif
+        return hints.join(QLatin1Char(' '));
+    }
+
+    QString aiBaseUrlErrorText(AiQueryAssistant::BaseUrlError error)
+    {
+        using AiQueryAssistant::BaseUrlError;
+        switch (error) {
+        case BaseUrlError::None:
+            return {};
+        case BaseUrlError::Empty:
+            return AiAssistant::tr("Enter the server address.");
+        case BaseUrlError::TooLong:
+            return AiAssistant::tr("The address is too long.");
+        case BaseUrlError::Malformed:
+            return AiAssistant::tr("Enter a full address that starts with https://, for example https://api.openai.com/v1.");
+        case BaseUrlError::HasCredentials:
+            return AiAssistant::tr("The address must not contain a user name or password. Put the key in the key field.");
+        case BaseUrlError::HasQueryOrFragment:
+            return AiAssistant::tr("The address must not contain ? or #.");
+        case BaseUrlError::PlainHttpPublic:
+            return AiAssistant::tr("Use https://. Plain http:// is allowed only for this device (localhost) or, without a key, for the local network.");
+        case BaseUrlError::PlainHttpWithKey:
+            return AiAssistant::tr("A key is never sent over plain http:// on the network. Use https://, or clear the key for a local server that needs none.");
+        case BaseUrlError::PlainHttpBlocked:
+            return AiAssistant::tr("Plain http:// to the local network is blocked on this device. Use https:// (for example through a reverse proxy) or localhost.");
+        }
+        return {};
     }
 
     AiAssistant::AiAssistant(QObject *parent)
@@ -74,20 +177,22 @@ namespace RagoShell
         }
     }
 
-    CloudClient *AiAssistant::cloudClient() const
-    {
-        CloudService *svc = QmlSingletonInstance<CloudService>::peek();
-        return svc ? svc->client() : nullptr;
-    }
-
     QString AiAssistant::apiKey(Provider provider) const
     {
-        // Hosted mode has no user key: the "key" is a live account session.
-        if (provider == Provider::RagoCloud) {
-            const CloudClient *c = cloudClient();
-            return (c && c->isSignedIn()) ? QStringLiteral("cloud") : QString();
-        }
         return savedOrEnvironmentKey(provider);
+    }
+
+    AiQueryAssistant::BaseUrlCheck AiAssistant::endpointCheck(Provider provider) const
+    {
+        return AiQueryAssistant::checkBaseUrl(savedBaseUrl(provider), !apiKey(provider).isEmpty(),
+                                              aiAllowsPrivateHttp());
+    }
+
+    bool AiAssistant::configured(Provider provider) const
+    {
+        if (AiQueryAssistant::hasConfigurableBaseUrl(provider))
+            return endpointCheck(provider).ok() && !modelFor(provider).isEmpty();
+        return !apiKey(provider).isEmpty();
     }
 
     Provider AiAssistant::selectedProvider() const
@@ -106,7 +211,7 @@ namespace RagoShell
     bool AiAssistant::ready() const
     {
         SettingsManager *s = settings();
-        return s && s->aiAssistantEnabled() && !apiKey(selectedProvider()).isEmpty();
+        return s && s->aiAssistantEnabled() && configured(selectedProvider());
     }
 
     QString AiAssistant::provider() const
@@ -122,6 +227,17 @@ namespace RagoShell
     QString AiAssistant::model() const
     {
         return modelFor(selectedProvider());
+    }
+
+    QString AiAssistant::endpointHost() const
+    {
+        // The provider asked last (it may be the "instead" provider).
+        const Provider p = _activeModel.isEmpty() ? selectedProvider() : _activeProvider;
+        if (AiQueryAssistant::hasConfigurableBaseUrl(p)) {
+            const AiQueryAssistant::BaseUrlCheck check = endpointCheck(p);
+            return check.ok() ? AiQueryAssistant::urlHost(check.normalized) : QString();
+        }
+        return AiQueryAssistant::urlHost(AiQueryAssistant::endpointUrl(p, modelFor(p)));
     }
 
     QString AiAssistant::alternativeProviderName() const
@@ -359,9 +475,25 @@ namespace RagoShell
         _activeModel.clear();
         _suggestion = AiQueryAssistant::Suggestion();
         SettingsManager *s = settings();
-        if (!s || !s->aiAssistantEnabled() || apiKey(p).isEmpty()) {
-            _error = tr("Turn on the AI assistant and add an API key for %1 in Preferences.")
-                         .arg(AiQueryAssistant::providerName(p));
+        if (s && s->aiAssistantEnabled() && AiQueryAssistant::hasConfigurableBaseUrl(p)) {
+            const AiQueryAssistant::BaseUrlCheck check = endpointCheck(p);
+            QString problem;
+            if (!check.ok())
+                problem = aiBaseUrlErrorText(check.error);
+            else if (modelFor(p).isEmpty())
+                problem = tr("Pick or type a model for %1 in Preferences.").arg(AiQueryAssistant::providerName(p));
+            if (!problem.isEmpty()) {
+                _error = problem;
+                emit stateChanged();
+                return;
+            }
+        }
+        if (!s || !s->aiAssistantEnabled() || !configured(p)) {
+            _error = AiQueryAssistant::usesApiKey(p)
+                         ? tr("Turn on the AI assistant and add an API key for %1 in Preferences.")
+                               .arg(AiQueryAssistant::providerName(p))
+                         : tr("Turn on the AI assistant and set up %1 in Preferences.")
+                               .arg(AiQueryAssistant::providerName(p));
             emit stateChanged();
             return;
         }
@@ -428,50 +560,41 @@ namespace RagoShell
         }
 
         const QString key = apiKey(_activeProvider);
-        if (_activeProvider == Provider::RagoCloud) {
-            // Hosted path: bearer token instead of a stored API key; the
-            // proxy chooses provider+model ("ragoshell-ai" is display-only).
-            CloudClient *cloud = cloudClient();
-            _activeModel = model;
-            _tried << model;
-            emit stateChanged();
-            cloud->withValidAccessToken([this, cloud](bool ok, const QString &token, const QString &) {
-                if (!ok) {
-                    fail(tr("The RagoShell session expired; sign in again."), false);
-                    return;
-                }
-                QNetworkRequest request{QUrl(cloud->effectiveApiUrl()
-                                            + QStringLiteral("/v1/ai/generate"))};
-                request.setRawHeader("Authorization", QByteArray("Bearer ") + token.toUtf8());
-                request.setRawHeader("Content-Type", "application/json");
-                request.setRawHeader("Accept", "application/json");
-                request.setTransferTimeout(kRequestTimeoutMs);
-                _reply = _network->post(request, AiQueryAssistant::cloudRequestBody(_context, _question));
-                connect(_reply, &QNetworkReply::finished, this, [this, reply = _reply]() {
-                    if (reply)
-                        onFinished(reply);
-                });
-                emit stateChanged();
-            });
-            LOG_MSG(QStringLiteral("AI assistant: asking %1 %2 about %3.%4")
-                        .arg(AiQueryAssistant::providerName(_activeProvider), model, _database, _collection),
-                    LogSeverity::Info);
-            return;
+        QString base;
+        if (AiQueryAssistant::hasConfigurableBaseUrl(_activeProvider)) {
+            // Checked again right before sending: the settings may have
+            // been edited by hand.
+            const AiQueryAssistant::BaseUrlCheck check = endpointCheck(_activeProvider);
+            if (!check.ok()) {
+                fail(aiBaseUrlErrorText(check.error), false);
+                return;
+            }
+            base = check.normalized;
         }
-        QNetworkRequest request{QUrl(AiQueryAssistant::endpointUrl(_activeProvider, model))};
+        QNetworkRequest request{QUrl(AiQueryAssistant::endpointUrl(_activeProvider, model, base))};
         for (const auto &[name, value] : AiQueryAssistant::requestHeaders(_activeProvider, key, model))
             request.setRawHeader(name, value);
-        request.setTransferTimeout(kRequestTimeoutMs);
+        noRedirects(request);
+
+        if (!key.isEmpty() && AiQueryAssistant::checkPastedKey(key, nullptr) != AiQueryAssistant::PastedKey::Ok) {
+            fail(tr("The saved API key has spaces or characters an API key does not contain. Enter it again in Preferences."),
+                 false);
+            return;
+        }
 
         _activeModel = model;
         _tried << model;
+        emit readyChanged();   // endpointHost follows the provider asked
         _reply = _network->post(request, AiQueryAssistant::requestBody(_activeProvider, model, _context, _question));
+        deadline(_reply, timeoutMs(_activeProvider));
+        limitResponse(_reply, AiQueryAssistant::kMaxResponseBytes);
         connect(_reply, &QNetworkReply::finished, this, [this, reply = _reply]() {
             if (reply)
                 onFinished(reply);
         });
-        LOG_MSG(QStringLiteral("AI assistant: asking %1 %2 about %3.%4")
-                    .arg(AiQueryAssistant::providerName(_activeProvider), model, _database, _collection),
+        LOG_MSG(QStringLiteral("AI assistant: asking %1 %2 at %3 about %4.%5")
+                    .arg(AiQueryAssistant::providerName(_activeProvider), model, request.url().host(), _database,
+                         _collection),
                 LogSeverity::Info);
         emit stateChanged();
     }
@@ -480,7 +603,7 @@ namespace RagoShell
     {
         _error = error;
         _retryable = retryable;
-        LOG_MSG(QStringLiteral("AI assistant: %1").arg(_error), LogSeverity::Warning);
+        LOG_MSG(QStringLiteral("AI assistant: %1").arg(AiQueryAssistant::redactSecrets(_error)), LogSeverity::Warning);
         emit stateChanged();
     }
 
@@ -492,7 +615,7 @@ namespace RagoShell
         const QDateTime now = QDateTime::currentDateTimeUtc();
         for (const QString &id : AiQueryAssistant::providerIds()) {
             const Provider p = AiQueryAssistant::providerFromId(id);
-            if (p == _activeProvider || apiKey(p).isEmpty())
+            if (p == _activeProvider || !configured(p))
                 continue;
             const QStringList candidates = AiQueryAssistant::fallbackCandidates(
                 p, modelFor(p), s->aiAvailableModels(id), kMaxModelsPerRequest);
@@ -509,12 +632,31 @@ namespace RagoShell
             return;   // cancelled
         _reply = nullptr;
 
+        if (reply->property("tooLarge").toBool()) {
+            fail(tr("The server sent a response that is too large (over %1 MB).")
+                     .arg(AiQueryAssistant::kMaxResponseBytes / (1024 * 1024)),
+                 false);
+            return;
+        }
         const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-        if (status == 0) {
-            fail(reply->error() == QNetworkReply::OperationCanceledError
-                     ? tr("The request timed out.")
-                     : tr("Cannot reach the API: %1").arg(reply->errorString()),
-                 true);
+        // Checked before the status: the limit may cut a response whose
+        // headers already arrived.
+        if (status == 0 || timedOut(reply)) {
+            QString error;
+            if (timedOut(reply)) {
+                const int seconds = reply->property("limitSec").toInt();
+                error = AiQueryAssistant::hasConfigurableBaseUrl(_activeProvider)
+                            //: %1 = seconds. Local models can take long, especially while loading.
+                            ? tr("No answer within %1 seconds. A local model can be slow, especially while it "
+                                 "loads; you can raise the time limit in Preferences.").arg(seconds)
+                            : tr("The request timed out.");
+            } else {
+                error = tr("Cannot reach the API: %1").arg(reply->errorString());
+                const QString hint = aiUnreachableHint(_activeProvider);
+                if (!hint.isEmpty())
+                    error += QLatin1Char(' ') + hint;
+            }
+            fail(error, true);
             return;
         }
 
@@ -522,13 +664,8 @@ namespace RagoShell
         QStringList known{_collection};
         for (const AiQueryAssistant::RelatedCollection &r : _context.related)
             known << r.name;
-        const AiQueryAssistant::Suggestion s =
-            _activeProvider == Provider::RagoCloud
-                ? AiQueryAssistant::parseCloudResponse(status, reply->readAll(), _database,
-                                                       reply->rawHeader("retry-after"), known)
-                : AiQueryAssistant::parseResponse(
-                      _activeProvider, status, reply->readAll(), _database,
-                      reply->rawHeader("retry-after"), known);
+        const AiQueryAssistant::Suggestion s = AiQueryAssistant::parseResponse(
+            _activeProvider, status, reply->readAll(), _database, reply->rawHeader("retry-after"), known);
         if (s.ok) {
             _suggestion = s;
             _error.clear();
@@ -546,7 +683,7 @@ namespace RagoShell
             if (more) {
                 _notices << tr("%1: %2.").arg(_activeModel, AiQueryAssistant::failureSummary(s, until));
                 LOG_MSG(QStringLiteral("AI assistant: %1 failed (%2), trying the next model.")
-                            .arg(_activeModel, s.error), LogSeverity::Warning);
+                            .arg(_activeModel, AiQueryAssistant::redactSecrets(s.error)), LogSeverity::Warning);
                 send();
                 return;
             }
@@ -592,25 +729,70 @@ namespace RagoShell
         return !_reply.isNull();
     }
 
-    void AiModelCatalog::refresh(const QString &providerId, const QString &apiKey)
+    void AiModelCatalog::clear()
+    {
+        if (_reply) {
+            _reply->disconnect(this);
+            _reply->abort();
+            _reply->deleteLater();
+            _reply = nullptr;
+        }
+        _error.clear();
+        _result.clear();
+        emit stateChanged();
+    }
+
+    void AiModelCatalog::refresh(const QString &providerId, const QString &apiKey, const QString &baseUrl)
     {
         if (_reply)
             return;
         const Provider provider = AiQueryAssistant::providerFromId(providerId);
-        const QString key = apiKey.trimmed().isEmpty() ? AiQueryAssistant::apiKeyFromEnvironment(provider)
-                                                       : apiKey.trimmed();
+        const bool configurable = AiQueryAssistant::hasConfigurableBaseUrl(provider);
         _error.clear();
-        if (key.isEmpty()) {
+        _result.clear();
+
+        QString base;
+        if (configurable) {
+            // The environment key needs the address first (preset only).
+            const AiQueryAssistant::BaseUrlCheck plain = AiQueryAssistant::checkBaseUrl(baseUrl, false, aiAllowsPrivateHttp());
+            if (!plain.ok()) {
+                _error = aiBaseUrlErrorText(plain.error);
+                emit stateChanged();
+                return;
+            }
+            base = plain.normalized;
+        }
+        const QString key = !AiQueryAssistant::usesApiKey(provider) ? QString()
+                            : apiKey.trimmed().isEmpty() ? AiQueryAssistant::apiKeyFromEnvironment(provider, base)
+                                                         : apiKey.trimmed();
+        if (key.isEmpty() && !configurable) {
             _error = tr("Enter an API key first.");
             emit stateChanged();
             return;
         }
+        // A typed key gets the same check as a pasted one before it goes
+        // into a header.
+        if (!key.isEmpty() && AiQueryAssistant::checkPastedKey(key, nullptr) != AiQueryAssistant::PastedKey::Ok) {
+            _error = tr("The key has spaces or characters an API key does not contain.");
+            emit stateChanged();
+            return;
+        }
+        if (configurable && !key.isEmpty()) {
+            const AiQueryAssistant::BaseUrlCheck withKey = AiQueryAssistant::checkBaseUrl(base, true, aiAllowsPrivateHttp());
+            if (!withKey.ok()) {
+                _error = aiBaseUrlErrorText(withKey.error);
+                emit stateChanged();
+                return;
+            }
+        }
 
-        QNetworkRequest request{QUrl(AiQueryAssistant::modelsUrl(provider))};
+        QNetworkRequest request{QUrl(AiQueryAssistant::modelsUrl(provider, base))};
         for (const auto &[name, value] : AiQueryAssistant::requestHeaders(provider, key, QString()))
             request.setRawHeader(name, value);
-        request.setTransferTimeout(kModelListTimeoutMs);
+        noRedirects(request);
         _reply = _network->get(request);
+        deadline(_reply, kModelListTimeoutMs);
+        limitResponse(_reply, AiQueryAssistant::kMaxModelListBytes);
         connect(_reply, &QNetworkReply::finished, this, [this, reply = _reply, provider]() {
             if (!reply)
                 return;
@@ -618,25 +800,71 @@ namespace RagoShell
             if (reply != _reply)
                 return;
             _reply = nullptr;
-            const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-            if (status == 0) {
-                _error = tr("Cannot reach the API: %1").arg(reply->errorString());
-            } else {
-                const AiQueryAssistant::ModelList list = AiQueryAssistant::parseModelList(provider, status, reply->readAll());
-                if (list.ok) {
-                    const QString id = AiQueryAssistant::providerId(provider);
-                    if (SettingsManager *s = settings())
-                        s->setAiAvailableModels(id, list.models);
-                    LOG_MSG(QStringLiteral("AI assistant: %1 lists %2 model(s).")
-                                .arg(AiQueryAssistant::providerName(provider)).arg(list.models.size()),
-                            LogSeverity::Info);
-                    emit stateChanged();
-                    emit refreshed(id, list.models);
-                    return;
-                }
-                _error = list.error;
+            if (reply->property("tooLarge").toBool()) {
+                _error = tr("The model list is too large (over %1 MB).")
+                             .arg(AiQueryAssistant::kMaxModelListBytes / (1024 * 1024));
+                LOG_MSG(QStringLiteral("AI assistant: connection test: %1").arg(AiQueryAssistant::redactSecrets(_error)), LogSeverity::Warning);
+                emit stateChanged();
+                return;
             }
-            LOG_MSG(QStringLiteral("AI assistant: model list: %1").arg(_error), LogSeverity::Warning);
+            // A cut-off list reads as "not reachable in time", not as a bad list.
+            const int status = timedOut(reply) ? 0 : reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+            const AiQueryAssistant::ConnectionCheck check =
+                AiQueryAssistant::checkConnection(provider, status, status > 0 ? reply->readAll() : QByteArray());
+            using AiQueryAssistant::ConnectionStatus;
+            switch (check.status) {
+            case ConnectionStatus::Connected: {
+                const QString id = AiQueryAssistant::providerId(provider);
+                if (SettingsManager *s = settings())
+                    s->setAiAvailableModels(id, check.list.models);
+                //: Preferences › AI › Test connection succeeded.
+                _result = tr("Connected. %n model(s) available.", nullptr, int(check.list.models.size()));
+                LOG_MSG(QStringLiteral("AI assistant: %1 lists %2 model(s).")
+                            .arg(AiQueryAssistant::providerName(provider)).arg(check.list.models.size()),
+                        LogSeverity::Info);
+                emit stateChanged();
+                emit refreshed(id, check.list.models);
+                return;
+            }
+            case ConnectionStatus::NoUsableModels:
+                _error = tr("Connected, but the provider listed no model this app can use.");
+                break;
+            case ConnectionStatus::NoModelsInstalled:
+                _error = provider == Provider::Ollama
+                             //: Preferences › AI › Test connection with Ollama. Keep "ollama pull <model>" as is.
+                             ? tr("Ollama is running, but no model is installed. Download one in a terminal with "
+                                  "\"ollama pull <model>\", then test again.")
+                             : tr("The server is running but lists no models. Download or load a model on the "
+                                  "server, then test again.");
+                break;
+            case ConnectionStatus::KeyRejected:
+                _error = tr("The API key was rejected (HTTP %1). Check it and try again.").arg(status);
+                break;
+            case ConnectionStatus::NoModelList:
+                _error = tr("The server is reachable but has no model list (HTTP 404).");
+                break;
+            case ConnectionStatus::RateLimited:
+                _error = tr("The provider's rate limit was reached (HTTP 429). Try again in a moment.");
+                break;
+            case ConnectionStatus::RedirectRefused:
+                _error = tr("The server answered with a redirect (HTTP %1). It was not followed, so the key "
+                            "was not sent anywhere else.").arg(status);
+                break;
+            case ConnectionStatus::ProviderError:
+                _error = check.list.error;
+                break;
+            case ConnectionStatus::Unreachable:
+                if (timedOut(reply)) {
+                    _error = tr("The server did not answer in time.");
+                } else {
+                    _error = tr("Cannot reach the server: %1").arg(reply->errorString());
+                    const QString hint = aiUnreachableHint(provider);
+                    if (!hint.isEmpty())
+                        _error += QLatin1Char(' ') + hint;
+                }
+                break;
+            }
+            LOG_MSG(QStringLiteral("AI assistant: connection test: %1").arg(AiQueryAssistant::redactSecrets(_error)), LogSeverity::Warning);
             emit stateChanged();
         });
         emit stateChanged();

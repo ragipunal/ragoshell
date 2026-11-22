@@ -13,8 +13,10 @@ ComboBox {
     font.pixelSize: 12
     opacity: enabled ? 1.0 : 0.45
 
+    // Items can come from a server (model ids): plain text only.
     contentItem: Label {
         text: control.displayText
+        textFormat: Text.PlainText
         font: control.font
         color: Theme.textColor
         verticalAlignment: Text.AlignVCenter
@@ -53,6 +55,7 @@ ComboBox {
             text: (control.textRole && itemDel.model && itemDel.model[control.textRole] !== undefined)
                   ? itemDel.model[control.textRole]
                   : itemDel.modelData
+            textFormat: Text.PlainText
             font: control.font
             color: {
                 if (Theme.dark)

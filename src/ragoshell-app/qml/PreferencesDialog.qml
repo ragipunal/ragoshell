@@ -69,34 +69,110 @@ RagoDialog {
     // saved together; the provider combo shows one at a time.
     property var _aiKeys: ({})
     property var _aiModelSel: ({})
+    property var _aiBaseUrls: ({})        // providers with an address field (OpenAI-compatible, Ollama)
+    property var _aiTimeouts: ({})        // answer time limit (sec) of those providers
+    // Origin the text in the key field was entered for. When the address
+    // moves to another origin the field is emptied: a key typed for one
+    // server is never sent to another (docs: T1).
+    property string _aiKeyFieldOrigin: ""
+    property bool _aiKeyClearedForOrigin: false
+    readonly property bool _aiHasBase: AppSettings.aiHasBaseUrl(_aiShownProvider)
+    readonly property bool _aiUsesKey: AppSettings.aiUsesKey(_aiShownProvider)   // false: Ollama
+    readonly property bool _aiHasPresets: _aiShownProvider === "openai_compat"
+    readonly property var _aiBaseCheck: AppSettings.checkAiBaseUrl(aiBaseField.text,
+                                                                   _aiUsesKey && aiKeyField.text.trim().length > 0)
     property string _aiShownProvider: ""
     property var _aiModelList: []
     property bool _aiFetched: false
     property bool _aiSelectionRetired: false
     property string _aiKeyPlaceholder: ""
+    property bool _aiKeyVisible: false
+    property string _aiPastedKey: ""      // offered "Clear clipboard" for this text
+    property string _aiPasteError: ""
+
+    // Per-provider entry state that must not outlive a provider switch or
+    // the dialog: the key goes back to hidden, old test results go away.
+    function _aiResetEntry() {
+        _aiKeyVisible = false
+        _aiPastedKey = ""
+        _aiPasteError = ""
+        aiCatalog.clear()
+    }
+    // The clipboard is read only here, when the user presses Paste.
+    function _aiPasteKey() {
+        var r = Backend.pasteApiKey()
+        if (r.error !== undefined) {
+            _aiPasteError = r.error
+            _aiPastedKey = ""
+            return
+        }
+        aiKeyField.text = r.key
+        _aiKeyFieldOrigin = _aiBaseCheck.origin
+        _aiKeyClearedForOrigin = false
+        aiCatalog.clear()
+        _aiPasteError = ""
+        _aiPastedKey = r.key
+    }
 
     function _aiStash() {
         if (_aiShownProvider.length === 0)
             return
         _aiKeys[_aiShownProvider] = aiKeyField.text
-        if (aiModelCombo.currentIndex >= 0)
+        if (_aiHasBase) {
+            _aiBaseUrls[_aiShownProvider] = aiBaseField.text.trim()
+            _aiModelSel[_aiShownProvider] = aiModelField.text.trim()
+            aiTimeoutSpin.commitText()
+            _aiTimeouts[_aiShownProvider] = aiTimeoutSpin.value
+        } else if (aiModelCombo.currentIndex >= 0) {
             _aiModelSel[_aiShownProvider] = aiModelCombo.currentText
+        }
     }
     function _aiShow(provider) {
         _aiShownProvider = provider
+        var hasBase = AppSettings.aiHasBaseUrl(provider)
         var models = AppSettings.aiModelsFor(provider).slice()
-        var sel = _aiModelSel[provider] || models[0]
+        var sel = _aiModelSel[provider] || models[0] || ""
         _aiFetched = AppSettings.aiModelsFetched(provider)
         // A saved model the provider no longer lists stays selectable, flagged.
-        _aiSelectionRetired = _aiFetched && models.indexOf(sel) < 0
-        if (models.indexOf(sel) < 0)
+        _aiSelectionRetired = _aiFetched && sel.length > 0 && models.indexOf(sel) < 0
+        if (!hasBase && sel.length > 0 && models.indexOf(sel) < 0)
             models.unshift(sel)
         _aiModelList = models
         aiModelCombo.currentIndex = Math.max(0, models.indexOf(sel))
+        if (hasBase) {
+            // A new setup starts at the provider's default (Ollama) or the
+            // first preset; the address stays editable.
+            var base = _aiBaseUrls[provider] || AppSettings.aiDefaultBaseUrl(provider)
+            if (base.length === 0 && provider === "openai_compat")
+                base = AppSettings.aiPresets()[0].baseUrl
+            aiBaseField.text = base
+            aiModelField.text = sel
+            aiTimeoutSpin.value = _aiTimeouts[provider] || AppSettings.aiTimeoutFor(provider)
+        }
         aiKeyField.text = _aiKeys[provider] || ""
-        var env = AppSettings.aiKeyEnvironmentVariable(provider)
+        _aiKeyFieldOrigin = hasBase ? AppSettings.checkAiBaseUrl(aiBaseField.text, false).origin : ""
+        _aiKeyClearedForOrigin = false
+        _aiUpdateKeyPlaceholder()
+    }
+    function _aiUpdateKeyPlaceholder() {
+        var env = AppSettings.aiKeyEnvironmentVariable(_aiShownProvider, _aiHasBase ? aiBaseField.text : "")
         _aiKeyPlaceholder = env.length > 0 ? qsTr("%1 is used").arg(env)
-                                           : (provider === "gemini" ? "AIza…" : "sk-ant-…")
+                          : _aiShownProvider === "gemini" ? "AIza…"
+                          : _aiHasBase ? qsTr("Not needed for a local server")
+                          : "sk-ant-…"
+    }
+    // The address field changed: a key entered for another origin goes away.
+    function _aiBaseEdited() {
+        aiCatalog.clear()
+        var origin = AppSettings.checkAiBaseUrl(aiBaseField.text, false).origin
+        if (aiKeyField.text.length > 0 && origin !== _aiKeyFieldOrigin) {
+            aiKeyField.text = ""
+            _aiPastedKey = ""
+            _aiKeyClearedForOrigin = true
+        }
+        if (aiKeyField.text.length === 0)
+            _aiKeyFieldOrigin = origin
+        _aiUpdateKeyPlaceholder()
     }
 
     function selectedFontFamily() {
@@ -130,15 +206,22 @@ RagoDialog {
         startupScriptArea.text = AppSettings.startupScript
         confirmDestructiveCheck.checked = AppSettings.confirmDestructiveQueries
         aiEnabledCheck.checked = AppSettings.aiAssistantEnabled
-        var keys = {}, models = {}
+        var keys = {}, models = {}, bases = {}, timeouts = {}
         for (var i = 0; i < AppSettings.aiProviders.length; ++i) {
             var p = AppSettings.aiProviders[i]
             keys[p] = AppSettings.aiApiKeyFor(p)
             models[p] = AppSettings.aiModelFor(p)
+            if (AppSettings.aiHasBaseUrl(p)) {
+                bases[p] = AppSettings.aiBaseUrlFor(p)
+                timeouts[p] = AppSettings.aiTimeoutFor(p)
+            }
         }
         _aiKeys = keys
         _aiModelSel = models
+        _aiBaseUrls = bases
+        _aiTimeouts = timeouts
         _aiShownProvider = ""
+        _aiResetEntry()
         aiProviderCombo.currentIndex = Math.max(0, AppSettings.aiProviders.indexOf(AppSettings.aiProvider))
         _aiShow(AppSettings.aiProvider)
         aiValuesCheck.checked = AppSettings.aiIncludeSampleValues
@@ -185,8 +268,15 @@ RagoDialog {
         _aiStash()
         for (var i = 0; i < AppSettings.aiProviders.length; ++i) {
             var p = AppSettings.aiProviders[i]
+            if (AppSettings.aiHasBaseUrl(p) && _aiBaseUrls[p] !== undefined) {
+                // The address first: the key below is bound to its origin.
+                var check = AppSettings.checkAiBaseUrl(_aiBaseUrls[p], false)
+                AppSettings.setAiBaseUrlFor(p, check.ok ? check.normalized : _aiBaseUrls[p])
+                if (_aiTimeouts[p] !== undefined)
+                    AppSettings.setAiTimeoutFor(p, _aiTimeouts[p])
+            }
             AppSettings.setAiApiKeyFor(p, _aiKeys[p] || "")
-            if (_aiModelSel[p])
+            if (_aiModelSel[p] !== undefined && (_aiModelSel[p].length > 0 || AppSettings.aiHasBaseUrl(p)))
                 AppSettings.setAiModelFor(p, _aiModelSel[p])
         }
         AppSettings.aiProvider = _aiShownProvider
@@ -203,6 +293,7 @@ RagoDialog {
     }
 
     onClosed: {
+        _aiResetEntry()
         if (!_saved && !_loading) {
             if (_origFontFamily.length > 0)
                 AppSettings.codeFontFamily = _origFontFamily
@@ -596,14 +687,29 @@ RagoDialog {
                 text: qsTr("Turns a request in plain language into a find() or aggregate() query "
                            + "(Tools › AI Query Assistant). Generate sends the request and the "
                            + "collection's field names and types from a 1000-document sample to the "
-                           + "selected provider: Anthropic's Claude API or Google's Gemini API (an "
-                           + "API key from Google AI Studio). Nothing is sent until you press Generate.")
+                           + "selected provider: Anthropic's Claude API, Google's Gemini API (an "
+                           + "API key from Google AI Studio) or any OpenAI-compatible server you choose. "
+                           + "Nothing is sent until you press Generate.")
             }
 
             RagoCheckBox {
                 id: aiEnabledCheck
                 Layout.fillWidth: true
                 text: qsTr("Enable the AI query assistant")
+            }
+
+            // Shown once after an update when the saved provider was the
+            // removed hosted RagoShell AI: the assistant was turned off.
+            Label {
+                visible: AppSettings.aiHostedProviderRemoved
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                font.pixelSize: 12
+                color: Theme.warningColor
+                //: Preferences › AI assistant notice after an update (%1 = product name).
+                text: qsTr("%1 AI (the hosted assistant) is no longer offered, so the assistant was "
+                           + "turned off. Pick a provider, enter your own API key and turn it on again.")
+                          .arg(Brand.productName)
             }
 
             GridLayout {
@@ -625,86 +731,301 @@ RagoDialog {
                     Layout.preferredWidth: 200
                     onActivated: {
                         dlg._aiStash()
+                        dlg._aiResetEntry()
                         dlg._aiShow(AppSettings.aiProviders[currentIndex])
                     }
                 }
 
+                // OpenAI-compatible: a preset fills the address; the address
+                // stays visible and editable.
                 Label {
-                    visible: dlg._aiShownProvider !== "ragoshell_cloud"
+                    visible: dlg._aiHasPresets
+                    text: qsTr("Service")
+                    font.pixelSize: 13
+                    color: Theme.textColor
+                    Layout.fillWidth: true
+                }
+                RagoComboBox {
+                    id: aiPresetCombo
+                    visible: dlg._aiHasPresets
+                    Layout.preferredWidth: 200
+                    Accessible.name: qsTr("Service")
+                    readonly property var presets: AppSettings.aiPresets()
+                    readonly property string presetId: AppSettings.aiPresetFor(aiBaseField.text)
+                    model: presets.map(p => p.name).concat([qsTr("Custom address")])
+                    function presetIndex() {
+                        for (var i = 0; i < presets.length; ++i)
+                            if (presets[i].id === presetId)
+                                return i
+                        return presets.length
+                    }
+                    currentIndex: presetIndex()
+                    onActivated: index => {
+                        if (index < presets.length) {
+                            aiBaseField.text = presets[index].baseUrl
+                            dlg._aiBaseEdited()
+                        } else {
+                            aiBaseField.forceActiveFocus()
+                        }
+                        // A pick replaces the binding; keep following the address.
+                        currentIndex = Qt.binding(presetIndex)
+                    }
+                }
+
+                Label {
+                    id: aiBaseLabel
+                    visible: dlg._aiHasBase
+                    text: qsTr("Server address")
+                    font.pixelSize: 13
+                    color: Theme.textColor
+                    Layout.fillWidth: true
+                }
+                RagoTextField {
+                    id: aiBaseField
+                    visible: dlg._aiHasBase
+                    ltr: true
+                    placeholderText: dlg._aiShownProvider === "ollama" ? "http://localhost:11434/v1" : "https://…/v1"
+                    inputMethodHints: Qt.ImhUrlCharactersOnly | Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
+                    Layout.preferredWidth: 200
+                    Accessible.name: aiBaseLabel.text
+                    onTextEdited: dlg._aiBaseEdited()
+                }
+
+                // Where the data goes, and who pays (docs: T1, T11).
+                Label {
+                    visible: dlg._aiHasBase
+                    Layout.columnSpan: Math.min(2, parent.columns)
+                    Layout.fillWidth: true
+                    wrapMode: Text.WordWrap
+                    font.pixelSize: 12
+                    color: !dlg._aiBaseCheck.ok ? Theme.dangerColor
+                         : dlg._aiKeyClearedForOrigin ? Theme.warningColor : Theme.disabledTextColor
+                    textFormat: Text.PlainText
+                    text: !dlg._aiBaseCheck.ok ? dlg._aiBaseCheck.error
+                        : (dlg._aiKeyClearedForOrigin
+                           ? qsTr("The address points to another server now, so the key was cleared. Enter the key for this server.") + " "
+                           : "")
+                          + (dlg._aiBaseCheck.scope === "device"
+                             //: Preferences › AI, server on this computer (%1 = host name, e.g. localhost).
+                             ? qsTr("Requests go to %1 on this device. A model that runs here is free and the data stays on this device; a cloud model or proxy behind this address sends it on.")
+                             : dlg._aiBaseCheck.scope === "network"
+                             //: Preferences › AI, server on the local network (%1 = host name or IP address).
+                             ? qsTr("Requests go to %1 on your local network. A model that runs there is free and the data stays on your network; a cloud model or proxy behind this address sends it on.")
+                             //: Preferences › AI, OpenAI-compatible (%1 = host name).
+                             : qsTr("Requests go to %1. Usage is billed by that provider, if it charges."))
+                                .arg(dlg._aiBaseCheck.host)
+                }
+
+                Label {
+                    id: aiKeyLabel
+                    visible: dlg._aiUsesKey
                     text: dlg._aiShownProvider === "gemini" ? qsTr("Google AI Studio API key")
-                                                            : qsTr("Anthropic API key")
+                        : dlg._aiHasBase ? qsTr("API key (optional)")
+                        : qsTr("Anthropic API key")
                     font.pixelSize: 13
                     color: Theme.textColor
                     Layout.fillWidth: true
                 }
                 RagoTextField {
                     id: aiKeyField
-                    visible: dlg._aiShownProvider !== "ragoshell_cloud"
-                    echoMode: TextInput.Password
+                    visible: dlg._aiUsesKey
+                    echoMode: dlg._aiKeyVisible ? TextInput.Normal : TextInput.Password
+                    // Still a secret while shown: keyboards must not learn or sync it.
+                    inputMethodHints: Qt.ImhSensitiveData | Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
                     placeholderText: dlg._aiKeyPlaceholder
                     Layout.preferredWidth: 200
+                    Accessible.name: aiKeyLabel.text
+                    // A test result belongs to the key it was run with.
+                    onTextEdited: {
+                        aiCatalog.clear()
+                        dlg._aiKeyFieldOrigin = dlg._aiBaseCheck.origin
+                        dlg._aiKeyClearedForOrigin = false
+                    }
+                }
+
+                // Key helpers: show/hide, paste (reads the clipboard only on
+                // press), test (model list only, no schema or prompt), and
+                // where to create a key.
+                Flow {
+                    Layout.columnSpan: Math.min(2, parent.columns)
+                    Layout.fillWidth: true
+                    spacing: 6
+
+                    RagoPillButton {
+                        compact: true
+                        visible: dlg._aiUsesKey
+                        text: dlg._aiKeyVisible ? qsTr("Hide key") : qsTr("Show key")
+                        Accessible.role: Accessible.Button
+                        Accessible.name: text
+                        Accessible.onPressAction: clicked()
+                        onClicked: dlg._aiKeyVisible = !dlg._aiKeyVisible
+                    }
+                    RagoPillButton {
+                        compact: true
+                        visible: dlg._aiUsesKey
+                        //: Preferences › AI: paste the API key from the clipboard.
+                        text: qsTr("Paste")
+                        Accessible.role: Accessible.Button
+                        Accessible.name: qsTr("Paste the API key from the clipboard")
+                        Accessible.onPressAction: clicked()
+                        onClicked: dlg._aiPasteKey()
+                    }
+                    RagoPillButton {
+                        compact: true
+                        enabled: !aiCatalog.busy
+                        text: qsTr("Test connection")
+                        Accessible.role: Accessible.Button
+                        Accessible.name: text
+                        Accessible.onPressAction: if (enabled) clicked()
+                        ToolTip.visible: hovered
+                        ToolTip.text: dlg._aiUsesKey
+                                      ? qsTr("Asks the provider for its model list with this key. No query or schema is sent.")
+                                      : qsTr("Asks the server for its model list. No query or schema is sent.")
+                        onClicked: aiCatalog.refresh(dlg._aiShownProvider, dlg._aiUsesKey ? aiKeyField.text : "",
+                                                     dlg._aiHasBase ? aiBaseField.text : "")
+                    }
+                    RagoPillButton {
+                        compact: true
+                        readonly property string pageUrl: AppSettings.aiKeyPageUrl(dlg._aiShownProvider,
+                                                                                   dlg._aiHasBase ? aiBaseField.text : "")
+                        visible: dlg._aiUsesKey && pageUrl.length > 0
+                        text: qsTr("How to get a key ↗")
+                        Accessible.role: Accessible.Link
+                        Accessible.name: qsTr("Open the provider's API key page")
+                        Accessible.onPressAction: clicked()
+                        ToolTip.visible: hovered
+                        ToolTip.text: pageUrl
+                        onClicked: Qt.openUrlExternally(pageUrl)
+                    }
+                }
+
+                // Paste outcome: an error, or the offer to clear the clipboard.
+                RowLayout {
+                    Layout.columnSpan: Math.min(2, parent.columns)
+                    Layout.fillWidth: true
+                    visible: dlg._aiUsesKey && (dlg._aiPasteError.length > 0 || dlg._aiPastedKey.length > 0)
+                    spacing: 8
+                    Label {
+                        Layout.fillWidth: true
+                        wrapMode: Text.WordWrap
+                        font.pixelSize: 12
+                        color: dlg._aiPasteError.length > 0 ? Theme.dangerColor : Theme.disabledTextColor
+                        text: dlg._aiPasteError.length > 0
+                              ? dlg._aiPasteError
+                              : qsTr("Key pasted. Clear it from the clipboard? (A clipboard history may still keep a copy.)")
+                    }
+                    RagoPillButton {
+                        compact: true
+                        Layout.fillWidth: false
+                        visible: dlg._aiPasteError.length === 0
+                        text: qsTr("Clear clipboard")
+                        Accessible.role: Accessible.Button
+                        Accessible.name: text
+                        Accessible.onPressAction: clicked()
+                        onClicked: {
+                            Backend.clearClipboardIfEquals(dlg._aiPastedKey)
+                            dlg._aiPastedKey = ""
+                        }
+                    }
                 }
 
                 // Where the key in use comes from: the field, an environment variable, or nowhere.
                 Label {
+                    visible: dlg._aiUsesKey
                     Layout.columnSpan: Math.min(2, parent.columns)
                     Layout.fillWidth: true
                     wrapMode: Text.WordWrap
                     font.pixelSize: 11
                     color: Theme.disabledTextColor
-                    readonly property string envName: AppSettings.aiKeyEnvironmentVariable(dlg._aiShownProvider)
-                    text: dlg._aiShownProvider === "ragoshell_cloud"
-                          ? (CloudService.signedIn
-                             ? qsTr("Signed in — requests run through your RagoShell account quota; no API key needed.")
-                             : qsTr("Sign in on the Account tab to use RagoShell AI, or pick another provider and enter its key."))
-                          : (aiKeyField.text.trim().length > 0
-                             ? qsTr("Using the key entered here (saved with your settings).")
-                             : (envName.length > 0
-                                ? qsTr("Using the key from the environment variable %1.").arg(envName)
-                                : qsTr("No key yet. Enter one above.")))
+                    readonly property string envName: AppSettings.aiKeyEnvironmentVariable(
+                                                          dlg._aiShownProvider, dlg._aiHasBase ? aiBaseField.text : "")
+                    text: aiKeyField.text.trim().length > 0
+                          ? qsTr("Using the key entered here (saved with your settings).")
+                          : (envName.length > 0
+                             ? qsTr("Using the key from the environment variable %1.").arg(envName)
+                             : dlg._aiHasBase
+                               ? qsTr("No key: requests are sent without one (enough for a local server).")
+                               : qsTr("No key yet. Enter one above."))
                 }
 
                 Label {
-                    visible: dlg._aiShownProvider !== "ragoshell_cloud"
                     text: qsTr("Model")
                     font.pixelSize: 13
                     color: Theme.textColor
                     Layout.fillWidth: true
                 }
-                RowLayout {
-                    visible: dlg._aiShownProvider !== "ragoshell_cloud"
+                RagoComboBox {
+                    id: aiModelCombo
+                    visible: !dlg._aiHasBase
+                    model: dlg._aiModelList
+                    Layout.preferredWidth: 200
+                    Accessible.name: qsTr("Model")
+                    onActivated: dlg._aiSelectionRetired = false
+                }
+                ColumnLayout {
+                    visible: dlg._aiHasBase
                     spacing: 6
                     Layout.preferredWidth: 200
-                    RagoComboBox {
-                        id: aiModelCombo
-                        model: dlg._aiModelList
+                    RagoTextField {
+                        id: aiModelField
+                        ltr: true
                         Layout.fillWidth: true
-                        onActivated: dlg._aiSelectionRetired = false
+                        placeholderText: dlg._aiShownProvider === "ollama" ? qsTr("Installed model, e.g. llama3.2")
+                                                                            : qsTr("Model name, e.g. gpt-5.5")
+                        Accessible.name: qsTr("Model")
+                        onTextEdited: dlg._aiSelectionRetired = false
                     }
-                    // Providers add and retire models; fetch what this key can use.
-                    RagoPillButton {
-                        text: "⟳"
-                        enabled: !aiCatalog.busy
-                        ToolTip.visible: hovered
-                        ToolTip.text: qsTr("Load the provider's current model list")
-                        onClicked: aiCatalog.refresh(dlg._aiShownProvider, aiKeyField.text)
+                    RagoComboBox {
+                        visible: dlg._aiModelList.length > 0
+                        Layout.fillWidth: true
+                        model: dlg._aiModelList
+                        displayText: qsTr("Pick from the server's list…")
+                        Accessible.name: qsTr("Models listed by the server")
+                        onActivated: index => {
+                            aiModelField.text = dlg._aiModelList[index]
+                            dlg._aiSelectionRetired = false
+                        }
                     }
                 }
 
+                // Test connection outcome, then the model list state.
                 Label {
-                    visible: dlg._aiShownProvider !== "ragoshell_cloud"
                     Layout.columnSpan: Math.min(2, parent.columns)
                     Layout.fillWidth: true
                     wrapMode: Text.WordWrap
                     font.pixelSize: 12
                     color: aiCatalog.error.length > 0 ? Theme.dangerColor
+                         : aiCatalog.result.length > 0 ? Theme.accentColor
                          : dlg._aiSelectionRetired ? Theme.warningColor : Theme.disabledTextColor
-                    text: aiCatalog.busy ? qsTr("Loading the model list…")
+                    textFormat: Text.PlainText   // server error text
+                    text: aiCatalog.busy ? qsTr("Testing the connection…")
                         : aiCatalog.error.length > 0 ? aiCatalog.error
+                        : aiCatalog.result.length > 0 ? aiCatalog.result
                         : dlg._aiSelectionRetired
                           ? qsTr("The selected model is no longer in the provider's list (retired?). Pick another one.")
                         : dlg._aiFetched ? qsTr("Models from the provider's current list.")
-                        : qsTr("Built-in list. ⟳ loads the models this key can use now.")
+                        : dlg._aiHasBase ? qsTr("Type the model name, or use Test connection to list the server's models.")
+                        : qsTr("Built-in list. Test connection loads the models this key can use now.")
+                }
+
+                // Local models can be slow, mostly while they load (docs: B7).
+                Label {
+                    id: aiTimeoutLabel
+                    visible: dlg._aiHasBase
+                    text: qsTr("Answer time limit (sec)")
+                    font.pixelSize: 13
+                    color: Theme.textColor
+                    Layout.fillWidth: true
+                }
+                RagoSpinBox {
+                    id: aiTimeoutSpin
+                    visible: dlg._aiHasBase
+                    from: AppSettings.aiMinTimeout()
+                    to: AppSettings.aiMaxTimeout()
+                    Layout.preferredWidth: 200
+                    Accessible.name: aiTimeoutLabel.text
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("How long to wait for an answer. A local model can need minutes, especially while it loads.")
                 }
             }
 

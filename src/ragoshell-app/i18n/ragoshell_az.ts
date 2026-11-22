@@ -88,7 +88,12 @@
     </message>
     <message>
         <source>off</source>
+        <extracomment>AI assistant header: provider · model · host the request goes to.</extracomment>
         <translation>söndürülüb</translation>
+    </message>
+    <message>
+        <source>sends to %1</source>
+        <translation>%1 ünvanına göndərir</translation>
     </message>
     <message>
         <source>Sampling the collection…</source>
@@ -103,8 +108,8 @@
         <translation>Göndərilən məlumat</translation>
     </message>
     <message>
-        <source>The AI assistant is off or has no API key for %1. When it is on, Generate sends your request and this collection&apos;s field names and types (no document values unless you allow them) to the selected provider&apos;s API (Anthropic Claude or Google Gemini). Turn it on and add an API key in Preferences.</source>
-        <translation>AI köməkçisi söndürülüb və ya %1 üçün API açarı yoxdur. Aktiv olduqda Yarat düyməsi sorğunuzu və bu kolleksiyanın sahə adları ilə tiplərini (icazə verməsəniz, sənəd dəyərləri olmadan) seçilmiş provayderin API-sinə (Anthropic Claude və ya Google Gemini) göndərir. Tənzimləmələrdə onu aktiv edin və API açarı əlavə edin.</translation>
+        <source>The AI assistant is off or not set up for %1. When it is on, Generate sends your request and this collection&apos;s field names and types (no document values unless you allow them) to the selected provider&apos;s API (Anthropic Claude, Google Gemini, an OpenAI-compatible server or Ollama). Turn it on and set it up in Preferences.</source>
+        <translation>Süni intellekt köməkçisi söndürülüb və ya %1 üçün qurulmayıb. Açıq olduqda Yarat sorğunuzu və bu kolleksiyanın sahə adlarını və növlərini (icazə verməsəniz sənəd dəyərləri olmadan) seçilmiş provayderin API-sinə (Anthropic Claude, Google Gemini, OpenAI ilə uyğun server və ya Ollama) göndərir. Onu Parametrlərdə açın və qurun.</translation>
     </message>
     <message>
         <source>Preferences…</source>
@@ -202,6 +207,18 @@
         <translation>Model hazırda həddindən artıq yüklənib. Bir qədər sonra yenidən cəhd edin.</translation>
     </message>
     <message>
+        <source>The account at this provider has no credit or quota left.</source>
+        <translation>Bu provayderdəki hesabda kredit və ya kvota qalmayıb.</translation>
+    </message>
+    <message>
+        <source>The server does not know this model or address. Check both in Preferences.</source>
+        <translation>Server bu modeli və ya ünvanı tanımır. Hər ikisini Parametrlərdə yoxlayın.</translation>
+    </message>
+    <message>
+        <source>The server answered with a redirect (HTTP %1). It was not followed, so nothing was sent anywhere else. Check the address.</source>
+        <translation>Server yönləndirmə ilə cavab verdi (HTTP %1). Ona əməl edilmədi, ona görə heç nə başqa yerə göndərilmədi. Ünvanı yoxlayın.</translation>
+    </message>
+    <message>
         <source>The model did not return a query.</source>
         <translation>Model sorğu qaytarmadı.</translation>
     </message>
@@ -216,6 +233,14 @@
     <message>
         <source>The generated query reads the collection &quot;%1&quot;, which was not described to the model.</source>
         <translation>Yaradılmış sorğu modelə təsvir edilməmiş &quot;%1&quot; kolleksiyasını oxuyur.</translation>
+    </message>
+    <message>
+        <source>The generated query is nested too deeply.</source>
+        <translation>Yaradılan sorğu həddən artıq dərin iç-içədir.</translation>
+    </message>
+    <message>
+        <source>The generated query uses %1, which runs JavaScript on the server. It was not accepted.</source>
+        <translation>Yaradılan sorğu serverdə JavaScript işlədən %1 istifadə edir. Qəbul edilmədi.</translation>
     </message>
     <message>
         <source>The model declined this request.</source>
@@ -234,32 +259,16 @@
         <translation>Model bu tələbi rədd etdi (%1).</translation>
     </message>
     <message>
+        <source>OpenAI-compatible</source>
+        <translation>OpenAI ilə uyğun</translation>
+    </message>
+    <message>
         <source>The API returned an unreadable response.</source>
         <translation>API oxunmaz cavab qaytardı.</translation>
     </message>
     <message>
         <source>The API listed no usable models.</source>
         <translation>API istifadə oluna bilən heç bir model göstərmədi.</translation>
-    </message>
-    <message>
-        <source>The monthly RagoShell AI quota is used up. Upgrade or wait for the next month.</source>
-        <translation>Aylıq RagoShell AI kvotası bitdi. Planı yüksəldin və ya növbəti ayı gözləyin.</translation>
-    </message>
-    <message>
-        <source>Too many requests; retry shortly.</source>
-        <translation>Həddindən artıq sorğu; bir az sonra yenidən cəhd edin.</translation>
-    </message>
-    <message>
-        <source>RagoShell AI requires a Pro or Team plan.</source>
-        <translation>RagoShell AI üçün Pro və ya Team planı tələb olunur.</translation>
-    </message>
-    <message>
-        <source>The RagoShell session expired; sign in again.</source>
-        <translation>RagoShell sessiyasının müddəti bitdi; yenidən daxil olun.</translation>
-    </message>
-    <message>
-        <source>The AI service is temporarily unavailable.</source>
-        <translation>Süni intellekt xidməti müvəqqəti əlçatmazdır.</translation>
     </message>
 </context>
 <context>
@@ -3004,8 +3013,8 @@
         <translation>BULUD HESABI (İSTƏYƏ BAĞLI)</translation>
     </message>
     <message>
-        <source>All local MongoDB connections, SSH/TLS tunnels, the embedded shell, schema analysis, and bring-your-own-key AI work without an account. Sign in only if you want optional encrypted cross-device sync or hosted cloud AI.</source>
-        <translation>Bütün yerli MongoDB bağlantıları, SSH/TLS tunelləri, daxili örtük, sxem təhlili və öz açarınızla (BYOK) süni intellekt hesabsız işləyir. Yalnız şifrəli sinxronizasiya və ya bulud süni intellekti istəyirsinizsə daxil olun.</translation>
+        <source>All local MongoDB connections, SSH/TLS tunnels, the embedded shell, schema analysis, and bring-your-own-key AI work without an account. Sign in only if you want optional encrypted cross-device sync or the hosted connection bridge.</source>
+        <translation>Bütün yerli MongoDB bağlantıları, SSH/TLS tunelləri, daxili örtük, sxem təhlili və öz açarınızla (BYOK) süni intellekt hesabsız işləyir. Yalnız şifrəli sinxronizasiya və ya yerləşdirilmiş bağlantı körpüsü istəyirsinizsə daxil olun.</translation>
     </message>
     <message>
         <source>OS keychain is unavailable; cloud sign-in will apply to this session only and will never write tokens to disk.</source>
@@ -3172,10 +3181,6 @@
         <translation>Serverdə saxlanılan bütün şifrəli məlumat kolleksiyaları birdəfəlik silinəcək. Yerli tənzimləmələr bu cihazda qalır.</translation>
     </message>
     <message>
-        <source>Cloud AI quota</source>
-        <translation>Bulud süni intellekt kvotası</translation>
-    </message>
-    <message>
         <source>Refreshing…</source>
         <translation>Yenilənir…</translation>
     </message>
@@ -3213,6 +3218,10 @@
     <message>
         <source>%1 is used</source>
         <translation>%1 istifadə olunur</translation>
+    </message>
+    <message>
+        <source>Not needed for a local server</source>
+        <translation>Yerli server üçün lazım deyil</translation>
     </message>
     <message>
         <source>Language</source>
@@ -3348,32 +3357,101 @@
         <translation>AI SORĞU KÖMƏKÇİSİ</translation>
     </message>
     <message>
-        <source>Turns a request in plain language into a find() or aggregate() query (Tools › AI Query Assistant). Generate sends the request and the collection&apos;s field names and types from a 1000-document sample to the selected provider: Anthropic&apos;s Claude API or Google&apos;s Gemini API (an API key from Google AI Studio). Nothing is sent until you press Generate.</source>
-        <translation>Sadə dildəki tələbi find() və ya aggregate() sorğusuna çevirir (Alətlər › AI sorğu köməkçisi). Yarat düyməsi tələbi və kolleksiyanın 1000 sənədlik nümunəsindən sahə adları ilə tiplərini seçilmiş provayderə göndərir: Anthropic-in Claude API-sinə və ya Google-un Gemini API-sinə (Google AI Studio-dan API açarı). Yarat düyməsini basmadıqca heç nə göndərilmir.</translation>
-    </message>
-    <message>
         <source>Enable the AI query assistant</source>
         <translation>AI sorğu köməkçisini aktiv et</translation>
+    </message>
+    <message>
+        <source>%1 AI (the hosted assistant) is no longer offered, so the assistant was turned off. Pick a provider, enter your own API key and turn it on again.</source>
+        <extracomment>Preferences › AI assistant notice after an update (%1 = product name).</extracomment>
+        <translation>%1 AI (yerləşdirilmiş köməkçi) artıq təklif olunmur, buna görə köməkçi söndürüldü. Provayder seçin, öz API açarınızı daxil edin və onu yenidən yandırın.</translation>
     </message>
     <message>
         <source>Provider</source>
         <translation>Provayder</translation>
     </message>
     <message>
+        <source>Service</source>
+        <translation>Xidmət</translation>
+    </message>
+    <message>
+        <source>Custom address</source>
+        <translation>Xüsusi ünvan</translation>
+    </message>
+    <message>
+        <source>Server address</source>
+        <translation>Server ünvanı</translation>
+    </message>
+    <message>
+        <source>The address points to another server now, so the key was cleared. Enter the key for this server.</source>
+        <translation>Ünvan indi başqa serveri göstərir, ona görə açar silindi. Bu serverin açarını daxil edin.</translation>
+    </message>
+    <message>
+        <source>Requests go to %1 on this device. A model that runs here is free and the data stays on this device; a cloud model or proxy behind this address sends it on.</source>
+        <extracomment>Preferences › AI, server on this computer (%1 = host name, e.g. localhost).</extracomment>
+        <translation>Sorğular bu cihazdakı %1 ünvanına gedir. Burada işləyən model pulsuzdur və məlumat bu cihazda qalır; bu ünvanın arxasındakı bulud modeli və ya proksi onu kənara ötürür.</translation>
+    </message>
+    <message>
+        <source>Requests go to %1 on your local network. A model that runs there is free and the data stays on your network; a cloud model or proxy behind this address sends it on.</source>
+        <extracomment>Preferences › AI, server on the local network (%1 = host name or IP address).</extracomment>
+        <translation>Sorğular yerli şəbəkənizdəki %1 ünvanına gedir. Orada işləyən model pulsuzdur və məlumat şəbəkənizdə qalır; bu ünvanın arxasındakı bulud modeli və ya proksi onu kənara ötürür.</translation>
+    </message>
+    <message>
+        <source>Requests go to %1. Usage is billed by that provider, if it charges.</source>
+        <extracomment>Preferences › AI, OpenAI-compatible (%1 = host name).</extracomment>
+        <translation>Sorğular %1 ünvanına gedir. Ödənişlidirsə, istifadəni həmin provayder hesablayır.</translation>
+    </message>
+    <message>
         <source>Google AI Studio API key</source>
         <translation>Google AI Studio API açarı</translation>
+    </message>
+    <message>
+        <source>API key (optional)</source>
+        <translation>API açarı (istəyə bağlı)</translation>
     </message>
     <message>
         <source>Anthropic API key</source>
         <translation>Anthropic API açarı</translation>
     </message>
     <message>
-        <source>Signed in — requests run through your RagoShell account quota; no API key needed.</source>
-        <translation>Daxil olunub — sorğular RagoShell hesabınızın kvotası ilə icra olunur; API açarı lazım deyil.</translation>
+        <source>Hide key</source>
+        <translation>Açarı gizlət</translation>
     </message>
     <message>
-        <source>Sign in on the Account tab to use RagoShell AI, or pick another provider and enter its key.</source>
-        <translation>RagoShell AI-dan istifadə etmək üçün Hesab tabında daxil olun və ya başqa provayder seçib onun açarını daxil edin.</translation>
+        <source>Show key</source>
+        <translation>Açarı göstər</translation>
+    </message>
+    <message>
+        <source>Paste</source>
+        <extracomment>Preferences › AI: paste the API key from the clipboard.</extracomment>
+        <translation>Yapışdır</translation>
+    </message>
+    <message>
+        <source>Paste the API key from the clipboard</source>
+        <translation>API açarını mübadilə buferindən yapışdır</translation>
+    </message>
+    <message>
+        <source>Test connection</source>
+        <translation>Bağlantını yoxla</translation>
+    </message>
+    <message>
+        <source>Asks the provider for its model list with this key. No query or schema is sent.</source>
+        <translation>Bu açarla provayderdən model siyahısını istəyir. Sorğu və ya sxem göndərilmir.</translation>
+    </message>
+    <message>
+        <source>Asks the server for its model list. No query or schema is sent.</source>
+        <translation>Serverdən model siyahısını istəyir. Heç bir sorğu və ya sxem göndərilmir.</translation>
+    </message>
+    <message>
+        <source>How to get a key ↗</source>
+        <translation>Açarı necə almaq olar ↗</translation>
+    </message>
+    <message>
+        <source>Open the provider&apos;s API key page</source>
+        <translation>Provayderin API açarı səhifəsini aç</translation>
+    </message>
+    <message>
+        <source>Clear clipboard</source>
+        <translation>Buferi təmizlə</translation>
     </message>
     <message>
         <source>Using the key entered here (saved with your settings).</source>
@@ -3384,6 +3462,10 @@
         <translation>%1 mühit dəyişənindəki açar istifadə olunur.</translation>
     </message>
     <message>
+        <source>No key: requests are sent without one (enough for a local server).</source>
+        <translation>Açar yoxdur: sorğular açarsız göndərilir (yerli server üçün kifayətdir).</translation>
+    </message>
+    <message>
         <source>No key yet. Enter one above.</source>
         <translation>Hələ açar yoxdur. Yuxarıda birini daxil edin.</translation>
     </message>
@@ -3392,24 +3474,56 @@
         <translation>Model</translation>
     </message>
     <message>
-        <source>Load the provider&apos;s current model list</source>
-        <translation>Provayderin cari model siyahısını yüklə</translation>
+        <source>Installed model, e.g. llama3.2</source>
+        <translation>Quraşdırılmış model, məs. llama3.2</translation>
     </message>
     <message>
-        <source>Loading the model list…</source>
-        <translation>Model siyahısı yüklənir…</translation>
+        <source>Model name, e.g. gpt-5.5</source>
+        <translation>Model adı, məs. gpt-5.5</translation>
+    </message>
+    <message>
+        <source>Pick from the server&apos;s list…</source>
+        <translation>Serverin siyahısından seçin…</translation>
+    </message>
+    <message>
+        <source>Models listed by the server</source>
+        <translation>Serverin göstərdiyi modellər</translation>
+    </message>
+    <message>
+        <source>Testing the connection…</source>
+        <translation>Bağlantı yoxlanılır…</translation>
+    </message>
+    <message>
+        <source>Type the model name, or use Test connection to list the server&apos;s models.</source>
+        <translation>Model adını yazın və ya serverin modellərini siyahıya almaq üçün «Bağlantını yoxla» düyməsindən istifadə edin.</translation>
+    </message>
+    <message>
+        <source>Built-in list. Test connection loads the models this key can use now.</source>
+        <translation>Daxili siyahı. “Bağlantını yoxla” bu açarın indi istifadə edə bildiyi modelləri yükləyir.</translation>
     </message>
     <message>
         <source>The selected model is no longer in the provider&apos;s list (retired?). Pick another one.</source>
         <translation>Seçilmiş model artıq provayderin siyahısında yoxdur (istifadədən çıxarılıb?). Başqa model seçin.</translation>
     </message>
     <message>
+        <source>Turns a request in plain language into a find() or aggregate() query (Tools › AI Query Assistant). Generate sends the request and the collection&apos;s field names and types from a 1000-document sample to the selected provider: Anthropic&apos;s Claude API, Google&apos;s Gemini API (an API key from Google AI Studio) or any OpenAI-compatible server you choose. Nothing is sent until you press Generate.</source>
+        <translation>Adi dildə yazılmış sorğunu find() və ya aggregate() sorğusuna çevirir (Alətlər › AI sorğu köməkçisi). «Yarat» sorğunu və kolleksiyanın 1000 sənədlik nümunədən alınmış sahə adlarını və növlərini seçilmiş provayderə göndərir: Anthropic-in Claude API-si, Google-un Gemini API-si (Google AI Studio-dan API açarı ilə) və ya seçdiyiniz istənilən OpenAI ilə uyğun server. «Yarat» düyməsini basana qədər heç nə göndərilmir.</translation>
+    </message>
+    <message>
+        <source>Key pasted. Clear it from the clipboard? (A clipboard history may still keep a copy.)</source>
+        <translation>Açar yapışdırıldı. Mübadilə buferindən silinsin? (Bufer tarixçəsi yenə də surətini saxlaya bilər.)</translation>
+    </message>
+    <message>
         <source>Models from the provider&apos;s current list.</source>
         <translation>Provayderin cari siyahısındakı modellər.</translation>
     </message>
     <message>
-        <source>Built-in list. ⟳ loads the models this key can use now.</source>
-        <translation>Daxili siyahı. ⟳ bu açarın hazırda istifadə edə biləcəyi modelləri yükləyir.</translation>
+        <source>Answer time limit (sec)</source>
+        <translation>Cavab vaxt limiti (san)</translation>
+    </message>
+    <message>
+        <source>How long to wait for an answer. A local model can need minutes, especially while it loads.</source>
+        <translation>Cavab üçün nə qədər gözlənilsin. Yerli model, xüsusən yüklənərkən, dəqiqələrlə vaxt apara bilər.</translation>
     </message>
     <message>
         <source>When a model runs out of quota, hits a rate limit or is retired, try another model of the same provider</source>
@@ -3716,12 +3830,60 @@
 <context>
     <name>RagoShell::AiAssistant</name>
     <message>
+        <source>Is Ollama running? Start the Ollama app, or run &quot;ollama serve&quot; in a terminal.</source>
+        <translation>Ollama işləyir? Ollama tətbiqini başladın və ya terminalda "ollama serve" icra edin.</translation>
+    </message>
+    <message>
+        <source>In the browser the server must also allow this page (CORS): for Ollama set OLLAMA_ORIGINS to this page&apos;s address; in LM Studio turn on CORS in the server settings.</source>
+        <translation>Brauzerdə server bu səhifəyə də icazə verməlidir (CORS): Ollama üçün OLLAMA_ORIGINS dəyərini bu səhifənin ünvanına təyin edin; LM Studio-da server parametrlərində CORS-u açın.</translation>
+    </message>
+    <message>
+        <source>Enter the server address.</source>
+        <translation>Server ünvanını daxil edin.</translation>
+    </message>
+    <message>
+        <source>The address is too long.</source>
+        <translation>Ünvan çox uzundur.</translation>
+    </message>
+    <message>
+        <source>Enter a full address that starts with https://, for example https://api.openai.com/v1.</source>
+        <translation>https:// ilə başlayan tam ünvan daxil edin, məs. https://api.openai.com/v1.</translation>
+    </message>
+    <message>
+        <source>The address must not contain a user name or password. Put the key in the key field.</source>
+        <translation>Ünvanda istifadəçi adı və ya parol olmamalıdır. Açarı açar sahəsinə yazın.</translation>
+    </message>
+    <message>
+        <source>The address must not contain ? or #.</source>
+        <translation>Ünvanda ? və ya # olmamalıdır.</translation>
+    </message>
+    <message>
+        <source>Use https://. Plain http:// is allowed only for this device (localhost) or, without a key, for the local network.</source>
+        <translation>https:// istifadə edin. Şifrələnməmiş http:// yalnız bu cihaz (localhost) üçün və ya açarsız olaraq yerli şəbəkə üçün icazəlidir.</translation>
+    </message>
+    <message>
+        <source>A key is never sent over plain http:// on the network. Use https://, or clear the key for a local server that needs none.</source>
+        <translation>Açar şəbəkədə heç vaxt şifrələnməmiş http:// ilə göndərilmir. https:// istifadə edin və ya açar tələb etməyən yerli server üçün açarı silin.</translation>
+    </message>
+    <message>
+        <source>Plain http:// to the local network is blocked on this device. Use https:// (for example through a reverse proxy) or localhost.</source>
+        <translation>Yerli şəbəkəyə şifrələnməmiş http:// bu cihazda bloklanıb. https:// (məs. əks proksi vasitəsilə) və ya localhost istifadə edin.</translation>
+    </message>
+    <message>
         <source>Could not sample the collection: %1</source>
         <translation>Kolleksiyadan nümunə götürmək mümkün olmadı: %1</translation>
     </message>
     <message>
+        <source>Pick or type a model for %1 in Preferences.</source>
+        <translation>Parametrlərdə %1 üçün model seçin və ya yazın.</translation>
+    </message>
+    <message>
         <source>Turn on the AI assistant and add an API key for %1 in Preferences.</source>
         <translation>AI köməkçisini aktiv edin və Tənzimləmələrdə %1 üçün API açarı əlavə edin.</translation>
+    </message>
+    <message>
+        <source>Turn on the AI assistant and set up %1 in Preferences.</source>
+        <translation>Parametrlərdə süni intellekt köməkçisini açın və %1 qurun.</translation>
     </message>
     <message>
         <source>%1 skipped: %2.</source>
@@ -3732,8 +3894,17 @@
         <translation>Hazırda heç bir %1 modeli əlçatan deyil: onların kvotası bitib və ya əvvəl sorğu limitinə çatıblar. Yenidən cəhd et bunu unudur və təkrar soruşur.</translation>
     </message>
     <message>
-        <source>The RagoShell session expired; sign in again.</source>
-        <translation>RagoShell sessiyasının müddəti bitdi; yenidən daxil olun.</translation>
+        <source>The saved API key has spaces or characters an API key does not contain. Enter it again in Preferences.</source>
+        <translation>Saxlanmış API açarında boşluq və ya API açarında olmayan simvollar var. Onu Parametrlərdə yenidən daxil edin.</translation>
+    </message>
+    <message>
+        <source>The server sent a response that is too large (over %1 MB).</source>
+        <translation>Server çox böyük cavab göndərdi (%1 MB-dan çox).</translation>
+    </message>
+    <message>
+        <source>No answer within %1 seconds. A local model can be slow, especially while it loads; you can raise the time limit in Preferences.</source>
+        <extracomment>%1 = seconds. Local models can take long, especially while loading.</extracomment>
+        <translation>%1 saniyə ərzində cavab gəlmədi. Yerli model, xüsusən yüklənərkən, yavaş ola bilər; vaxt limitini Parametrlərdə artıra bilərsiniz.</translation>
     </message>
     <message>
         <source>The request timed out.</source>
@@ -3759,8 +3930,56 @@
         <translation>Əvvəlcə API açarı daxil edin.</translation>
     </message>
     <message>
-        <source>Cannot reach the API: %1</source>
-        <translation>API-yə qoşulmaq mümkün deyil: %1</translation>
+        <source>The key has spaces or characters an API key does not contain.</source>
+        <translation>Açarda boşluq və ya API açarında olmayan simvollar var.</translation>
+    </message>
+    <message>
+        <source>The model list is too large (over %1 MB).</source>
+        <translation>Model siyahısı çox böyükdür (%1 MB-dan çox).</translation>
+    </message>
+    <message numerus="yes">
+        <source>Connected. %n model(s) available.</source>
+        <extracomment>Preferences › AI › Test connection succeeded.</extracomment>
+        <translation>
+            <numerusform>Qoşuldu. %n model mövcuddur.</numerusform>
+            <numerusform>Qoşuldu. %n model mövcuddur.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Connected, but the provider listed no model this app can use.</source>
+        <translation>Qoşuldu, lakin provayder bu tətbiqin istifadə edə biləcəyi heç bir model göstərmədi.</translation>
+    </message>
+    <message>
+        <source>Ollama is running, but no model is installed. Download one in a terminal with &quot;ollama pull &lt;model&gt;&quot;, then test again.</source>
+        <translation>Ollama işləyir, lakin quraşdırılmış model yoxdur. Terminalda "ollama pull &lt;model&gt;" ilə bir model endirin, sonra yenidən yoxlayın.</translation>
+    </message>
+    <message>
+        <source>The server is running but lists no models. Download or load a model on the server, then test again.</source>
+        <translation>Server işləyir, lakin heç bir model göstərmir. Serverdə model endirin və ya yükləyin, sonra yenidən yoxlayın.</translation>
+    </message>
+    <message>
+        <source>The API key was rejected (HTTP %1). Check it and try again.</source>
+        <translation>API açarı rədd edildi (HTTP %1). Yoxlayıb yenidən cəhd edin.</translation>
+    </message>
+    <message>
+        <source>The server is reachable but has no model list (HTTP 404).</source>
+        <translation>Serverə çatmaq olur, amma model siyahısı yoxdur (HTTP 404).</translation>
+    </message>
+    <message>
+        <source>The provider&apos;s rate limit was reached (HTTP 429). Try again in a moment.</source>
+        <translation>Provayderin sorğu limitinə çatıldı (HTTP 429). Bir azdan yenidən cəhd edin.</translation>
+    </message>
+    <message>
+        <source>The server answered with a redirect (HTTP %1). It was not followed, so the key was not sent anywhere else.</source>
+        <translation>Server yönləndirmə ilə cavab verdi (HTTP %1). Yönləndirməyə əməl edilmədi, ona görə açar başqa yerə göndərilmədi.</translation>
+    </message>
+    <message>
+        <source>The server did not answer in time.</source>
+        <translation>Server vaxtında cavab vermədi.</translation>
+    </message>
+    <message>
+        <source>Cannot reach the server: %1</source>
+        <translation>Serverə çatmaq mümkün deyil: %1</translation>
     </message>
 </context>
 <context>
@@ -3811,14 +4030,6 @@
     <message>
         <source>Canceled</source>
         <translation>Ləğv edilib</translation>
-    </message>
-    <message>
-        <source>Local BYOK AI only</source>
-        <translation>Yalnız yerli BYOK süni intellekt</translation>
-    </message>
-    <message>
-        <source>%1 tokens / month</source>
-        <translation>Ayda %1 token</translation>
     </message>
     <message>
         <source>Offline grace valid until %1</source>
@@ -4083,6 +4294,22 @@
     <message>
         <source>Index &quot;%1&quot; dropped from %2.%3.</source>
         <translation>&quot;%1&quot; indeksi %2.%3 daxilindən silindi.</translation>
+    </message>
+    <message>
+        <source>The clipboard has no text.</source>
+        <translation>Mübadilə buferində mətn yoxdur.</translation>
+    </message>
+    <message>
+        <source>The clipboard holds more than one line. Copy only the key.</source>
+        <translation>Mübadilə buferində birdən çox sətir var. Yalnız açarı kopyalayın.</translation>
+    </message>
+    <message>
+        <source>The clipboard text is too long for an API key (over %1 characters).</source>
+        <translation>Buferdəki mətn API açarı üçün çox uzundur (%1 simvoldan çox).</translation>
+    </message>
+    <message>
+        <source>The clipboard text has spaces or characters an API key does not contain.</source>
+        <translation>Buferdəki mətndə boşluq və ya API açarında olmayan simvollar var.</translation>
     </message>
     <message numerus="yes">
         <source>Replica Set (%n seed node(s))</source>

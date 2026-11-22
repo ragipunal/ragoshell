@@ -42,6 +42,7 @@
 #include "ragoshell/core/settings/ReplicaSetSettings.h"
 #include "ragoshell/core/settings/SettingsManager.h"
 #include "ragoshell/core/utils/AppLog.h"
+#include "ragoshell/core/utils/AiQueryAssistant.h"
 #include "ragoshell/core/utils/AppPaths.h"
 #include "ragoshell/core/utils/HostKeyPrompter.h"
 #include "ragoshell/core/utils/SchemaCatalog.h"
@@ -285,6 +286,37 @@ namespace RagoShell
     {
         if (QClipboard *cb = QGuiApplication::clipboard())
             cb->setText(text);
+    }
+
+    QVariantMap QmlBackend::pasteApiKey() const
+    {
+        QClipboard *cb = QGuiApplication::clipboard();
+        QString key;
+        switch (AiQueryAssistant::checkPastedKey(cb ? cb->text() : QString(), &key)) {
+        case AiQueryAssistant::PastedKey::Ok:
+            return {{QStringLiteral("key"), key}};
+        case AiQueryAssistant::PastedKey::Empty:
+            return {{QStringLiteral("error"), tr("The clipboard has no text.")}};
+        case AiQueryAssistant::PastedKey::MultiLine:
+            return {{QStringLiteral("error"), tr("The clipboard holds more than one line. Copy only the key.")}};
+        case AiQueryAssistant::PastedKey::TooLong:
+            return {{QStringLiteral("error"),
+                     tr("The clipboard text is too long for an API key (over %1 characters).")
+                         .arg(AiQueryAssistant::kMaxApiKeyLength)}};
+        case AiQueryAssistant::PastedKey::InvalidCharacters:
+            break;
+        }
+        return {{QStringLiteral("error"),
+                 tr("The clipboard text has spaces or characters an API key does not contain.")}};
+    }
+
+    bool QmlBackend::clearClipboardIfEquals(const QString &text) const
+    {
+        QClipboard *cb = QGuiApplication::clipboard();
+        if (!cb || text.isEmpty() || cb->text().trimmed() != text)
+            return false;
+        cb->clear();
+        return true;
     }
 
     QString QmlBackend::insertDocumentsJson(const QString &uuid, const QString &dbName,

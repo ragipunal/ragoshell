@@ -3,6 +3,8 @@
 #include <QObject>
 #include <QString>
 #include <QStringList>
+#include <QVariantList>
+#include <QVariantMap>
 #include <QtQml/qqmlregistration.h>
 
 #include "ragoshell-app/QmlSingleton.h"
@@ -58,6 +60,9 @@ namespace RagoShell
         /// go through aiModelFor() / aiApiKeyFor().
         Q_PROPERTY(QString aiProvider READ aiProvider WRITE setAiProvider NOTIFY aiSettingsChanged FINAL)
         Q_PROPERTY(QStringList aiProviders READ aiProviders CONSTANT FINAL)
+        /// The saved settings chose the removed hosted "RagoShell AI"
+        /// provider; Preferences explains why the assistant is off.
+        Q_PROPERTY(bool aiHostedProviderRemoved READ aiHostedProviderRemoved NOTIFY aiSettingsChanged FINAL)
         Q_PROPERTY(QString secretStorageName READ secretStorageName CONSTANT FINAL)
         Q_PROPERTY(bool secretStorageInKeyStore READ secretStorageInKeyStore CONSTANT FINAL)
         Q_PROPERTY(QStringList aiProviderNames READ aiProviderNames CONSTANT FINAL)
@@ -123,6 +128,7 @@ namespace RagoShell
         QString aiProvider() const;
         void setAiProvider(const QString &provider);
         QStringList aiProviders() const;
+        bool aiHostedProviderRemoved() const;
         QStringList aiProviderNames() const;
         bool aiIncludeSampleValues() const;
         void setAiIncludeSampleValues(bool v);
@@ -154,7 +160,31 @@ namespace RagoShell
         /// Whether aiModelsFor() comes from the provider.
         Q_INVOKABLE bool aiModelsFetched(const QString &provider) const;
         /// The environment variable that provides a key, or "".
-        Q_INVOKABLE QString aiKeyEnvironmentVariable(const QString &provider) const;
+        /// baseUrl matters for the OpenAI-compatible provider only (its
+        /// environment key is used at a preset's own address, docs: T12).
+        Q_INVOKABLE QString aiKeyEnvironmentVariable(const QString &provider, const QString &baseUrl = {}) const;
+        /// Provider page where an API key is created (Preferences › How to get a key).
+        Q_INVOKABLE QString aiKeyPageUrl(const QString &provider, const QString &baseUrl = {}) const;
+        /// Whether the provider has a base address field (OpenAI-compatible).
+        Q_INVOKABLE bool aiHasBaseUrl(const QString &provider) const;
+        /// False for Ollama: Preferences hides the key field.
+        Q_INVOKABLE bool aiUsesKey(const QString &provider) const;
+        /// Answer time limit in seconds (providers with a base address).
+        Q_INVOKABLE int aiTimeoutFor(const QString &provider) const;
+        Q_INVOKABLE void setAiTimeoutFor(const QString &provider, int seconds);
+        Q_INVOKABLE int aiMinTimeout() const;
+        Q_INVOKABLE int aiMaxTimeout() const;
+        Q_INVOKABLE QString aiBaseUrlFor(const QString &provider) const;
+        /// Address a provider starts from when none is saved (Ollama: localhost).
+        Q_INVOKABLE QString aiDefaultBaseUrl(const QString &provider) const;
+        /// Saves the address; another origin forgets the saved key (docs: T1).
+        Q_INVOKABLE void setAiBaseUrlFor(const QString &provider, const QString &baseUrl);
+        /// {ok, normalized, error, host, origin} for the address field.
+        Q_INVOKABLE QVariantMap checkAiBaseUrl(const QString &baseUrl, bool hasKey) const;
+        /// [{id, name, baseUrl}] of the OpenAI-compatible presets.
+        Q_INVOKABLE QVariantList aiPresets() const;
+        /// Preset id at exactly this address, "" for a custom address.
+        Q_INVOKABLE QString aiPresetFor(const QString &baseUrl) const;
         /// Where the key that encrypts saved passwords is kept ("Windows Credential
         /// Manager", "Keychain", "Secret Service"); empty without a key store.
         QString secretStorageName() const;

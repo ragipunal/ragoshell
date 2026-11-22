@@ -15,6 +15,7 @@
 
 #include "ragoshell/core/settings/ConnectionSettings.h"
 #include "ragoshell/core/utils/WasmPersist.h"
+#include "ragoshell/core/utils/AiQueryAssistant.h"
 #include "ragoshell/core/settings/CredentialSettings.h"
 #include "ragoshell/core/settings/SshSettings.h"
 #include "ragoshell/core/settings/SslSettings.h"
@@ -33,7 +34,12 @@ namespace RagoShell
 
     namespace
     {
-        const QStringList AiProviders{QStringLiteral("anthropic"), QStringLiteral("gemini")};
+        const QStringList AiProviders = AiQueryAssistant::providerIds();
+
+        bool configurableBase(const QString &provider)
+        {
+            return AiQueryAssistant::hasConfigurableBaseUrl(AiQueryAssistant::providerFromId(provider));
+        }
 
         // Anthropic keeps the keys of the single-provider version ("model",
         // "apiKeyEncrypted"); other providers are prefixed ("geminiModel").
@@ -126,6 +132,85 @@ namespace RagoShell
     void SettingsManager::setSchemaBackgroundMaxCollections(int count)
     {
         _schemaBackgroundMaxCollections = std::clamp(count, 1, 1000);
+    }
+
+    QString SettingsManager::aiApiKey(const QString &provider) const
+    {
+        if (!AiQueryAssistant::usesApiKey(AiQueryAssistant::providerFromId(provider)))
+            return {};
+        const QString key = _aiApiKeys.value(provider);
+        if (key.isEmpty() || !configurableBase(provider))
+            return key;
+        const QString origin = AiQueryAssistant::urlOrigin(_aiBaseUrls.value(provider));
+        return !origin.isEmpty() && origin == _aiKeyOrigins.value(provider) ? key : QString();
+    }
+
+    void SettingsManager::setAiApiKey(const QString &provider, const QString &key)
+    {
+        if (!AiQueryAssistant::usesApiKey(AiQueryAssistant::providerFromId(provider))) {
+            _aiApiKeys.remove(provider);   // Ollama: never stored
+            _aiKeyOrigins.remove(provider);
+            return;
+        }
+        _aiApiKeys.insert(provider, key);
+        if (!configurableBase(provider))
+            return;
+        if (key.isEmpty())
+            _aiKeyOrigins.remove(provider);
+        else
+            _aiKeyOrigins.insert(provider, AiQueryAssistant::urlOrigin(_aiBaseUrls.value(provider)));
+    }
+
+    QString SettingsManager::aiBaseUrl(const QString &provider) const
+    {
+        const QString saved = _aiBaseUrls.value(provider);
+        return saved.isEmpty() ? AiQueryAssistant::defaultBaseUrl(AiQueryAssistant::providerFromId(provider)) : saved;
+    }
+
+    int SettingsManager::aiTimeoutSec(const QString &provider) const
+    {
+        const AiQueryAssistant::Provider p = AiQueryAssistant::providerFromId(provider);
+        if (!configurableBase(provider) || !_aiTimeouts.contains(provider))
+            return AiQueryAssistant::defaultTimeoutSec(p);
+        return AiQueryAssistant::clampTimeoutSec(_aiTimeouts.value(provider));
+    }
+
+    void SettingsManager::setAiTimeoutSec(const QString &provider, int seconds)
+    {
+        if (configurableBase(provider))
+            _aiTimeouts.insert(provider, AiQueryAssistant::clampTimeoutSec(seconds));
+    }
+
+    void SettingsManager::setAiBaseUrl(const QString &provider, const QString &baseUrl)
+    {
+        if (!configurableBase(provider))
+            return;
+        const QString origin = AiQueryAssistant::urlOrigin(baseUrl);
+        if (origin.isEmpty() || origin != _aiKeyOrigins.value(provider)) {
+            // The key was given for another server: never send it here.
+            _aiApiKeys.remove(provider);
+            _aiKeyOrigins.remove(provider);
+        }
+        // Listed by the previous server. Before the first save the list came
+        // from Test connection on the address being saved now.
+        const QString previous = _aiBaseUrls.value(provider);
+        if (!previous.isEmpty() && previous != baseUrl)
+            _aiAvailableModels.remove(provider);
+        _aiBaseUrls.insert(provider, baseUrl);
+    }
+
+    SettingsManager::AiProviderMigration SettingsManager::migrateAiProvider(QString &provider,
+                                                                           bool &assistantEnabled)
+    {
+        const QString id = provider.trimmed();
+        if (id.isEmpty() || AiQueryAssistant::providerIds().contains(id))
+            return AiProviderMigration::None;
+        const AiProviderMigration result = id == QLatin1String(AiQueryAssistant::kRemovedHostedProviderId)
+                                               ? AiProviderMigration::HostedRemoved
+                                               : AiProviderMigration::Unknown;
+        provider.clear();
+        assistantEnabled = false;
+        return result;
     }
 
     bool SettingsManager::migrateMapToCurrentSchema(QVariantMap &map, QString *previousVersion)
@@ -481,8 +566,23 @@ namespace RagoShell
         const QVariantMap ai = map.value("aiAssistant").toMap();
         _aiAssistantEnabled = ai.value("enabled", false).toBool();
         _aiProvider = ai.value("provider").toString();
+        const QString savedAiProvider = _aiProvider;
+        const AiProviderMigration aiMigration = migrateAiProvider(_aiProvider, _aiAssistantEnabled);
+        _aiHostedProviderRemoved = aiMigration == AiProviderMigration::HostedRemoved;
+        if (aiMigration == AiProviderMigration::HostedRemoved)
+            LOG_MSG(QStringLiteral("AI assistant: the hosted AI provider was removed; "
+                                   "the assistant is off until a provider and key are set."),
+                    LogSeverity::Warning);
+        else if (aiMigration == AiProviderMigration::Unknown)
+            LOG_MSG(QStringLiteral("AI assistant: unsupported provider \"%1\" in the settings; "
+                                   "the assistant is off until a provider and key are set.")
+                        .arg(savedAiProvider.left(64)),
+                    LogSeverity::Warning);
         _aiModels.clear();
         _aiApiKeys.clear();
+        _aiKeyOrigins.clear();
+        _aiBaseUrls.clear();
+        _aiTimeouts.clear();
         _aiAvailableModels.clear();
         for (const QString &provider : AiProviders) {
             auto name = [&provider](const char *key) { return aiSettingName(provider, key); };
@@ -490,8 +590,26 @@ namespace RagoShell
             if (!model.isEmpty())
                 _aiModels.insert(provider, model);
             const QString aiKey = ai.value(name("apiKeyEncrypted")).toString();
-            if (!aiKey.isEmpty())
-                _aiApiKeys.insert(provider, QtUtils::toQString(RagoCrypt::decrypt(QtUtils::toStdString(aiKey))));
+            const QString plain = aiKey.isEmpty() ? QString()
+                                  : QtUtils::toQString(RagoCrypt::decrypt(QtUtils::toStdString(aiKey)));
+            if (configurableBase(provider)) {
+                // A hand-edited address is checked again before any request.
+                const QString base = ai.value(name("baseUrl")).toString();
+                if (!base.isEmpty())
+                    _aiBaseUrls.insert(provider, base);
+                const QVariant timeout = ai.value(name("timeoutSec"));
+                if (timeout.isValid() && timeout.toInt() > 0)
+                    _aiTimeouts.insert(provider, AiQueryAssistant::clampTimeoutSec(timeout.toInt()));
+                // "origin\nkey", encrypted together: editing the file cannot
+                // move the key to another server (docs: T1).
+                const qsizetype split = plain.indexOf(QLatin1Char('\n'));
+                if (split > 0 && AiQueryAssistant::usesApiKey(AiQueryAssistant::providerFromId(provider))) {
+                    _aiKeyOrigins.insert(provider, plain.left(split));
+                    _aiApiKeys.insert(provider, plain.mid(split + 1));
+                }
+            } else if (!plain.isEmpty()) {
+                _aiApiKeys.insert(provider, plain);
+            }
             const QStringList models = ai.value(name("availableModels")).toStringList();
             if (!models.isEmpty())
                 _aiAvailableModels.insert(provider, models);
@@ -618,10 +736,18 @@ namespace RagoShell
         for (const QString &provider : AiProviders) {
             auto name = [&provider](const char *key) { return aiSettingName(provider, key); };
             const QString aiKey = _aiApiKeys.value(provider);
+            const QString stored = configurableBase(provider) && !aiKey.isEmpty()
+                                       ? _aiKeyOrigins.value(provider) + QLatin1Char('\n') + aiKey
+                                       : aiKey;
             ai.insert(name("model"), _aiModels.value(provider));
             ai.insert(name("apiKeyEncrypted"), aiKey.isEmpty() ? QString()
-                      : QtUtils::toQString(RagoCrypt::encrypt(QtUtils::toStdString(aiKey))));
+                      : QtUtils::toQString(RagoCrypt::encrypt(QtUtils::toStdString(stored))));
             ai.insert(name("availableModels"), QVariant(_aiAvailableModels.value(provider)));
+            if (configurableBase(provider)) {
+                ai.insert(name("baseUrl"), _aiBaseUrls.value(provider));
+                if (_aiTimeouts.contains(provider))
+                    ai.insert(name("timeoutSec"), _aiTimeouts.value(provider));
+            }
         }
         ai.insert("includeSampleValues", _aiIncludeSampleValues);
         ai.insert("autoFallback", _aiAutoFallback);

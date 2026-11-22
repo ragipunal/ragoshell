@@ -57,10 +57,7 @@ namespace RagoShell
         Q_PROPERTY(QString syncLastError READ syncLastError NOTIFY stateChanged FINAL)
         Q_PROPERTY(QStringList syncCollections READ syncCollections NOTIFY stateChanged FINAL)
         Q_PROPERTY(bool syncIncludePasswords READ syncIncludePasswords NOTIFY stateChanged FINAL)
-        Q_PROPERTY(bool hostedAiEnabled READ hostedAiEnabled NOTIFY stateChanged FINAL)
         Q_PROPERTY(bool hostedBridgeEnabled READ hostedBridgeEnabled NOTIFY stateChanged FINAL)
-        Q_PROPERTY(qint64 aiMonthlyTokenQuota READ aiMonthlyTokenQuota NOTIFY stateChanged FINAL)
-        Q_PROPERTY(QString aiQuotaSummary READ aiQuotaSummary NOTIFY stateChanged FINAL)
         Q_PROPERTY(QString validitySummary READ validitySummary NOTIFY stateChanged FINAL)
 
         Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY stateChanged FINAL)
@@ -111,10 +108,7 @@ namespace RagoShell
         bool offlineGraceActive() const;
 
         bool syncEnabled() const;
-        bool hostedAiEnabled() const;
         bool hostedBridgeEnabled() const;
-        qint64 aiMonthlyTokenQuota() const;
-        QString aiQuotaSummary() const;
         QString validitySummary() const;
 
         QString errorMessage() const;

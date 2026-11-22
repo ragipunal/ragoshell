@@ -68,6 +68,22 @@ namespace RagoShell
          */
         static bool migrateMapToCurrentSchema(QVariantMap &map, QString *previousVersion = nullptr);
 
+        enum class AiProviderMigration
+        {
+            None,            ///< empty (default Anthropic) or a supported id: untouched
+            HostedRemoved,   ///< the removed hosted "RagoShell AI" provider
+            Unknown,         ///< any other id (hand edit, newer build)
+        };
+
+        /**
+         * @brief A saved provider id the app no longer supports would read as
+         *        Anthropic and could silently send schema data with a personal
+         *        key from the environment. For the removed hosted provider and
+         *        any other unsupported non-empty id, clears provider and turns
+         *        the assistant off; leaves an empty or supported id untouched.
+         */
+        static AiProviderMigration migrateAiProvider(QString &provider, bool &assistantEnabled);
+
         /**
          * @brief Load settings from config file.
          * @return true if success, false otherwise
@@ -181,16 +197,33 @@ namespace RagoShell
         void setShellTimeoutSec(int newValue) { _shellTimeoutSec = std::abs(newValue); }
 
         // Optional AI query assistant: off by default. Provider ids are
-        // AiQueryAssistant::providerIds() ("anthropic", "gemini"); an empty
+        // AiQueryAssistant::providerIds() ("anthropic", "gemini", "openai_compat"); an empty
         // provider means Anthropic and an empty model the provider's default.
         bool aiAssistantEnabled() const { return _aiAssistantEnabled; }
-        void setAiAssistantEnabled(bool enabled) { _aiAssistantEnabled = enabled; }
+        void setAiAssistantEnabled(bool enabled) { _aiAssistantEnabled = enabled; _aiHostedProviderRemoved = false; }
         QString aiProvider() const { return _aiProvider; }
-        void setAiProvider(const QString &provider) { _aiProvider = provider; }
+        void setAiProvider(const QString &provider) { _aiProvider = provider; _aiHostedProviderRemoved = false; }
+        // True after loading settings that chose the removed hosted provider
+        // (the assistant was turned off); cleared once the user sets a
+        // provider or turns the assistant on again. Not saved.
+        bool aiHostedProviderRemoved() const { return _aiHostedProviderRemoved; }
         QString aiModel(const QString &provider) const { return _aiModels.value(provider); }
         void setAiModel(const QString &provider, const QString &model) { _aiModels.insert(provider, model); }
-        QString aiApiKey(const QString &provider) const { return _aiApiKeys.value(provider); }
-        void setAiApiKey(const QString &provider, const QString &key) { _aiApiKeys.insert(provider, key); }
+        // For a provider with a configurable base address the key belongs to
+        // the origin (scheme, host, port) it was saved for: aiApiKey() is
+        // empty once the base address points elsewhere, and setAiBaseUrl()
+        // to another origin forgets the key (docs: T1).
+        QString aiApiKey(const QString &provider) const;
+        void setAiApiKey(const QString &provider, const QString &key);
+        // Base address of a provider such as "openai_compat" (normalized by
+        // AiQueryAssistant::checkBaseUrl). While none is saved, the
+        // provider's default (Ollama: localhost), else empty.
+        QString aiBaseUrl(const QString &provider) const;
+        void setAiBaseUrl(const QString &provider, const QString &baseUrl);
+        // Seconds to wait for an answer (providers with a base address only;
+        // AiQueryAssistant::kMinTimeoutSec..kMaxTimeoutSec).
+        int aiTimeoutSec(const QString &provider) const;
+        void setAiTimeoutSec(const QString &provider, int seconds);
         // Model ids last fetched from the provider (empty: never fetched).
         QStringList aiAvailableModels(const QString &provider) const { return _aiAvailableModels.value(provider); }
         void setAiAvailableModels(const QString &provider, const QStringList &models) { _aiAvailableModels.insert(provider, models); }
@@ -288,9 +321,13 @@ namespace RagoShell
         int _shellTimeoutSec;
 
         bool _aiAssistantEnabled = false;
+        bool _aiHostedProviderRemoved = false;
         QString _aiProvider;
         QHash<QString, QString> _aiModels;
         QHash<QString, QString> _aiApiKeys;     // stored encrypted (RagoCrypt)
+        QHash<QString, QString> _aiKeyOrigins;  // origin each key was saved for (configurable providers)
+        QHash<QString, QString> _aiBaseUrls;
+        QHash<QString, int> _aiTimeouts;
         QHash<QString, QStringList> _aiAvailableModels;
         bool _aiIncludeSampleValues = false;
         bool _aiAutoFallback = true;

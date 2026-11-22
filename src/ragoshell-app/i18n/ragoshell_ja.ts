@@ -88,7 +88,12 @@
     </message>
     <message>
         <source>off</source>
+        <extracomment>AI assistant header: provider · model · host the request goes to.</extracomment>
         <translation>オフ</translation>
+    </message>
+    <message>
+        <source>sends to %1</source>
+        <translation>送信先: %1</translation>
     </message>
     <message>
         <source>Sampling the collection…</source>
@@ -103,8 +108,8 @@
         <translation>送信データ</translation>
     </message>
     <message>
-        <source>The AI assistant is off or has no API key for %1. When it is on, Generate sends your request and this collection&apos;s field names and types (no document values unless you allow them) to the selected provider&apos;s API (Anthropic Claude or Google Gemini). Turn it on and add an API key in Preferences.</source>
-        <translation>AI アシスタントがオフ、または %1 の API キーが未設定です。オンにすると、「生成」はリクエストと、このコレクションのフィールド名および型 (許可しない限りドキュメントの値は含まれません) を、選択したプロバイダーの API (Anthropic Claude または Google Gemini) に送信します。環境設定でオンにして API キーを追加してください。</translation>
+        <source>The AI assistant is off or not set up for %1. When it is on, Generate sends your request and this collection&apos;s field names and types (no document values unless you allow them) to the selected provider&apos;s API (Anthropic Claude, Google Gemini, an OpenAI-compatible server or Ollama). Turn it on and set it up in Preferences.</source>
+        <translation>AI アシスタントがオフか、%1 の設定がされていません。オンにすると、[生成] はリクエストとこのコレクションのフィールド名と型（許可しない限りドキュメントの値は含みません）を選択したプロバイダーの API（Anthropic Claude、Google Gemini、OpenAI 互換サーバー、または Ollama）に送信します。環境設定でオンにして設定してください。</translation>
     </message>
     <message>
         <source>Preferences…</source>
@@ -202,6 +207,18 @@
         <translation>モデルが現在過負荷になっています。しばらくしてからもう一度お試しください。</translation>
     </message>
     <message>
+        <source>The account at this provider has no credit or quota left.</source>
+        <translation>このプロバイダーのアカウントにクレジットまたはクォータが残っていません。</translation>
+    </message>
+    <message>
+        <source>The server does not know this model or address. Check both in Preferences.</source>
+        <translation>サーバーはこのモデルまたはアドレスを認識していません。環境設定で両方を確認してください。</translation>
+    </message>
+    <message>
+        <source>The server answered with a redirect (HTTP %1). It was not followed, so nothing was sent anywhere else. Check the address.</source>
+        <translation>サーバーがリダイレクトで応答しました (HTTP %1)。リダイレクトには従わなかったため、他の場所には何も送信されていません。アドレスを確認してください。</translation>
+    </message>
+    <message>
         <source>The model did not return a query.</source>
         <translation>モデルがクエリを返しませんでした。</translation>
     </message>
@@ -216,6 +233,14 @@
     <message>
         <source>The generated query reads the collection &quot;%1&quot;, which was not described to the model.</source>
         <translation>生成されたクエリは、モデルに説明されていないコレクション「%1」を読み取ります。</translation>
+    </message>
+    <message>
+        <source>The generated query is nested too deeply.</source>
+        <translation>生成されたクエリの入れ子が深すぎます。</translation>
+    </message>
+    <message>
+        <source>The generated query uses %1, which runs JavaScript on the server. It was not accepted.</source>
+        <translation>生成されたクエリは、サーバー上で JavaScript を実行する %1 を使用しています。受け入れませんでした。</translation>
     </message>
     <message>
         <source>The model declined this request.</source>
@@ -234,32 +259,16 @@
         <translation>モデルがこのリクエストを拒否しました (%1)。</translation>
     </message>
     <message>
+        <source>OpenAI-compatible</source>
+        <translation>OpenAI 互換</translation>
+    </message>
+    <message>
         <source>The API returned an unreadable response.</source>
         <translation>API から読み取れない応答が返されました。</translation>
     </message>
     <message>
         <source>The API listed no usable models.</source>
         <translation>API から利用可能なモデルが返されませんでした。</translation>
-    </message>
-    <message>
-        <source>The monthly RagoShell AI quota is used up. Upgrade or wait for the next month.</source>
-        <translation>今月の RagoShell AI クォータを使い切りました。アップグレードするか、翌月までお待ちください。</translation>
-    </message>
-    <message>
-        <source>Too many requests; retry shortly.</source>
-        <translation>リクエストが多すぎます。しばらくしてから再試行してください。</translation>
-    </message>
-    <message>
-        <source>RagoShell AI requires a Pro or Team plan.</source>
-        <translation>RagoShell AI には Pro または Team プランが必要です。</translation>
-    </message>
-    <message>
-        <source>The RagoShell session expired; sign in again.</source>
-        <translation>RagoShell のセッションが期限切れです。もう一度サインインしてください。</translation>
-    </message>
-    <message>
-        <source>The AI service is temporarily unavailable.</source>
-        <translation>AI サービスは一時的に利用できません。</translation>
     </message>
 </context>
 <context>
@@ -2998,8 +3007,8 @@
         <translation>クラウドアカウント（任意）</translation>
     </message>
     <message>
-        <source>All local MongoDB connections, SSH/TLS tunnels, the embedded shell, schema analysis, and bring-your-own-key AI work without an account. Sign in only if you want optional encrypted cross-device sync or hosted cloud AI.</source>
-        <translation>ローカルの MongoDB 接続、SSH/TLS トンネル、内蔵シェル、スキーマ解析、独自キー（BYOK）AI はアカウントなしで利用できます。暗号化同期やホスト型クラウド AI を利用する場合のみサインインしてください。</translation>
+        <source>All local MongoDB connections, SSH/TLS tunnels, the embedded shell, schema analysis, and bring-your-own-key AI work without an account. Sign in only if you want optional encrypted cross-device sync or the hosted connection bridge.</source>
+        <translation>ローカルの MongoDB 接続、SSH/TLS トンネル、内蔵シェル、スキーマ解析、独自キー（BYOK）AI はアカウントなしで利用できます。暗号化同期やホスト型接続ブリッジを利用する場合のみサインインしてください。</translation>
     </message>
     <message>
         <source>OS keychain is unavailable; cloud sign-in will apply to this session only and will never write tokens to disk.</source>
@@ -3166,10 +3175,6 @@
         <translation>サーバーに保存されている暗号化コレクションはすべて完全に削除されます。ローカル設定はこのデバイスに残ります。</translation>
     </message>
     <message>
-        <source>Cloud AI quota</source>
-        <translation>クラウド AI クォータ</translation>
-    </message>
-    <message>
         <source>Refreshing…</source>
         <translation>更新中…</translation>
     </message>
@@ -3207,6 +3212,10 @@
     <message>
         <source>%1 is used</source>
         <translation>%1 を使用</translation>
+    </message>
+    <message>
+        <source>Not needed for a local server</source>
+        <translation>ローカルサーバーには不要</translation>
     </message>
     <message>
         <source>Language</source>
@@ -3342,32 +3351,101 @@
         <translation>AI クエリアシスタント</translation>
     </message>
     <message>
-        <source>Turns a request in plain language into a find() or aggregate() query (Tools › AI Query Assistant). Generate sends the request and the collection&apos;s field names and types from a 1000-document sample to the selected provider: Anthropic&apos;s Claude API or Google&apos;s Gemini API (an API key from Google AI Studio). Nothing is sent until you press Generate.</source>
-        <translation>自然言語のリクエストを find() または aggregate() クエリに変換します (ツール › AI クエリアシスタント)。「生成」は、リクエストと、1000 件のドキュメントのサンプルから得たコレクションのフィールド名と型を、選択したプロバイダー (Anthropic の Claude API または Google の Gemini API (Google AI Studio の API キー)) に送信します。「生成」を押すまで何も送信されません。</translation>
-    </message>
-    <message>
         <source>Enable the AI query assistant</source>
         <translation>AI クエリアシスタントを有効にする</translation>
+    </message>
+    <message>
+        <source>%1 AI (the hosted assistant) is no longer offered, so the assistant was turned off. Pick a provider, enter your own API key and turn it on again.</source>
+        <extracomment>Preferences › AI assistant notice after an update (%1 = product name).</extracomment>
+        <translation>%1 AI（ホスト型アシスタント）の提供は終了したため、アシスタントはオフになりました。プロバイダーを選び、ご自身の API キーを入力して、もう一度オンにしてください。</translation>
     </message>
     <message>
         <source>Provider</source>
         <translation>プロバイダー</translation>
     </message>
     <message>
+        <source>Service</source>
+        <translation>サービス</translation>
+    </message>
+    <message>
+        <source>Custom address</source>
+        <translation>カスタムアドレス</translation>
+    </message>
+    <message>
+        <source>Server address</source>
+        <translation>サーバーアドレス</translation>
+    </message>
+    <message>
+        <source>The address points to another server now, so the key was cleared. Enter the key for this server.</source>
+        <translation>アドレスが別のサーバーを指すようになったため、キーを消去しました。このサーバーのキーを入力してください。</translation>
+    </message>
+    <message>
+        <source>Requests go to %1 on this device. A model that runs here is free and the data stays on this device; a cloud model or proxy behind this address sends it on.</source>
+        <extracomment>Preferences › AI, server on this computer (%1 = host name, e.g. localhost).</extracomment>
+        <translation>リクエストはこのデバイス上の %1 に送られます。ここで動くモデルは無料で、データはこのデバイスから出ません。ただし、このアドレスの背後にあるクラウドモデルやプロキシはデータを外部に転送します。</translation>
+    </message>
+    <message>
+        <source>Requests go to %1 on your local network. A model that runs there is free and the data stays on your network; a cloud model or proxy behind this address sends it on.</source>
+        <extracomment>Preferences › AI, server on the local network (%1 = host name or IP address).</extracomment>
+        <translation>リクエストはローカルネットワーク上の %1 に送られます。そこで動くモデルは無料で、データはネットワーク内にとどまります。ただし、このアドレスの背後にあるクラウドモデルやプロキシはデータを外部に転送します。</translation>
+    </message>
+    <message>
+        <source>Requests go to %1. Usage is billed by that provider, if it charges.</source>
+        <extracomment>Preferences › AI, OpenAI-compatible (%1 = host name).</extracomment>
+        <translation>リクエストの送信先は %1 です。有料の場合、利用料はそのプロバイダーから請求されます。</translation>
+    </message>
+    <message>
         <source>Google AI Studio API key</source>
         <translation>Google AI Studio の API キー</translation>
+    </message>
+    <message>
+        <source>API key (optional)</source>
+        <translation>API キー（任意）</translation>
     </message>
     <message>
         <source>Anthropic API key</source>
         <translation>Anthropic の API キー</translation>
     </message>
     <message>
-        <source>Signed in — requests run through your RagoShell account quota; no API key needed.</source>
-        <translation>サインイン済み — リクエストは RagoShell アカウントのクォータで実行されます。API キーは不要です。</translation>
+        <source>Hide key</source>
+        <translation>キーを隠す</translation>
     </message>
     <message>
-        <source>Sign in on the Account tab to use RagoShell AI, or pick another provider and enter its key.</source>
-        <translation>RagoShell AI を使うには [アカウント] タブでサインインするか、別のプロバイダーを選んでそのキーを入力してください。</translation>
+        <source>Show key</source>
+        <translation>キーを表示</translation>
+    </message>
+    <message>
+        <source>Paste</source>
+        <extracomment>Preferences › AI: paste the API key from the clipboard.</extracomment>
+        <translation>貼り付け</translation>
+    </message>
+    <message>
+        <source>Paste the API key from the clipboard</source>
+        <translation>クリップボードから API キーを貼り付け</translation>
+    </message>
+    <message>
+        <source>Test connection</source>
+        <translation>接続をテスト</translation>
+    </message>
+    <message>
+        <source>Asks the provider for its model list with this key. No query or schema is sent.</source>
+        <translation>このキーでプロバイダーにモデル一覧を問い合わせます。クエリやスキーマは送信されません。</translation>
+    </message>
+    <message>
+        <source>Asks the server for its model list. No query or schema is sent.</source>
+        <translation>サーバーにモデル一覧を問い合わせます。クエリやスキーマは送信しません。</translation>
+    </message>
+    <message>
+        <source>How to get a key ↗</source>
+        <translation>キーの取得方法 ↗</translation>
+    </message>
+    <message>
+        <source>Open the provider&apos;s API key page</source>
+        <translation>プロバイダーの API キーのページを開く</translation>
+    </message>
+    <message>
+        <source>Clear clipboard</source>
+        <translation>クリップボードを消去</translation>
     </message>
     <message>
         <source>Using the key entered here (saved with your settings).</source>
@@ -3378,6 +3456,10 @@
         <translation>環境変数 %1 のキーを使用しています。</translation>
     </message>
     <message>
+        <source>No key: requests are sent without one (enough for a local server).</source>
+        <translation>キーなし: リクエストはキーなしで送信されます（ローカルサーバーなら十分です）。</translation>
+    </message>
+    <message>
         <source>No key yet. Enter one above.</source>
         <translation>キーがまだありません。上に入力してください。</translation>
     </message>
@@ -3386,24 +3468,56 @@
         <translation>モデル</translation>
     </message>
     <message>
-        <source>Load the provider&apos;s current model list</source>
-        <translation>プロバイダーの最新のモデルリストを読み込む</translation>
+        <source>Installed model, e.g. llama3.2</source>
+        <translation>インストール済みのモデル（例: llama3.2）</translation>
     </message>
     <message>
-        <source>Loading the model list…</source>
-        <translation>モデルリストを読み込んでいます…</translation>
+        <source>Model name, e.g. gpt-5.5</source>
+        <translation>モデル名（例: gpt-5.5）</translation>
+    </message>
+    <message>
+        <source>Pick from the server&apos;s list…</source>
+        <translation>サーバーの一覧から選択…</translation>
+    </message>
+    <message>
+        <source>Models listed by the server</source>
+        <translation>サーバーが提供するモデル</translation>
+    </message>
+    <message>
+        <source>Testing the connection…</source>
+        <translation>接続をテストしています…</translation>
+    </message>
+    <message>
+        <source>Type the model name, or use Test connection to list the server&apos;s models.</source>
+        <translation>モデル名を入力するか、「接続をテスト」でサーバーのモデル一覧を取得してください。</translation>
+    </message>
+    <message>
+        <source>Built-in list. Test connection loads the models this key can use now.</source>
+        <translation>組み込みの一覧です。「接続をテスト」で、このキーで現在使えるモデルを読み込みます。</translation>
     </message>
     <message>
         <source>The selected model is no longer in the provider&apos;s list (retired?). Pick another one.</source>
         <translation>選択したモデルはプロバイダーのリストにありません (提供終了?)。別のモデルを選んでください。</translation>
     </message>
     <message>
+        <source>Turns a request in plain language into a find() or aggregate() query (Tools › AI Query Assistant). Generate sends the request and the collection&apos;s field names and types from a 1000-document sample to the selected provider: Anthropic&apos;s Claude API, Google&apos;s Gemini API (an API key from Google AI Studio) or any OpenAI-compatible server you choose. Nothing is sent until you press Generate.</source>
+        <translation>日常の言葉で書いたリクエストを find() または aggregate() クエリに変換します（ツール › AI クエリアシスタント）。「生成」は、リクエストと、1000 件のドキュメントのサンプルから得たコレクションのフィールド名と型を、選択したプロバイダーに送信します: Anthropic の Claude API、Google の Gemini API（Google AI Studio の API キー）、または任意の OpenAI 互換サーバー。「生成」を押すまで何も送信されません。</translation>
+    </message>
+    <message>
+        <source>Key pasted. Clear it from the clipboard? (A clipboard history may still keep a copy.)</source>
+        <translation>キーを貼り付けました。クリップボードから消去しますか？（クリップボードの履歴にはコピーが残る場合があります。）</translation>
+    </message>
+    <message>
         <source>Models from the provider&apos;s current list.</source>
         <translation>プロバイダーの最新リストのモデルです。</translation>
     </message>
     <message>
-        <source>Built-in list. ⟳ loads the models this key can use now.</source>
-        <translation>組み込みリストです。⟳ でこのキーで現在使用できるモデルを読み込みます。</translation>
+        <source>Answer time limit (sec)</source>
+        <translation>応答の制限時間（秒）</translation>
+    </message>
+    <message>
+        <source>How long to wait for an answer. A local model can need minutes, especially while it loads.</source>
+        <translation>応答を待つ時間です。ローカルモデルは、特に読み込み中は数分かかることがあります。</translation>
     </message>
     <message>
         <source>When a model runs out of quota, hits a rate limit or is retired, try another model of the same provider</source>
@@ -3710,12 +3824,60 @@
 <context>
     <name>RagoShell::AiAssistant</name>
     <message>
+        <source>Is Ollama running? Start the Ollama app, or run &quot;ollama serve&quot; in a terminal.</source>
+        <translation>Ollama は起動していますか？Ollama アプリを起動するか、ターミナルで "ollama serve" を実行してください。</translation>
+    </message>
+    <message>
+        <source>In the browser the server must also allow this page (CORS): for Ollama set OLLAMA_ORIGINS to this page&apos;s address; in LM Studio turn on CORS in the server settings.</source>
+        <translation>ブラウザーでは、サーバーがこのページも許可している必要があります（CORS）。Ollama では OLLAMA_ORIGINS にこのページのアドレスを設定し、LM Studio ではサーバー設定で CORS をオンにしてください。</translation>
+    </message>
+    <message>
+        <source>Enter the server address.</source>
+        <translation>サーバーアドレスを入力してください。</translation>
+    </message>
+    <message>
+        <source>The address is too long.</source>
+        <translation>アドレスが長すぎます。</translation>
+    </message>
+    <message>
+        <source>Enter a full address that starts with https://, for example https://api.openai.com/v1.</source>
+        <translation>https:// で始まる完全なアドレスを入力してください（例: https://api.openai.com/v1）。</translation>
+    </message>
+    <message>
+        <source>The address must not contain a user name or password. Put the key in the key field.</source>
+        <translation>アドレスにユーザー名やパスワードを含めないでください。キーはキーの欄に入力してください。</translation>
+    </message>
+    <message>
+        <source>The address must not contain ? or #.</source>
+        <translation>アドレスに ? や # を含めないでください。</translation>
+    </message>
+    <message>
+        <source>Use https://. Plain http:// is allowed only for this device (localhost) or, without a key, for the local network.</source>
+        <translation>https:// を使用してください。暗号化されない http:// は、このデバイス (localhost) か、キーなしでのローカルネットワークにのみ使用できます。</translation>
+    </message>
+    <message>
+        <source>A key is never sent over plain http:// on the network. Use https://, or clear the key for a local server that needs none.</source>
+        <translation>キーがネットワーク上で暗号化されない http:// で送信されることはありません。https:// を使用するか、キーが不要なローカルサーバーではキーを消去してください。</translation>
+    </message>
+    <message>
+        <source>Plain http:// to the local network is blocked on this device. Use https:// (for example through a reverse proxy) or localhost.</source>
+        <translation>このデバイスでは、ローカルネットワークへの暗号化されない http:// はブロックされています。https://（リバースプロキシ経由など）か localhost を使用してください。</translation>
+    </message>
+    <message>
         <source>Could not sample the collection: %1</source>
         <translation>コレクションをサンプリングできませんでした: %1</translation>
     </message>
     <message>
+        <source>Pick or type a model for %1 in Preferences.</source>
+        <translation>環境設定で %1 のモデルを選択または入力してください。</translation>
+    </message>
+    <message>
         <source>Turn on the AI assistant and add an API key for %1 in Preferences.</source>
         <translation>AI アシスタントをオンにして、環境設定で %1 の API キーを追加してください。</translation>
+    </message>
+    <message>
+        <source>Turn on the AI assistant and set up %1 in Preferences.</source>
+        <translation>環境設定で AI アシスタントをオンにし、%1 を設定してください。</translation>
     </message>
     <message>
         <source>%1 skipped: %2.</source>
@@ -3726,8 +3888,17 @@
         <translation>現在利用できる %1 のモデルがありません。クォータを使い切ったか、以前にレート制限に達しました。「再試行」でその記録を消去して再度問い合わせます。</translation>
     </message>
     <message>
-        <source>The RagoShell session expired; sign in again.</source>
-        <translation>RagoShell のセッションが期限切れです。もう一度サインインしてください。</translation>
+        <source>The saved API key has spaces or characters an API key does not contain. Enter it again in Preferences.</source>
+        <translation>保存された API キーに、空白または API キーに含まれない文字があります。環境設定で入力し直してください。</translation>
+    </message>
+    <message>
+        <source>The server sent a response that is too large (over %1 MB).</source>
+        <translation>サーバーから大きすぎる応答が届きました (%1 MB 超)。</translation>
+    </message>
+    <message>
+        <source>No answer within %1 seconds. A local model can be slow, especially while it loads; you can raise the time limit in Preferences.</source>
+        <extracomment>%1 = seconds. Local models can take long, especially while loading.</extracomment>
+        <translation>%1 秒以内に応答がありませんでした。ローカルモデルは、特に読み込み中は遅くなることがあります。制限時間は環境設定で延ばせます。</translation>
     </message>
     <message>
         <source>The request timed out.</source>
@@ -3753,8 +3924,55 @@
         <translation>先に API キーを入力してください。</translation>
     </message>
     <message>
-        <source>Cannot reach the API: %1</source>
-        <translation>API に接続できません: %1</translation>
+        <source>The key has spaces or characters an API key does not contain.</source>
+        <translation>キーに、空白または API キーに含まれない文字があります。</translation>
+    </message>
+    <message>
+        <source>The model list is too large (over %1 MB).</source>
+        <translation>モデル一覧が大きすぎます (%1 MB 超)。</translation>
+    </message>
+    <message numerus="yes">
+        <source>Connected. %n model(s) available.</source>
+        <extracomment>Preferences › AI › Test connection succeeded.</extracomment>
+        <translation>
+            <numerusform>接続しました。%n 個のモデルを利用できます。</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Connected, but the provider listed no model this app can use.</source>
+        <translation>接続しましたが、このアプリで使えるモデルがプロバイダーの一覧にありません。</translation>
+    </message>
+    <message>
+        <source>Ollama is running, but no model is installed. Download one in a terminal with &quot;ollama pull &lt;model&gt;&quot;, then test again.</source>
+        <translation>Ollama は起動していますが、モデルがインストールされていません。ターミナルで "ollama pull &lt;model&gt;" を実行してモデルをダウンロードし、もう一度テストしてください。</translation>
+    </message>
+    <message>
+        <source>The server is running but lists no models. Download or load a model on the server, then test again.</source>
+        <translation>サーバーは起動していますが、モデルが一覧にありません。サーバーでモデルをダウンロードまたは読み込んでから、もう一度テストしてください。</translation>
+    </message>
+    <message>
+        <source>The API key was rejected (HTTP %1). Check it and try again.</source>
+        <translation>API キーが拒否されました (HTTP %1)。確認してもう一度お試しください。</translation>
+    </message>
+    <message>
+        <source>The server is reachable but has no model list (HTTP 404).</source>
+        <translation>サーバーには到達できますが、モデル一覧がありません (HTTP 404)。</translation>
+    </message>
+    <message>
+        <source>The provider&apos;s rate limit was reached (HTTP 429). Try again in a moment.</source>
+        <translation>プロバイダーのレート制限に達しました (HTTP 429)。しばらくしてからもう一度お試しください。</translation>
+    </message>
+    <message>
+        <source>The server answered with a redirect (HTTP %1). It was not followed, so the key was not sent anywhere else.</source>
+        <translation>サーバーがリダイレクトで応答しました (HTTP %1)。リダイレクトには従わなかったため、キーは他の場所に送信されていません。</translation>
+    </message>
+    <message>
+        <source>The server did not answer in time.</source>
+        <translation>サーバーが時間内に応答しませんでした。</translation>
+    </message>
+    <message>
+        <source>Cannot reach the server: %1</source>
+        <translation>サーバーに接続できません: %1</translation>
     </message>
 </context>
 <context>
@@ -3805,14 +4023,6 @@
     <message>
         <source>Canceled</source>
         <translation>解約済み</translation>
-    </message>
-    <message>
-        <source>Local BYOK AI only</source>
-        <translation>ローカル BYOK AI のみ</translation>
-    </message>
-    <message>
-        <source>%1 tokens / month</source>
-        <translation>%1 トークン / 月</translation>
     </message>
     <message>
         <source>Offline grace valid until %1</source>
@@ -4071,6 +4281,22 @@
     <message>
         <source>Index &quot;%1&quot; dropped from %2.%3.</source>
         <translation>インデックス「%1」を %2.%3 から削除しました。</translation>
+    </message>
+    <message>
+        <source>The clipboard has no text.</source>
+        <translation>クリップボードにテキストがありません。</translation>
+    </message>
+    <message>
+        <source>The clipboard holds more than one line. Copy only the key.</source>
+        <translation>クリップボードに複数行があります。キーだけをコピーしてください。</translation>
+    </message>
+    <message>
+        <source>The clipboard text is too long for an API key (over %1 characters).</source>
+        <translation>クリップボードのテキストは API キーとしては長すぎます (%1 文字超)。</translation>
+    </message>
+    <message>
+        <source>The clipboard text has spaces or characters an API key does not contain.</source>
+        <translation>クリップボードのテキストに、空白または API キーに含まれない文字があります。</translation>
     </message>
     <message numerus="yes">
         <source>Replica Set (%n seed node(s))</source>

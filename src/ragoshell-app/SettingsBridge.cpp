@@ -9,6 +9,7 @@
 #include "ragoshell/core/domain/MongoServer.h"
 #include "ragoshell/core/settings/SettingsManager.h"
 #include "ragoshell/core/utils/AiQueryAssistant.h"
+#include "ragoshell-app/AiAssistant.h"
 #include "ragoshell/utils/RagoCrypt.h"
 #include "ragoshell/core/Enums.h"
 
@@ -206,6 +207,11 @@ namespace RagoShell
         return AiQueryAssistant::providerIds();
     }
 
+    bool SettingsBridge::aiHostedProviderRemoved() const
+    {
+        return _settings->aiHostedProviderRemoved();
+    }
+
     QStringList SettingsBridge::aiProviderNames() const
     {
         QStringList names;
@@ -348,12 +354,108 @@ namespace RagoShell
         return !_settings->aiAvailableModels(provider).isEmpty();
     }
 
-    QString SettingsBridge::aiKeyEnvironmentVariable(const QString &provider) const
+    QString SettingsBridge::aiKeyEnvironmentVariable(const QString &provider, const QString &baseUrl) const
     {
-        for (const QString &name : AiQueryAssistant::apiKeyEnvironmentVariables(AiQueryAssistant::providerFromId(provider)))
+        const AiQueryAssistant::Provider p = AiQueryAssistant::providerFromId(provider);
+        const QString base = AiQueryAssistant::checkBaseUrl(baseUrl, false, true).normalized;
+        for (const QString &name : AiQueryAssistant::apiKeyEnvironmentVariables(p, base))
             if (!qEnvironmentVariable(name.toUtf8().constData()).trimmed().isEmpty())
                 return name;
         return {};
+    }
+
+    QString SettingsBridge::aiKeyPageUrl(const QString &provider, const QString &baseUrl) const
+    {
+        const QString base = AiQueryAssistant::checkBaseUrl(baseUrl, false, true).normalized;
+        return AiQueryAssistant::apiKeyPageUrl(AiQueryAssistant::providerFromId(provider), base);
+    }
+
+    bool SettingsBridge::aiHasBaseUrl(const QString &provider) const
+    {
+        return AiQueryAssistant::hasConfigurableBaseUrl(AiQueryAssistant::providerFromId(provider));
+    }
+
+    bool SettingsBridge::aiUsesKey(const QString &provider) const
+    {
+        return AiQueryAssistant::usesApiKey(AiQueryAssistant::providerFromId(provider));
+    }
+
+    int SettingsBridge::aiTimeoutFor(const QString &provider) const
+    {
+        return _settings->aiTimeoutSec(provider);
+    }
+
+    void SettingsBridge::setAiTimeoutFor(const QString &provider, int seconds)
+    {
+        _settings->setAiTimeoutSec(provider, seconds);
+        emit aiSettingsChanged();
+    }
+
+    int SettingsBridge::aiMinTimeout() const
+    {
+        return AiQueryAssistant::kMinTimeoutSec;
+    }
+
+    int SettingsBridge::aiMaxTimeout() const
+    {
+        return AiQueryAssistant::kMaxTimeoutSec;
+    }
+
+    QString SettingsBridge::aiDefaultBaseUrl(const QString &provider) const
+    {
+        return AiQueryAssistant::defaultBaseUrl(AiQueryAssistant::providerFromId(provider));
+    }
+
+    QString SettingsBridge::aiBaseUrlFor(const QString &provider) const
+    {
+        return _settings->aiBaseUrl(provider);
+    }
+
+    void SettingsBridge::setAiBaseUrlFor(const QString &provider, const QString &baseUrl)
+    {
+        _settings->setAiBaseUrl(provider, baseUrl.trimmed());
+        emit aiSettingsChanged();
+    }
+
+    QVariantMap SettingsBridge::checkAiBaseUrl(const QString &baseUrl, bool hasKey) const
+    {
+        const AiQueryAssistant::BaseUrlCheck check = AiQueryAssistant::checkBaseUrl(baseUrl, hasKey, aiAllowsPrivateHttp());
+        QString scope;
+        if (check.ok()) {
+            switch (AiQueryAssistant::hostScope(check.normalized)) {
+            case AiQueryAssistant::HostScope::ThisDevice:
+                scope = QStringLiteral("device");
+                break;
+            case AiQueryAssistant::HostScope::LocalNetwork:
+                scope = QStringLiteral("network");
+                break;
+            case AiQueryAssistant::HostScope::Internet:
+                scope = QStringLiteral("internet");
+                break;
+            }
+        }
+        return {{QStringLiteral("ok"), check.ok()},
+                {QStringLiteral("scope"), scope},
+                {QStringLiteral("normalized"), check.normalized},
+                {QStringLiteral("error"), aiBaseUrlErrorText(check.error)},
+                {QStringLiteral("host"), check.ok() ? AiQueryAssistant::urlHost(check.normalized) : QString()},
+                {QStringLiteral("origin"), check.ok() ? AiQueryAssistant::urlOrigin(check.normalized) : QString()}};
+    }
+
+    QVariantList SettingsBridge::aiPresets() const
+    {
+        QVariantList list;
+        for (const AiQueryAssistant::Preset &p : AiQueryAssistant::openAiPresets())
+            list << QVariantMap{{QStringLiteral("id"), p.id}, {QStringLiteral("name"), p.name},
+                                {QStringLiteral("baseUrl"), p.baseUrl}};
+        return list;
+    }
+
+    QString SettingsBridge::aiPresetFor(const QString &baseUrl) const
+    {
+        const AiQueryAssistant::Preset *p =
+            AiQueryAssistant::presetForBaseUrl(AiQueryAssistant::checkBaseUrl(baseUrl, false, true).normalized);
+        return p ? p->id : QString();
     }
 
     QString SettingsBridge::secretStorageName() const

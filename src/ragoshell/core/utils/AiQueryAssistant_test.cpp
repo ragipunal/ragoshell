@@ -4,6 +4,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QTimeZone>
+#include <QUrl>
 
 #include "ragoshell/core/utils/AiQueryAssistant.h"
 
@@ -451,6 +452,88 @@ TEST(AiQueryAssistantTest, model_lists)
     EXPECT_TRUE(list.error.contains("API key was rejected"));
 }
 
+// Preferences › Paste (docs: T9): one line of printable ASCII, trimmed.
+TEST(AiQueryAssistantTest, pasted_key_checks)
+{
+    using AiQueryAssistant::PastedKey;
+    QString key;
+    EXPECT_EQ(AiQueryAssistant::checkPastedKey("  sk-ant-api03-AbC_d-1\n", &key), PastedKey::Ok);
+    EXPECT_EQ(key, "sk-ant-api03-AbC_d-1");
+    EXPECT_EQ(AiQueryAssistant::checkPastedKey("AIzaSyD-x_y", &key), PastedKey::Ok);
+    EXPECT_EQ(key, "AIzaSyD-x_y");
+
+    key = "unchanged";
+    EXPECT_EQ(AiQueryAssistant::checkPastedKey("", &key), PastedKey::Empty);
+    EXPECT_EQ(AiQueryAssistant::checkPastedKey(" \t\r\n ", &key), PastedKey::Empty);
+    EXPECT_EQ(AiQueryAssistant::checkPastedKey("sk-one\nsk-two", &key), PastedKey::MultiLine);
+    EXPECT_EQ(AiQueryAssistant::checkPastedKey("sk-one\rsk-two", &key), PastedKey::MultiLine);
+    EXPECT_EQ(AiQueryAssistant::checkPastedKey("export KEY=sk", &key), PastedKey::InvalidCharacters);
+    EXPECT_EQ(AiQueryAssistant::checkPastedKey("sk-a\tb", &key), PastedKey::InvalidCharacters);
+    EXPECT_EQ(AiQueryAssistant::checkPastedKey(QString("sk-ab") + QChar(0x200B) + "c", &key), PastedKey::InvalidCharacters);
+    EXPECT_EQ(AiQueryAssistant::checkPastedKey(QString("sk-") + QChar(0x00E7) + "ok", &key), PastedKey::InvalidCharacters);
+    EXPECT_EQ(AiQueryAssistant::checkPastedKey(QString(AiQueryAssistant::kMaxApiKeyLength, 'a'), &key), PastedKey::Ok);
+    key = "unchanged";
+    EXPECT_EQ(AiQueryAssistant::checkPastedKey(QString(AiQueryAssistant::kMaxApiKeyLength + 1, 'a'), &key),
+              PastedKey::TooLong);
+    EXPECT_EQ(key, "unchanged"); // rejected text never reaches the field
+    EXPECT_EQ(AiQueryAssistant::checkPastedKey("sk-null-ok", nullptr), PastedKey::Ok);
+}
+
+// Preferences › Test connection (docs: T5, T6, T10): one outcome per case.
+TEST(AiQueryAssistantTest, connection_check_outcomes)
+{
+    using AiQueryAssistant::ConnectionStatus;
+    auto c = AiQueryAssistant::checkConnection(
+        Provider::Anthropic, 200, R"({"data":[{"id":"claude-opus-5-5"},{"id":"claude-haiku-5-5"}]})");
+    EXPECT_EQ(c.status, ConnectionStatus::Connected);
+    EXPECT_EQ(c.list.models.size(), 2);
+
+    c = AiQueryAssistant::checkConnection(Provider::Anthropic, 200, R"({"data":[{"id":"other-model"}]})");
+    EXPECT_EQ(c.status, ConnectionStatus::NoUsableModels);
+    c = AiQueryAssistant::checkConnection(Provider::Gemini, 200, "not json");
+    EXPECT_EQ(c.status, ConnectionStatus::NoUsableModels);
+
+    c = AiQueryAssistant::checkConnection(
+        Provider::Anthropic, 401, R"({"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"}})");
+    EXPECT_EQ(c.status, ConnectionStatus::KeyRejected);
+    c = AiQueryAssistant::checkConnection(
+        Provider::Anthropic, 403, R"({"type":"error","error":{"type":"permission_error","message":"no"}})");
+    EXPECT_EQ(c.status, ConnectionStatus::KeyRejected);
+    // Gemini answers an invalid key with 400 API_KEY_INVALID.
+    c = AiQueryAssistant::checkConnection(
+        Provider::Gemini, 400,
+        R"({"error":{"code":400,"message":"API key not valid. Please pass a valid API key.","status":"INVALID_ARGUMENT",
+            "details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"API_KEY_INVALID"}]}})");
+    EXPECT_EQ(c.status, ConnectionStatus::KeyRejected);
+
+    c = AiQueryAssistant::checkConnection(Provider::Anthropic, 404, "<html>Not Found</html>");
+    EXPECT_EQ(c.status, ConnectionStatus::NoModelList);
+    c = AiQueryAssistant::checkConnection(Provider::Gemini, 429, R"({"error":{"code":429,"status":"RESOURCE_EXHAUSTED"}})");
+    EXPECT_EQ(c.status, ConnectionStatus::RateLimited);
+    c = AiQueryAssistant::checkConnection(Provider::Anthropic, 500, "");
+    EXPECT_EQ(c.status, ConnectionStatus::ProviderError);
+    EXPECT_FALSE(c.list.error.isEmpty());
+
+    for (int status : {301, 302, 307, 308}) {
+        c = AiQueryAssistant::checkConnection(Provider::Anthropic, status, "");
+        EXPECT_EQ(c.status, ConnectionStatus::RedirectRefused) << status;
+        EXPECT_TRUE(c.list.models.isEmpty());
+    }
+    c = AiQueryAssistant::checkConnection(Provider::Gemini, 0, "");
+    EXPECT_EQ(c.status, ConnectionStatus::Unreachable);
+}
+
+TEST(AiQueryAssistantTest, api_key_pages_are_https_provider_pages)
+{
+    for (Provider p : {Provider::Anthropic, Provider::Gemini}) {
+        const QUrl url(AiQueryAssistant::apiKeyPageUrl(p));
+        EXPECT_EQ(url.scheme(), "https");
+        EXPECT_TRUE(url.query().isEmpty());
+    }
+    EXPECT_EQ(QUrl(AiQueryAssistant::apiKeyPageUrl(Provider::Anthropic)).host(), "platform.claude.com");
+    EXPECT_EQ(QUrl(AiQueryAssistant::apiKeyPageUrl(Provider::Gemini)).host(), "aistudio.google.com");
+}
+
 TEST(AiQueryAssistantTest, fallback_candidates)
 {
     // Availability unknown: preferred first, then the built-in order.
@@ -609,75 +692,444 @@ TEST(AiQueryAssistantTest, lookups_must_use_described_collections)
     EXPECT_TRUE(AiQueryAssistant::systemPrompt().contains("related collections listed"));
 }
 
-TEST(AiQueryAssistantTest, cloud_provider_identity)
+// BYOK only: the hosted "RagoShell AI" provider is gone. Requests go from
+// the device straight to the chosen provider and never carry the RagoShell
+// account token (docs: hosted AI removal, E1/E2).
+TEST(AiQueryAssistantTest, byok_only_providers)
 {
-    EXPECT_EQ(AiQueryAssistant::providerId(AiQueryAssistant::Provider::RagoCloud),
-              QStringLiteral("ragoshell_cloud"));
-    EXPECT_EQ(AiQueryAssistant::providerFromId(QStringLiteral("ragoshell_cloud")),
-              AiQueryAssistant::Provider::RagoCloud);
-    EXPECT_EQ(AiQueryAssistant::providerName(AiQueryAssistant::Provider::RagoCloud),
-              QStringLiteral("RagoShell AI"));
-    EXPECT_TRUE(AiQueryAssistant::providerIds().contains(QStringLiteral("ragoshell_cloud")));
-    EXPECT_TRUE(AiQueryAssistant::apiKeyEnvironmentVariables(
-                    AiQueryAssistant::Provider::RagoCloud).isEmpty());
-    EXPECT_EQ(AiQueryAssistant::defaultModel(AiQueryAssistant::Provider::RagoCloud),
-              QStringLiteral("ragoshell-ai"));
+    EXPECT_EQ(AiQueryAssistant::providerIds(),
+              (QStringList{QStringLiteral("anthropic"), QStringLiteral("gemini"), QStringLiteral("openai_compat"),
+                           QStringLiteral("ollama")}));
+    const QString removed = QString::fromLatin1(AiQueryAssistant::kRemovedHostedProviderId);
+    EXPECT_FALSE(AiQueryAssistant::providerIds().contains(removed));
+    // Unknown ids read as Anthropic; SettingsManager::migrateAiProvider
+    // turns the assistant off before a saved "ragoshell_cloud" can get here.
+    EXPECT_EQ(AiQueryAssistant::providerFromId(removed), Provider::Anthropic);
+    for (const QString &id : AiQueryAssistant::providerIds())
+        EXPECT_FALSE(AiQueryAssistant::providerName(AiQueryAssistant::providerFromId(id))
+                         .contains(QStringLiteral("RagoShell")));
 }
 
-TEST(AiQueryAssistantTest, cloud_request_body_shape)
+TEST(AiQueryAssistantTest, requests_never_carry_an_account_token)
 {
-    const QByteArray body = AiQueryAssistant::cloudRequestBody(sampleContext(false),
-                                                               QStringLiteral("recent orders"));
-    const QJsonObject root = QJsonDocument::fromJson(body).object();
-    EXPECT_EQ(root.value("provider").toString(), QStringLiteral("anthropic"));
-    EXPECT_EQ(root.value("max_tokens").toInteger(), qint64(4096));
-    const QJsonArray msgs = root.value("messages").toArray();
-    ASSERT_EQ(msgs.size(), 2);
-    EXPECT_EQ(msgs[0].toObject().value("role").toString(), QStringLiteral("system"));
-    EXPECT_EQ(msgs[1].toObject().value("role").toString(), QStringLiteral("user"));
-    EXPECT_TRUE(msgs[1].toObject().value("content").toString()
-                    .contains(QStringLiteral("recent orders")));
+    // Tests may point every provider at a local mock server.
+    const bool overridden = qEnvironmentVariableIsSet("RAGOSHELL_AI_BASE_URL");
+    for (const Provider p : {Provider::Anthropic, Provider::Gemini}) {
+        const QString model = AiQueryAssistant::defaultModel(p);
+        for (const auto &[name, value] : AiQueryAssistant::requestHeaders(p, QStringLiteral("user-key"), model)) {
+            const QByteArray lower = name.toLower();
+            EXPECT_NE(lower, QByteArrayLiteral("authorization")) << name.constData();
+            EXPECT_FALSE(value.startsWith("Bearer ")) << name.constData();
+        }
+        // Straight to the provider, never through a RagoShell server.
+        if (overridden)
+            continue;
+        for (const QString &url : {AiQueryAssistant::endpointUrl(p, model), AiQueryAssistant::modelsUrl(p)}) {
+            const QString host = QUrl(url).host();
+            EXPECT_TRUE(host == QLatin1String("api.anthropic.com")
+                        || host == QLatin1String("generativelanguage.googleapis.com"))
+                << url.toStdString();
+            EXPECT_FALSE(url.contains(QStringLiteral("/v1/ai/generate"))) << url.toStdString();
+        }
+    }
 }
 
-TEST(AiQueryAssistantTest, cloud_response_happy_path)
+// ---- B6: OpenAI-compatible endpoint ------------------------------------
+
+// docs: T2, T3. One row per rule.
+TEST(AiQueryAssistantTest, base_url_checks)
 {
-    const QByteArray body = R"({"content":"{\"kind\":\"find\",\"script\":\"db.orders.find({})\",
-        \"explanation\":\"all orders\"}","promptTokens":120,"completionTokens":40,
-        "remainingMonthlyQuota":1999800})";
-    const auto s = AiQueryAssistant::parseCloudResponse(200, body, QStringLiteral("shop"),
-                                                      {}, {QStringLiteral("orders")});
-    ASSERT_TRUE(s.ok);
-    EXPECT_EQ(s.kind, QStringLiteral("find"));
-    EXPECT_EQ(s.script, QStringLiteral("db.orders.find({})"));
-    EXPECT_EQ(s.explanation, QStringLiteral("all orders"));
+    using AiQueryAssistant::BaseUrlError;
+    struct Row
+    {
+        const char *input;
+        bool hasKey;
+        bool allowPrivateHttp;
+        BaseUrlError error;
+        const char *normalized;
+    };
+    const Row rows[] = {
+        {"https://api.openai.com/v1", true, true, BaseUrlError::None, "https://api.openai.com/v1"},
+        {"  HTTPS://API.OpenAI.com/v1///  ", true, true, BaseUrlError::None, "https://api.openai.com/v1"},
+        {"https://api.deepseek.com", true, true, BaseUrlError::None, "https://api.deepseek.com"},
+        {"https://host.example:8443/api/v1/", true, true, BaseUrlError::None, "https://host.example:8443/api/v1"},
+        // Loopback: plain http allowed, with or without a key, on every platform.
+        {"http://localhost:1234/v1", true, false, BaseUrlError::None, "http://localhost:1234/v1"},
+        {"http://127.0.0.1:11434/v1", true, false, BaseUrlError::None, "http://127.0.0.1:11434/v1"},
+        {"http://[::1]:8080/v1", true, false, BaseUrlError::None, "http://[::1]:8080/v1"},
+        // Private network: plain http only without a key, and not on Android.
+        {"http://192.168.1.20:1234/v1", false, true, BaseUrlError::None, "http://192.168.1.20:1234/v1"},
+        {"http://gpu-box.local:1234/v1", false, true, BaseUrlError::None, "http://gpu-box.local:1234/v1"},
+        // A single-label name may be answered by any host (DNS suffix, LLMNR).
+        {"http://gpu-box:1234/v1", false, true, BaseUrlError::PlainHttpPublic, ""},
+        {"https://gpu-box:1234/v1", true, true, BaseUrlError::None, "https://gpu-box:1234/v1"},
+        {"http://192.168.1.20:1234/v1", true, true, BaseUrlError::PlainHttpWithKey, ""},
+        {"http://10.0.0.5/v1", false, false, BaseUrlError::PlainHttpBlocked, ""},
+        // Public address over plain http: never.
+        {"http://api.openai.com/v1", false, true, BaseUrlError::PlainHttpPublic, ""},
+        {"http://8.8.8.8/v1", false, true, BaseUrlError::PlainHttpPublic, ""},
+        // Shape.
+        {"", true, true, BaseUrlError::Empty, ""},
+        {"   ", true, true, BaseUrlError::Empty, ""},
+        {"api.openai.com/v1", true, true, BaseUrlError::Malformed, ""},
+        {"localhost:1234/v1", true, true, BaseUrlError::Malformed, ""},
+        {"ftp://host.example/v1", true, true, BaseUrlError::Malformed, ""},
+        {"file:///etc/passwd", true, true, BaseUrlError::Malformed, ""},
+        {"javascript:alert(1)", true, true, BaseUrlError::Malformed, ""},
+        {"https://", true, true, BaseUrlError::Malformed, ""},
+        {"https://host .example/v1", true, true, BaseUrlError::Malformed, ""},
+        {"https://host.example/v1\nX-Evil: 1", true, true, BaseUrlError::Malformed, ""},
+        {"https://user:pass@host.example/v1", true, true, BaseUrlError::HasCredentials, ""},
+        {"https://api.openai.com@evil.example/v1", true, true, BaseUrlError::HasCredentials, ""},
+        {"https://host.example/v1?key=abc", true, true, BaseUrlError::HasQueryOrFragment, ""},
+        {"https://host.example/v1#x", true, true, BaseUrlError::HasQueryOrFragment, ""},
+    };
+    for (const Row &r : rows) {
+        const auto c = AiQueryAssistant::checkBaseUrl(QString::fromUtf8(r.input), r.hasKey, r.allowPrivateHttp);
+        EXPECT_EQ(c.error, r.error) << r.input;
+        EXPECT_EQ(c.normalized, QString::fromUtf8(r.normalized)) << r.input;
+    }
+    const QString longUrl = QStringLiteral("https://host.example/") + QString(AiQueryAssistant::kMaxBaseUrlLength, 'a');
+    EXPECT_EQ(AiQueryAssistant::checkBaseUrl(longUrl, true, true).error, BaseUrlError::TooLong);
 }
 
-TEST(AiQueryAssistantTest, cloud_response_error_mapping)
+// docs: T1. The origin a saved key belongs to.
+TEST(AiQueryAssistantTest, url_origins)
 {
-    const auto quota = AiQueryAssistant::parseCloudResponse(
-        402, R"({"error":{"code":"ai_quota_exceeded","message":"x"},
-                 "quota":{"limit":2000000,"used":2000000,"remaining":0}})",
-        QStringLiteral("shop"), {}, {});
-    EXPECT_EQ(quota.failure, AiQueryAssistant::Failure::QuotaExhausted);
-    EXPECT_TRUE(quota.allModels);
-    EXPECT_FALSE(quota.retryable);
+    EXPECT_EQ(AiQueryAssistant::urlOrigin("https://api.openai.com/v1"), "https://api.openai.com:443");
+    EXPECT_EQ(AiQueryAssistant::urlOrigin("https://API.openai.com:443/other"), "https://api.openai.com:443");
+    EXPECT_EQ(AiQueryAssistant::urlOrigin("http://localhost:1234/v1"), "http://localhost:1234");
+    EXPECT_EQ(AiQueryAssistant::urlOrigin("http://[::1]:8080/v1"), "http://[::1]:8080");
+    EXPECT_NE(AiQueryAssistant::urlOrigin("http://api.openai.com/v1"), AiQueryAssistant::urlOrigin("https://api.openai.com/v1"));
+    EXPECT_TRUE(AiQueryAssistant::urlOrigin("").isEmpty());
+    EXPECT_TRUE(AiQueryAssistant::urlOrigin("not a url").isEmpty());
+    EXPECT_EQ(AiQueryAssistant::urlHost("https://openrouter.ai/api/v1"), "openrouter.ai");
+}
 
-    const auto entitled = AiQueryAssistant::parseCloudResponse(
-        403, R"({"error":{"code":"ai_entitlement_required"}})", QStringLiteral("shop"), {}, {});
-    EXPECT_EQ(entitled.failure, AiQueryAssistant::Failure::Auth);
+// docs: T12. An environment key only at a preset's own address.
+TEST(AiQueryAssistantTest, presets_and_environment_keys)
+{
+    const auto presets = AiQueryAssistant::openAiPresets();
+    ASSERT_EQ(presets.size(), 4);
+    for (const auto &p : presets) {
+        // Every preset address passes the check unchanged.
+        EXPECT_EQ(AiQueryAssistant::checkBaseUrl(p.baseUrl, false, true).normalized, p.baseUrl) << p.id.toStdString();
+        if (!p.keyPageUrl.isEmpty())
+            EXPECT_EQ(QUrl(p.keyPageUrl).scheme(), "https") << p.id.toStdString();
+        EXPECT_EQ(AiQueryAssistant::presetForBaseUrl(p.baseUrl)->id, p.id);
+    }
+    const Provider c = Provider::OpenAiCompatible;
+    EXPECT_EQ(AiQueryAssistant::apiKeyEnvironmentVariables(c, "https://api.openai.com/v1"),
+              QStringList{"OPENAI_API_KEY"});
+    EXPECT_TRUE(AiQueryAssistant::apiKeyEnvironmentVariables(c, "https://evil.example/v1").isEmpty());
+    EXPECT_TRUE(AiQueryAssistant::apiKeyEnvironmentVariables(c, "https://api.openai.com/v1/x").isEmpty());
+    EXPECT_TRUE(AiQueryAssistant::apiKeyEnvironmentVariables(c, "http://localhost:1234/v1").isEmpty());
+    EXPECT_TRUE(AiQueryAssistant::apiKeyEnvironmentVariables(c, "").isEmpty());
+    EXPECT_EQ(AiQueryAssistant::presetForBaseUrl("https://my.server/v1"), nullptr);
 
-    const auto unauth = AiQueryAssistant::parseCloudResponse(
-        401, R"({"error":{"code":"unauthorized"}})", QStringLiteral("shop"), {}, {});
-    EXPECT_EQ(unauth.failure, AiQueryAssistant::Failure::Auth);
+    EXPECT_EQ(AiQueryAssistant::apiKeyPageUrl(c, "https://openrouter.ai/api/v1"), "https://openrouter.ai/settings/keys");
+    EXPECT_TRUE(AiQueryAssistant::apiKeyPageUrl(c, "http://localhost:1234/v1").isEmpty());
+    EXPECT_TRUE(AiQueryAssistant::apiKeyPageUrl(c, "https://my.server/v1").isEmpty());
+}
 
-    const auto limited = AiQueryAssistant::parseCloudResponse(
-        429, R"({"error":{"code":"rate_limited"}})", QStringLiteral("shop"), "15", {});
-    EXPECT_EQ(limited.failure, AiQueryAssistant::Failure::RateLimited);
-    EXPECT_TRUE(limited.retryable);
-    EXPECT_EQ(limited.retryAfterSec, 15);
+TEST(AiQueryAssistantTest, openai_compatible_request)
+{
+    const Provider c = Provider::OpenAiCompatible;
+    EXPECT_EQ(AiQueryAssistant::providerFromId("openai_compat"), c);
+    EXPECT_EQ(AiQueryAssistant::providerId(c), "openai_compat");
+    EXPECT_TRUE(AiQueryAssistant::hasConfigurableBaseUrl(c));
+    EXPECT_FALSE(AiQueryAssistant::hasConfigurableBaseUrl(Provider::Anthropic));
+    EXPECT_TRUE(AiQueryAssistant::modelIds(c).isEmpty());
+    EXPECT_TRUE(AiQueryAssistant::defaultModel(c).isEmpty());
+    EXPECT_EQ(AiQueryAssistant::fallbackCandidates(c, "gpt-x", {}, 3), QStringList{"gpt-x"});
 
-    const auto upstream = AiQueryAssistant::parseCloudResponse(
-        502, R"({"error":{"code":"ai_upstream_error"}})", QStringLiteral("shop"), {}, {});
-    EXPECT_EQ(upstream.failure, AiQueryAssistant::Failure::Overloaded);
-    EXPECT_TRUE(upstream.retryable);
+    EXPECT_EQ(AiQueryAssistant::endpointUrl(c, "m", "https://openrouter.ai/api/v1"),
+              "https://openrouter.ai/api/v1/chat/completions");
+    EXPECT_EQ(AiQueryAssistant::modelsUrl(c, "http://localhost:1234/v1"), "http://localhost:1234/v1/models");
+
+    // Bearer only with a key; nothing else that identifies the user.
+    auto headers = AiQueryAssistant::requestHeaders(c, QString(), "m");
+    ASSERT_EQ(headers.size(), 1u);
+    EXPECT_EQ(headers[0].first, QByteArray("content-type"));
+    headers = AiQueryAssistant::requestHeaders(c, "sk-abc", "m");
+    ASSERT_EQ(headers.size(), 2u);
+    EXPECT_EQ(headers[1].first, QByteArray("authorization"));
+    EXPECT_EQ(headers[1].second, QByteArray("Bearer sk-abc"));
+
+    const QJsonObject body = QJsonDocument::fromJson(
+        AiQueryAssistant::requestBody(c, "deepseek-chat", sampleContext(false), "orders shipped today")).object();
+    EXPECT_EQ(body.value("model").toString(), "deepseek-chat");
+    EXPECT_EQ(body.value("max_tokens").toInt(), 4096);
+    EXPECT_FALSE(body.contains("response_format"));
+    EXPECT_FALSE(body.contains("temperature"));
+    EXPECT_FALSE(body.contains("fallbacks"));
+    EXPECT_FALSE(body.contains("output_config"));
+    const QJsonArray messages = body.value("messages").toArray();
+    ASSERT_EQ(messages.size(), 2);
+    EXPECT_EQ(messages[0].toObject().value("role").toString(), "system");
+    EXPECT_TRUE(messages[0].toObject().value("content").toString().contains("Answer with one JSON object"));
+    EXPECT_EQ(messages[1].toObject().value("role").toString(), "user");
+    EXPECT_TRUE(messages[1].toObject().value("content").toString().contains("orders shipped today"));
+}
+
+TEST(AiQueryAssistantTest, openai_compatible_responses)
+{
+    const Provider c = Provider::OpenAiCompatible;
+    auto answer = [](const QString &content, const QString &finish = QStringLiteral("stop")) {
+        QJsonObject message{{"role", "assistant"}, {"content", content}};
+        QJsonObject choice{{"index", 0}, {"message", message}, {"finish_reason", finish}};
+        return QJsonDocument(QJsonObject{{"choices", QJsonArray{choice}}}).toJson();
+    };
+    const QString json = QStringLiteral(
+        R"J({"kind":"find","script":"db.getCollection('orders').find({status: 'shipped'})","explanation":"ok"})J");
+
+    auto s = AiQueryAssistant::parseResponse(c, 200, answer(json), "shop");
+    EXPECT_TRUE(s.ok) << s.error.toStdString();
+    // A Markdown fence or a leading sentence is tolerated.
+    s = AiQueryAssistant::parseResponse(c, 200, answer("Here you go:\n```json\n" + json + "\n```"), "shop");
+    EXPECT_TRUE(s.ok) << s.error.toStdString();
+    EXPECT_TRUE(s.script.startsWith("db.getCollection('orders').find"));
+    // The read-only check still applies.
+    s = AiQueryAssistant::parseResponse(
+        c, 200, answer(QStringLiteral(R"J({"kind":"find","script":"db.getCollection('orders').drop()","explanation":""})J")),
+        "shop");
+    EXPECT_FALSE(s.ok);
+    s = AiQueryAssistant::parseResponse(c, 200, answer("not json at all"), "shop");
+    EXPECT_FALSE(s.ok);
+    s = AiQueryAssistant::parseResponse(c, 200, answer(json, "length"), "shop");
+    EXPECT_FALSE(s.ok);
+    s = AiQueryAssistant::parseResponse(c, 200, answer(json, "content_filter"), "shop");
+    EXPECT_EQ(s.failure, Failure::Blocked);
+    s = AiQueryAssistant::parseResponse(c, 200, "{}", "shop");
+    EXPECT_FALSE(s.ok);
+
+    s = AiQueryAssistant::parseResponse(c, 401, R"({"error":{"message":"Incorrect API key","type":"invalid_request_error"}})", "shop");
+    EXPECT_EQ(s.failure, Failure::Auth);
+    EXPECT_TRUE(s.error.contains("Incorrect API key"));
+    s = AiQueryAssistant::parseResponse(c, 429, R"({"error":{"message":"quota","code":"insufficient_quota"}})", "shop");
+    EXPECT_EQ(s.failure, Failure::QuotaExhausted);
+    EXPECT_TRUE(s.allModels);
+    s = AiQueryAssistant::parseResponse(c, 402, R"({"error":{"message":"Insufficient credits"}})", "shop");
+    EXPECT_EQ(s.failure, Failure::QuotaExhausted);
+    s = AiQueryAssistant::parseResponse(c, 429, "{}", "shop", "12");
+    EXPECT_EQ(s.failure, Failure::RateLimited);
+    EXPECT_EQ(s.retryAfterSec, 12);
+    EXPECT_TRUE(s.retryable);
+    s = AiQueryAssistant::parseResponse(c, 404, R"({"error":"model not found"})", "shop");
+    EXPECT_EQ(s.failure, Failure::ModelUnavailable);
+    EXPECT_TRUE(s.error.contains("model not found"));
+    s = AiQueryAssistant::parseResponse(c, 503, "<html>", "shop");
+    EXPECT_EQ(s.failure, Failure::Overloaded);
+}
+
+// docs: T6. A redirect is an error for every provider, never retried.
+TEST(AiQueryAssistantTest, redirects_are_errors)
+{
+    for (const Provider p : {Provider::Anthropic, Provider::Gemini, Provider::OpenAiCompatible}) {
+        for (int status : {301, 302, 303, 307, 308}) {
+            const auto s = AiQueryAssistant::parseResponse(p, status, "", "shop");
+            EXPECT_FALSE(s.ok);
+            EXPECT_FALSE(s.retryable) << status;
+            EXPECT_EQ(s.failure, Failure::Other) << status;
+            EXPECT_TRUE(s.error.contains(QString::number(status)));
+        }
+    }
+}
+
+TEST(AiQueryAssistantTest, openai_compatible_model_list)
+{
+    const Provider c = Provider::OpenAiCompatible;
+    const QByteArray body = R"({"object":"list","data":[
+        {"id":"gpt-5.5"},{"id":"text-embedding-3-large"},{"id":"whisper-1"},{"id":"dall-e-3"},
+        {"id":"tts-1"},{"id":"omni-moderation-latest"},{"id":"Deepseek-Chat"},{"id":"gpt-5.5"},{"id":""},
+        {"id":"anthropic/claude-opus-5-5"}]})";
+    auto list = AiQueryAssistant::parseModelList(c, 200, body);
+    ASSERT_TRUE(list.ok);
+    EXPECT_EQ(list.models, (QStringList{"anthropic/claude-opus-5-5", "Deepseek-Chat", "gpt-5.5"}));
+
+    QJsonArray many;
+    for (int i = 0; i < 1500; ++i)
+        many.append(QJsonObject{{"id", QStringLiteral("model-%1").arg(i)}});
+    list = AiQueryAssistant::parseModelList(c, 200, QJsonDocument(QJsonObject{{"data", many}}).toJson());
+    EXPECT_EQ(list.models.size(), AiQueryAssistant::kMaxListedModels);
+
+    // docs: T5. No /models endpoint: reachable, list unknown.
+    EXPECT_EQ(AiQueryAssistant::checkConnection(c, 404, "Not Found").status,
+              AiQueryAssistant::ConnectionStatus::NoModelList);
+    EXPECT_EQ(AiQueryAssistant::checkConnection(c, 401, R"({"error":{"message":"bad key"}})").status,
+              AiQueryAssistant::ConnectionStatus::KeyRejected);
+}
+
+// B6 review: the write / JavaScript checks look at the keys the server will
+// see, so a JSON escape ($merge) cannot hide a stage.
+TEST(AiQueryAssistantTest, write_and_javascript_checks_see_decoded_keys)
+{
+    auto parse = [](const QString &script) {
+        QJsonObject answer{{"kind", "aggregate"}, {"script", script}, {"explanation", "x"}};
+        QJsonObject message{{"role", "assistant"}, {"content", QString::fromUtf8(QJsonDocument(answer).toJson())}};
+        QJsonObject choice{{"message", message}, {"finish_reason", "stop"}};
+        return AiQueryAssistant::parseResponse(Provider::OpenAiCompatible, 200,
+                                               QJsonDocument(QJsonObject{{"choices", QJsonArray{choice}}}).toJson(), "shop");
+    };
+    auto s = parse(QStringLiteral(R"S(db.getCollection('orders').aggregate([{"$merge": {into: "x"}}]))S"));
+    EXPECT_TRUE(!s.ok || s.writesData) << "escaped $merge slipped through";
+    s = parse(QStringLiteral(R"S(db.getCollection('orders').aggregate([{$match: {}}, {"$out": "x"}]))S"));
+    EXPECT_TRUE(!s.ok || s.writesData) << "escaped $out slipped through";
+    s = parse(QStringLiteral(R"S(db.getCollection('orders').aggregate([{$facet: {a: [{$merge: {into: "x"}}]}}]))S"));
+    EXPECT_TRUE(!s.ok || s.writesData);
+
+    // Server-side JavaScript is refused outright.
+    s = parse(QStringLiteral(R"S(db.getCollection('orders').find({$where: "sleep(1000) || true"}))S"));
+    EXPECT_FALSE(s.ok);
+    s = parse(QStringLiteral(R"S(db.getCollection('orders').aggregate([{$addFields: {x: {"$function": {body: "1", args: [], lang: "js"}}}}]))S"));
+    EXPECT_FALSE(s.ok);
+    s = parse(QStringLiteral(R"S(db.getCollection('orders').aggregate([{$group: {_id: 1, x: {$accumulator: {}}}}]))S"));
+    EXPECT_FALSE(s.ok);
+
+    // Plain reads stay fine.
+    s = parse(QStringLiteral(R"S(db.getCollection('orders').aggregate([{$match: {status: "shipped"}}, {$count: "n"}]))S"));
+    EXPECT_TRUE(s.ok) << s.error.toStdString();
+    EXPECT_FALSE(s.writesData);
+}
+
+TEST(AiQueryAssistantTest, log_redaction_and_lookalike_hosts)
+{
+    using AiQueryAssistant::redactSecrets;
+    EXPECT_EQ(redactSecrets("Incorrect API key provided: sk-proj-abcdef123456."), "Incorrect API key provided: [redacted].");
+    EXPECT_FALSE(redactSecrets("key AIzaSyD-0123456789abcdefghijk is invalid").contains("AIzaSy"));
+    EXPECT_FALSE(redactSecrets("Authorization: Bearer abc.def").contains("abc.def"));
+    EXPECT_FALSE(redactSecrets("token 0123456789abcdef0123456789abcdef!").contains("0123456789abcdef0123"));
+    // Ordinary words and model names stay readable.
+    EXPECT_EQ(redactSecrets("claude-sonnet-5-5 skipped: rate limit (HTTP 429), skeleton risk"),
+              "claude-sonnet-5-5 skipped: rate limit (HTTP 429), skeleton risk");
+
+    // A Cyrillic look-alike of api.openai.com is shown as punycode.
+    const QString lookalike = QStringLiteral("https://") + QChar(0x0430) + QStringLiteral("pi.openai.com/v1");
+    EXPECT_TRUE(AiQueryAssistant::urlHost(lookalike).startsWith("xn--")) << AiQueryAssistant::urlHost(lookalike).toStdString();
+    EXPECT_EQ(AiQueryAssistant::urlHost("https://api.openai.com/v1"), "api.openai.com");
+}
+
+// docs: B7. Ollama: the OpenAI-compatible path at localhost, never a key.
+TEST(AiQueryAssistantTest, ollama_defaults_and_keyless_requests)
+{
+    const Provider o = Provider::Ollama;
+    EXPECT_EQ(AiQueryAssistant::providerFromId("ollama"), o);
+    EXPECT_EQ(AiQueryAssistant::providerId(o), "ollama");
+    EXPECT_EQ(AiQueryAssistant::providerName(o), "Ollama");
+    EXPECT_TRUE(AiQueryAssistant::hasConfigurableBaseUrl(o));
+    EXPECT_TRUE(AiQueryAssistant::usesOpenAiApi(o));
+    EXPECT_FALSE(AiQueryAssistant::usesApiKey(o));
+    EXPECT_TRUE(AiQueryAssistant::usesApiKey(Provider::OpenAiCompatible));
+    EXPECT_FALSE(AiQueryAssistant::usesOpenAiApi(Provider::Gemini));
+
+    // Default address passes the check as it is, without a key.
+    const QString base = AiQueryAssistant::defaultBaseUrl(o);
+    EXPECT_EQ(base, "http://localhost:11434/v1");
+    EXPECT_TRUE(AiQueryAssistant::defaultBaseUrl(Provider::OpenAiCompatible).isEmpty());
+    EXPECT_EQ(AiQueryAssistant::checkBaseUrl(base, false, false).normalized, base);
+    EXPECT_EQ(AiQueryAssistant::endpointUrl(o, "llama3.2", base), "http://localhost:11434/v1/chat/completions");
+    EXPECT_EQ(AiQueryAssistant::modelsUrl(o, base), "http://localhost:11434/v1/models");
+    EXPECT_TRUE(AiQueryAssistant::modelIds(o).isEmpty());
+    EXPECT_TRUE(AiQueryAssistant::defaultModel(o).isEmpty());
+
+    // No Authorization header even when a key is passed by mistake, no
+    // environment variable and no key page.
+    auto headers = AiQueryAssistant::requestHeaders(o, "sk-should-not-go", "llama3.2");
+    ASSERT_EQ(headers.size(), 1u);
+    EXPECT_EQ(headers[0].first, QByteArray("content-type"));
+    EXPECT_TRUE(AiQueryAssistant::apiKeyEnvironmentVariables(o, base).isEmpty());
+    EXPECT_TRUE(AiQueryAssistant::apiKeyEnvironmentVariables(o, "https://api.openai.com/v1").isEmpty());
+    EXPECT_TRUE(AiQueryAssistant::apiKeyPageUrl(o, base).isEmpty());
+
+    // Same body and parsing as the OpenAI-compatible provider.
+    const QJsonObject body = QJsonDocument::fromJson(
+        AiQueryAssistant::requestBody(o, "llama3.2", sampleContext(false), "orders shipped today")).object();
+    EXPECT_EQ(body.value("model").toString(), "llama3.2");
+    EXPECT_EQ(body.value("messages").toArray().size(), 2);
+    const QJsonObject message{{"role", "assistant"},
+                              {"content", R"J({"kind":"find","script":"db.orders.find({})","explanation":"x"})J"}};
+    const QByteArray answer = QJsonDocument(QJsonObject{
+        {"choices", QJsonArray{QJsonObject{{"index", 0}, {"message", message}, {"finish_reason", "stop"}}}}}).toJson();
+    const auto s = AiQueryAssistant::parseResponse(o, 200, answer, "shop");
+    EXPECT_TRUE(s.ok) << s.error.toStdString();
+
+    // Ollama's "model not found, try pulling it first" (404).
+    const auto missing = AiQueryAssistant::parseResponse(
+        o, 404, R"({"error":{"message":"model \"llama9\" not found, try pulling it first","type":"api_error"}})", "shop");
+    EXPECT_EQ(missing.failure, AiQueryAssistant::Failure::ModelUnavailable);
+    EXPECT_TRUE(missing.error.contains("try pulling it first"));
+}
+
+TEST(AiQueryAssistantTest, ollama_model_list_and_empty_hint)
+{
+    const Provider o = Provider::Ollama;
+    using AiQueryAssistant::ConnectionStatus;
+    const QByteArray listed = R"({"object":"list","data":[
+        {"id":"qwen3:8b","object":"model","owned_by":"library"},
+        {"id":"nomic-embed-text:latest","object":"model","owned_by":"library"},
+        {"id":"llama3.2:latest","object":"model","owned_by":"library"}]})";
+    const auto c = AiQueryAssistant::checkConnection(o, 200, listed);
+    EXPECT_EQ(c.status, ConnectionStatus::Connected);
+    EXPECT_EQ(c.list.models, (QStringList{"llama3.2:latest", "qwen3:8b"}));
+
+    // Running, nothing pulled yet: "data": null (older Ollama) or [].
+    EXPECT_EQ(AiQueryAssistant::checkConnection(o, 200, R"({"object":"list","data":null})").status,
+              ConnectionStatus::NoModelsInstalled);
+    EXPECT_EQ(AiQueryAssistant::checkConnection(o, 200, R"({"object":"list","data":[]})").status,
+              ConnectionStatus::NoModelsInstalled);
+    EXPECT_EQ(AiQueryAssistant::checkConnection(Provider::OpenAiCompatible, 200, R"({"data":[]})").status,
+              ConnectionStatus::NoModelsInstalled);
+    // Only embedding models: installed, but none usable.
+    EXPECT_EQ(AiQueryAssistant::checkConnection(o, 200, R"({"data":[{"id":"nomic-embed-text"}]})").status,
+              ConnectionStatus::NoUsableModels);
+    // Anthropic / Gemini never report "nothing installed".
+    EXPECT_EQ(AiQueryAssistant::checkConnection(Provider::Anthropic, 200, R"({"data":[]})").status,
+              ConnectionStatus::NoUsableModels);
+    // Not running: no HTTP response.
+    EXPECT_EQ(AiQueryAssistant::checkConnection(o, 0, {}).status, ConnectionStatus::Unreachable);
+}
+
+// docs: T2. On the local network plain http is allowed only without a key;
+// Ollama never has one, an OpenAI-compatible server may.
+TEST(AiQueryAssistantTest, local_addresses_and_scope)
+{
+    using AiQueryAssistant::BaseUrlError;
+    using AiQueryAssistant::HostScope;
+    EXPECT_EQ(AiQueryAssistant::checkBaseUrl("http://192.168.1.20:11434/v1", false, true).error, BaseUrlError::None);
+    EXPECT_EQ(AiQueryAssistant::checkBaseUrl("http://192.168.1.20:11434/v1", true, true).error,
+              BaseUrlError::PlainHttpWithKey);
+    EXPECT_EQ(AiQueryAssistant::checkBaseUrl("http://gpu-box.local:11434/v1", true, true).error,
+              BaseUrlError::PlainHttpWithKey);
+    // Android and the browser: only loopback over plain http.
+    EXPECT_EQ(AiQueryAssistant::checkBaseUrl("http://192.168.1.20:11434/v1", false, false).error,
+              BaseUrlError::PlainHttpBlocked);
+    EXPECT_EQ(AiQueryAssistant::checkBaseUrl("http://127.0.0.1:11434/v1", true, false).error, BaseUrlError::None);
+    EXPECT_EQ(AiQueryAssistant::checkBaseUrl("http://ollama.example.com:11434/v1", false, true).error,
+              BaseUrlError::PlainHttpPublic);
+
+    EXPECT_EQ(AiQueryAssistant::hostScope("http://localhost:11434/v1"), HostScope::ThisDevice);
+    EXPECT_EQ(AiQueryAssistant::hostScope("http://[::1]:11434/v1"), HostScope::ThisDevice);
+    EXPECT_EQ(AiQueryAssistant::hostScope("http://10.0.0.5:11434/v1"), HostScope::LocalNetwork);
+    EXPECT_EQ(AiQueryAssistant::hostScope("https://gpu-box.local/v1"), HostScope::LocalNetwork);
+    EXPECT_EQ(AiQueryAssistant::hostScope("https://gpu-box/v1"), HostScope::Internet);
+    EXPECT_EQ(AiQueryAssistant::hostScope("https://api.openai.com/v1"), HostScope::Internet);
+    EXPECT_EQ(AiQueryAssistant::hostScope("https://localhost.evil.example/v1"), HostScope::Internet);
+    // Carrier-grade NAT space is shared with other customers: not local,
+    // so no plain http there either.
+    EXPECT_EQ(AiQueryAssistant::hostScope("http://100.64.1.2:11434/v1"), HostScope::Internet);
+    EXPECT_EQ(AiQueryAssistant::checkBaseUrl("http://100.100.5.5:11434/v1", false, true).error,
+              BaseUrlError::PlainHttpPublic);
+    EXPECT_EQ(AiQueryAssistant::hostScope(""), HostScope::Internet);
+}
+
+TEST(AiQueryAssistantTest, answer_time_limits)
+{
+    EXPECT_EQ(AiQueryAssistant::defaultTimeoutSec(Provider::Ollama), 180);
+    EXPECT_EQ(AiQueryAssistant::defaultTimeoutSec(Provider::OpenAiCompatible), 120);
+    EXPECT_EQ(AiQueryAssistant::defaultTimeoutSec(Provider::Anthropic), 120);
+    EXPECT_EQ(AiQueryAssistant::clampTimeoutSec(5), AiQueryAssistant::kMinTimeoutSec);
+    EXPECT_EQ(AiQueryAssistant::clampTimeoutSec(90), 90);
+    EXPECT_EQ(AiQueryAssistant::clampTimeoutSec(100000), AiQueryAssistant::kMaxTimeoutSec);
+    EXPECT_EQ(AiQueryAssistant::kMinTimeoutSec, 30);
+    EXPECT_EQ(AiQueryAssistant::kMaxTimeoutSec, 300);
 }

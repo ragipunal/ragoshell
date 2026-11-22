@@ -214,6 +214,13 @@ namespace RagoShell
         Q_INVOKABLE QString validateJson(const QString &jsonText, bool singleDocument = false) const;
         Q_INVOKABLE QString formatJson(const QString &jsonText) const;
         Q_INVOKABLE void copyToClipboard(const QString &text) const;
+        /// Preferences › AI › Paste. Reads the clipboard only when called
+        /// (the user pressed the button), never on its own. Returns
+        /// {"key": text} or {"error": message}; rejected text is not returned.
+        Q_INVOKABLE QVariantMap pasteApiKey() const;
+        /// Empties the clipboard if it still holds exactly this text (the
+        /// pasted key), so something copied since is left alone.
+        Q_INVOKABLE bool clearClipboardIfEquals(const QString &text) const;
         /// Opens the folder of the log file in the file manager.
         Q_INVOKABLE bool openLogFolder() const;
         /// Log file of this run (empty when file logging is not active).

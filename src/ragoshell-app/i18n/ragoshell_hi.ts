@@ -88,7 +88,12 @@
     </message>
     <message>
         <source>off</source>
+        <extracomment>AI assistant header: provider · model · host the request goes to.</extracomment>
         <translation>बंद</translation>
+    </message>
+    <message>
+        <source>sends to %1</source>
+        <translation>%1 पर भेजता है</translation>
     </message>
     <message>
         <source>Sampling the collection…</source>
@@ -103,8 +108,8 @@
         <translation>भेजा गया डेटा</translation>
     </message>
     <message>
-        <source>The AI assistant is off or has no API key for %1. When it is on, Generate sends your request and this collection&apos;s field names and types (no document values unless you allow them) to the selected provider&apos;s API (Anthropic Claude or Google Gemini). Turn it on and add an API key in Preferences.</source>
-        <translation>AI असिस्टेंट बंद है या %1 के लिए उसमें API कुंजी नहीं है। चालू होने पर, &quot;जनरेट करें&quot; आपका अनुरोध और इस कलेक्शन के फ़ील्ड के नाम व प्रकार (डॉक्यूमेंट के मान तभी, जब आप अनुमति दें) चुने गए प्रोवाइडर के API (Anthropic Claude या Google Gemini) को भेजता है। प्राथमिकताओं में इसे चालू करें और API कुंजी जोड़ें।</translation>
+        <source>The AI assistant is off or not set up for %1. When it is on, Generate sends your request and this collection&apos;s field names and types (no document values unless you allow them) to the selected provider&apos;s API (Anthropic Claude, Google Gemini, an OpenAI-compatible server or Ollama). Turn it on and set it up in Preferences.</source>
+        <translation>AI सहायक बंद है या %1 के लिए सेट अप नहीं है। चालू होने पर, जनरेट आपका अनुरोध और इस कलेक्शन के फ़ील्ड नाम और प्रकार (जब तक आप अनुमति न दें, दस्तावेज़ मानों के बिना) चुने गए प्रदाता के API (Anthropic Claude, Google Gemini, कोई OpenAI-संगत सर्वर या Ollama) को भेजता है। इसे प्राथमिकताओं में चालू करें और सेट अप करें।</translation>
     </message>
     <message>
         <source>Preferences…</source>
@@ -202,6 +207,18 @@
         <translation>मॉडल पर अभी अधिक भार है। थोड़ी देर बाद पुनः प्रयास करें।</translation>
     </message>
     <message>
+        <source>The account at this provider has no credit or quota left.</source>
+        <translation>इस प्रदाता के खाते में कोई क्रेडिट या कोटा नहीं बचा है।</translation>
+    </message>
+    <message>
+        <source>The server does not know this model or address. Check both in Preferences.</source>
+        <translation>सर्वर इस मॉडल या पते को नहीं पहचानता। प्राथमिकताओं में दोनों जाँचें।</translation>
+    </message>
+    <message>
+        <source>The server answered with a redirect (HTTP %1). It was not followed, so nothing was sent anywhere else. Check the address.</source>
+        <translation>सर्वर ने रीडायरेक्ट के साथ जवाब दिया (HTTP %1)। उसका पालन नहीं किया गया, इसलिए कुछ भी कहीं और नहीं भेजा गया। पता जाँचें।</translation>
+    </message>
+    <message>
         <source>The model did not return a query.</source>
         <translation>मॉडल ने कोई क्वेरी नहीं लौटाई।</translation>
     </message>
@@ -216,6 +233,14 @@
     <message>
         <source>The generated query reads the collection &quot;%1&quot;, which was not described to the model.</source>
         <translation>जनरेट की गई क्वेरी &quot;%1&quot; कलेक्शन पढ़ती है, जिसका विवरण मॉडल को नहीं दिया गया था।</translation>
+    </message>
+    <message>
+        <source>The generated query is nested too deeply.</source>
+        <translation>बनाई गई क्वेरी बहुत गहराई तक नेस्टेड है।</translation>
+    </message>
+    <message>
+        <source>The generated query uses %1, which runs JavaScript on the server. It was not accepted.</source>
+        <translation>बनाई गई क्वेरी %1 का उपयोग करती है, जो सर्वर पर JavaScript चलाता है। इसे स्वीकार नहीं किया गया।</translation>
     </message>
     <message>
         <source>The model declined this request.</source>
@@ -234,32 +259,16 @@
         <translation>मॉडल ने इस अनुरोध को अस्वीकार कर दिया (%1)।</translation>
     </message>
     <message>
+        <source>OpenAI-compatible</source>
+        <translation>OpenAI-संगत</translation>
+    </message>
+    <message>
         <source>The API returned an unreadable response.</source>
         <translation>API ने अपठनीय प्रतिक्रिया लौटाई।</translation>
     </message>
     <message>
         <source>The API listed no usable models.</source>
         <translation>API ने कोई उपयोगी मॉडल नहीं बताया।</translation>
-    </message>
-    <message>
-        <source>The monthly RagoShell AI quota is used up. Upgrade or wait for the next month.</source>
-        <translation>मासिक RagoShell AI कोटा समाप्त हो गया है। अपग्रेड करें या अगले महीने तक प्रतीक्षा करें।</translation>
-    </message>
-    <message>
-        <source>Too many requests; retry shortly.</source>
-        <translation>बहुत अधिक अनुरोध; थोड़ी देर बाद पुनः प्रयास करें।</translation>
-    </message>
-    <message>
-        <source>RagoShell AI requires a Pro or Team plan.</source>
-        <translation>RagoShell AI के लिए Pro या Team प्लान आवश्यक है।</translation>
-    </message>
-    <message>
-        <source>The RagoShell session expired; sign in again.</source>
-        <translation>RagoShell सत्र की अवधि समाप्त हो गई; फिर से साइन इन करें।</translation>
-    </message>
-    <message>
-        <source>The AI service is temporarily unavailable.</source>
-        <translation>AI सेवा अस्थायी रूप से उपलब्ध नहीं है।</translation>
     </message>
 </context>
 <context>
@@ -3004,8 +3013,8 @@
         <translation>क्लाउड खाता (वैकल्पिक)</translation>
     </message>
     <message>
-        <source>All local MongoDB connections, SSH/TLS tunnels, the embedded shell, schema analysis, and bring-your-own-key AI work without an account. Sign in only if you want optional encrypted cross-device sync or hosted cloud AI.</source>
-        <translation>सभी लोकल MongoDB कनेक्शन, SSH/TLS टनल, एम्बेडेड शेल, स्कीमा विश्लेषण और अपनी कुंजी वाला (BYOK) AI बिना खाते के काम करते हैं। केवल वैकल्पिक एन्क्रिप्टेड सिंक या होस्टेड क्लाउड AI के लिए साइन इन करें।</translation>
+        <source>All local MongoDB connections, SSH/TLS tunnels, the embedded shell, schema analysis, and bring-your-own-key AI work without an account. Sign in only if you want optional encrypted cross-device sync or the hosted connection bridge.</source>
+        <translation>सभी लोकल MongoDB कनेक्शन, SSH/TLS टनल, एम्बेडेड शेल, स्कीमा विश्लेषण और अपनी कुंजी वाला (BYOK) AI बिना खाते के काम करते हैं। केवल वैकल्पिक एन्क्रिप्टेड सिंक या होस्टेड कनेक्शन ब्रिज के लिए साइन इन करें।</translation>
     </message>
     <message>
         <source>OS keychain is unavailable; cloud sign-in will apply to this session only and will never write tokens to disk.</source>
@@ -3172,10 +3181,6 @@
         <translation>सर्वर पर संग्रहीत सभी एन्क्रिप्टेड कलेक्शन स्थायी रूप से हटा दिए जाएँगे। लोकल सेटिंग्स इसी डिवाइस पर रहेंगी।</translation>
     </message>
     <message>
-        <source>Cloud AI quota</source>
-        <translation>क्लाउड AI कोटा</translation>
-    </message>
-    <message>
         <source>Refreshing…</source>
         <translation>रीफ़्रेश हो रहा है…</translation>
     </message>
@@ -3213,6 +3218,10 @@
     <message>
         <source>%1 is used</source>
         <translation>%1 उपयोग में है</translation>
+    </message>
+    <message>
+        <source>Not needed for a local server</source>
+        <translation>स्थानीय सर्वर के लिए आवश्यक नहीं</translation>
     </message>
     <message>
         <source>Language</source>
@@ -3348,32 +3357,101 @@
         <translation>AI क्वेरी असिस्टेंट</translation>
     </message>
     <message>
-        <source>Turns a request in plain language into a find() or aggregate() query (Tools › AI Query Assistant). Generate sends the request and the collection&apos;s field names and types from a 1000-document sample to the selected provider: Anthropic&apos;s Claude API or Google&apos;s Gemini API (an API key from Google AI Studio). Nothing is sent until you press Generate.</source>
-        <translation>सामान्य भाषा के अनुरोध को find() या aggregate() क्वेरी में बदलता है (टूल › AI क्वेरी असिस्टेंट)। &quot;जनरेट करें&quot; अनुरोध और 1000 डॉक्यूमेंट के नमूने से कलेक्शन के फ़ील्ड नाम व प्रकार चुने गए प्रोवाइडर को भेजता है: Anthropic का Claude API या Google का Gemini API (Google AI Studio की API कुंजी)। &quot;जनरेट करें&quot; दबाने तक कुछ नहीं भेजा जाता।</translation>
-    </message>
-    <message>
         <source>Enable the AI query assistant</source>
         <translation>AI क्वेरी असिस्टेंट चालू करें</translation>
+    </message>
+    <message>
+        <source>%1 AI (the hosted assistant) is no longer offered, so the assistant was turned off. Pick a provider, enter your own API key and turn it on again.</source>
+        <extracomment>Preferences › AI assistant notice after an update (%1 = product name).</extracomment>
+        <translation>%1 AI (होस्टेड सहायक) अब उपलब्ध नहीं है, इसलिए सहायक बंद कर दिया गया। कोई प्रदाता चुनें, अपनी API कुंजी डालें और इसे फिर से चालू करें।</translation>
     </message>
     <message>
         <source>Provider</source>
         <translation>प्रोवाइडर</translation>
     </message>
     <message>
+        <source>Service</source>
+        <translation>सेवा</translation>
+    </message>
+    <message>
+        <source>Custom address</source>
+        <translation>कस्टम पता</translation>
+    </message>
+    <message>
+        <source>Server address</source>
+        <translation>सर्वर का पता</translation>
+    </message>
+    <message>
+        <source>The address points to another server now, so the key was cleared. Enter the key for this server.</source>
+        <translation>पता अब किसी दूसरे सर्वर की ओर है, इसलिए कुंजी हटा दी गई। इस सर्वर की कुंजी डालें।</translation>
+    </message>
+    <message>
+        <source>Requests go to %1 on this device. A model that runs here is free and the data stays on this device; a cloud model or proxy behind this address sends it on.</source>
+        <extracomment>Preferences › AI, server on this computer (%1 = host name, e.g. localhost).</extracomment>
+        <translation>अनुरोध इस डिवाइस पर %1 को जाते हैं। यहाँ चलने वाला मॉडल मुफ़्त है और डेटा इसी डिवाइस पर रहता है; इस पते के पीछे का क्लाउड मॉडल या प्रॉक्सी उसे आगे भेजता है।</translation>
+    </message>
+    <message>
+        <source>Requests go to %1 on your local network. A model that runs there is free and the data stays on your network; a cloud model or proxy behind this address sends it on.</source>
+        <extracomment>Preferences › AI, server on the local network (%1 = host name or IP address).</extracomment>
+        <translation>अनुरोध आपके स्थानीय नेटवर्क पर %1 को जाते हैं। वहाँ चलने वाला मॉडल मुफ़्त है और डेटा आपके नेटवर्क में रहता है; इस पते के पीछे का क्लाउड मॉडल या प्रॉक्सी उसे आगे भेजता है।</translation>
+    </message>
+    <message>
+        <source>Requests go to %1. Usage is billed by that provider, if it charges.</source>
+        <extracomment>Preferences › AI, OpenAI-compatible (%1 = host name).</extracomment>
+        <translation>अनुरोध %1 पर जाते हैं। यदि वह शुल्क लेता है, तो उपयोग का बिल वही प्रदाता बनाता है।</translation>
+    </message>
+    <message>
         <source>Google AI Studio API key</source>
         <translation>Google AI Studio API कुंजी</translation>
+    </message>
+    <message>
+        <source>API key (optional)</source>
+        <translation>API कुंजी (वैकल्पिक)</translation>
     </message>
     <message>
         <source>Anthropic API key</source>
         <translation>Anthropic API कुंजी</translation>
     </message>
     <message>
-        <source>Signed in — requests run through your RagoShell account quota; no API key needed.</source>
-        <translation>साइन इन है — अनुरोध आपके RagoShell खाते के कोटे से चलते हैं; API कुंजी की आवश्यकता नहीं है।</translation>
+        <source>Hide key</source>
+        <translation>कुंजी छिपाएँ</translation>
     </message>
     <message>
-        <source>Sign in on the Account tab to use RagoShell AI, or pick another provider and enter its key.</source>
-        <translation>RagoShell AI का उपयोग करने के लिए खाता टैब पर साइन इन करें, या कोई दूसरा प्रदाता चुनें और उसकी कुंजी दर्ज करें।</translation>
+        <source>Show key</source>
+        <translation>कुंजी दिखाएँ</translation>
+    </message>
+    <message>
+        <source>Paste</source>
+        <extracomment>Preferences › AI: paste the API key from the clipboard.</extracomment>
+        <translation>चिपकाएँ</translation>
+    </message>
+    <message>
+        <source>Paste the API key from the clipboard</source>
+        <translation>क्लिपबोर्ड से API कुंजी चिपकाएँ</translation>
+    </message>
+    <message>
+        <source>Test connection</source>
+        <translation>कनेक्शन जाँचें</translation>
+    </message>
+    <message>
+        <source>Asks the provider for its model list with this key. No query or schema is sent.</source>
+        <translation>इस कुंजी से प्रदाता से उसकी मॉडल सूची माँगता है। कोई क्वेरी या स्कीमा नहीं भेजा जाता।</translation>
+    </message>
+    <message>
+        <source>Asks the server for its model list. No query or schema is sent.</source>
+        <translation>सर्वर से उसकी मॉडल सूची माँगता है। कोई क्वेरी या स्कीमा नहीं भेजा जाता।</translation>
+    </message>
+    <message>
+        <source>How to get a key ↗</source>
+        <translation>कुंजी कैसे पाएँ ↗</translation>
+    </message>
+    <message>
+        <source>Open the provider&apos;s API key page</source>
+        <translation>प्रदाता का API कुंजी पेज खोलें</translation>
+    </message>
+    <message>
+        <source>Clear clipboard</source>
+        <translation>क्लिपबोर्ड साफ़ करें</translation>
     </message>
     <message>
         <source>Using the key entered here (saved with your settings).</source>
@@ -3384,6 +3462,10 @@
         <translation>एनवायरनमेंट वैरिएबल %1 की कुंजी का उपयोग हो रहा है।</translation>
     </message>
     <message>
+        <source>No key: requests are sent without one (enough for a local server).</source>
+        <translation>कोई कुंजी नहीं: अनुरोध बिना कुंजी के भेजे जाते हैं (स्थानीय सर्वर के लिए काफ़ी)।</translation>
+    </message>
+    <message>
         <source>No key yet. Enter one above.</source>
         <translation>अभी कोई कुंजी नहीं है। ऊपर एक दर्ज करें।</translation>
     </message>
@@ -3392,24 +3474,56 @@
         <translation>मॉडल</translation>
     </message>
     <message>
-        <source>Load the provider&apos;s current model list</source>
-        <translation>प्रोवाइडर की वर्तमान मॉडल सूची लोड करें</translation>
+        <source>Installed model, e.g. llama3.2</source>
+        <translation>इंस्टॉल किया गया मॉडल, जैसे llama3.2</translation>
     </message>
     <message>
-        <source>Loading the model list…</source>
-        <translation>मॉडल सूची लोड हो रही है…</translation>
+        <source>Model name, e.g. gpt-5.5</source>
+        <translation>मॉडल का नाम, जैसे gpt-5.5</translation>
+    </message>
+    <message>
+        <source>Pick from the server&apos;s list…</source>
+        <translation>सर्वर की सूची से चुनें…</translation>
+    </message>
+    <message>
+        <source>Models listed by the server</source>
+        <translation>सर्वर द्वारा बताए गए मॉडल</translation>
+    </message>
+    <message>
+        <source>Testing the connection…</source>
+        <translation>कनेक्शन जाँचा जा रहा है…</translation>
+    </message>
+    <message>
+        <source>Type the model name, or use Test connection to list the server&apos;s models.</source>
+        <translation>मॉडल का नाम लिखें, या सर्वर के मॉडल देखने के लिए “कनेक्शन जाँचें” का उपयोग करें।</translation>
+    </message>
+    <message>
+        <source>Built-in list. Test connection loads the models this key can use now.</source>
+        <translation>बिल्ट-इन सूची। “कनेक्शन जाँचें” वे मॉडल लोड करता है जिन्हें यह कुंजी अभी उपयोग कर सकती है।</translation>
     </message>
     <message>
         <source>The selected model is no longer in the provider&apos;s list (retired?). Pick another one.</source>
         <translation>चुना गया मॉडल अब प्रोवाइडर की सूची में नहीं है (बंद हो गया?)। कोई दूसरा चुनें।</translation>
     </message>
     <message>
+        <source>Turns a request in plain language into a find() or aggregate() query (Tools › AI Query Assistant). Generate sends the request and the collection&apos;s field names and types from a 1000-document sample to the selected provider: Anthropic&apos;s Claude API, Google&apos;s Gemini API (an API key from Google AI Studio) or any OpenAI-compatible server you choose. Nothing is sent until you press Generate.</source>
+        <translation>सामान्य भाषा के अनुरोध को find() या aggregate() क्वेरी में बदलता है (टूल › AI क्वेरी सहायक)। जनरेट अनुरोध और 1000 दस्तावेज़ों के नमूने से संग्रह के फ़ील्ड नाम और प्रकार चुने गए प्रदाता को भेजता है: Anthropic का Claude API, Google का Gemini API (Google AI Studio की API कुंजी) या आपका चुना कोई भी OpenAI-संगत सर्वर। जनरेट दबाने तक कुछ नहीं भेजा जाता।</translation>
+    </message>
+    <message>
+        <source>Key pasted. Clear it from the clipboard? (A clipboard history may still keep a copy.)</source>
+        <translation>कुंजी चिपका दी गई। इसे क्लिपबोर्ड से हटाएँ? (क्लिपबोर्ड इतिहास में फिर भी इसकी प्रति रह सकती है।)</translation>
+    </message>
+    <message>
         <source>Models from the provider&apos;s current list.</source>
         <translation>प्रोवाइडर की वर्तमान सूची के मॉडल।</translation>
     </message>
     <message>
-        <source>Built-in list. ⟳ loads the models this key can use now.</source>
-        <translation>अंतर्निहित सूची। ⟳ वे मॉडल लोड करता है जिन्हें यह कुंजी अभी उपयोग कर सकती है।</translation>
+        <source>Answer time limit (sec)</source>
+        <translation>उत्तर समय सीमा (सेकंड)</translation>
+    </message>
+    <message>
+        <source>How long to wait for an answer. A local model can need minutes, especially while it loads.</source>
+        <translation>उत्तर के लिए कितनी देर प्रतीक्षा करें। स्थानीय मॉडल को, खासकर लोड होते समय, कई मिनट लग सकते हैं।</translation>
     </message>
     <message>
         <source>When a model runs out of quota, hits a rate limit or is retired, try another model of the same provider</source>
@@ -3716,12 +3830,60 @@
 <context>
     <name>RagoShell::AiAssistant</name>
     <message>
+        <source>Is Ollama running? Start the Ollama app, or run &quot;ollama serve&quot; in a terminal.</source>
+        <translation>क्या Ollama चल रहा है? Ollama ऐप शुरू करें, या टर्मिनल में "ollama serve" चलाएँ।</translation>
+    </message>
+    <message>
+        <source>In the browser the server must also allow this page (CORS): for Ollama set OLLAMA_ORIGINS to this page&apos;s address; in LM Studio turn on CORS in the server settings.</source>
+        <translation>ब्राउज़र में सर्वर को इस पेज की भी अनुमति देनी होगी (CORS): Ollama के लिए OLLAMA_ORIGINS को इस पेज के पते पर सेट करें; LM Studio में सर्वर सेटिंग्स में CORS चालू करें।</translation>
+    </message>
+    <message>
+        <source>Enter the server address.</source>
+        <translation>सर्वर का पता डालें।</translation>
+    </message>
+    <message>
+        <source>The address is too long.</source>
+        <translation>पता बहुत लंबा है।</translation>
+    </message>
+    <message>
+        <source>Enter a full address that starts with https://, for example https://api.openai.com/v1.</source>
+        <translation>https:// से शुरू होने वाला पूरा पता डालें, जैसे https://api.openai.com/v1।</translation>
+    </message>
+    <message>
+        <source>The address must not contain a user name or password. Put the key in the key field.</source>
+        <translation>पते में उपयोगकर्ता नाम या पासवर्ड नहीं होना चाहिए। कुंजी को कुंजी फ़ील्ड में डालें।</translation>
+    </message>
+    <message>
+        <source>The address must not contain ? or #.</source>
+        <translation>पते में ? या # नहीं होना चाहिए।</translation>
+    </message>
+    <message>
+        <source>Use https://. Plain http:// is allowed only for this device (localhost) or, without a key, for the local network.</source>
+        <translation>https:// का उपयोग करें। बिना एन्क्रिप्शन वाला http:// केवल इस डिवाइस (localhost) के लिए या, बिना कुंजी के, स्थानीय नेटवर्क के लिए अनुमत है।</translation>
+    </message>
+    <message>
+        <source>A key is never sent over plain http:// on the network. Use https://, or clear the key for a local server that needs none.</source>
+        <translation>कुंजी नेटवर्क पर कभी भी बिना एन्क्रिप्शन वाले http:// से नहीं भेजी जाती। https:// का उपयोग करें, या ऐसे स्थानीय सर्वर के लिए कुंजी हटाएँ जिसे इसकी ज़रूरत नहीं।</translation>
+    </message>
+    <message>
+        <source>Plain http:// to the local network is blocked on this device. Use https:// (for example through a reverse proxy) or localhost.</source>
+        <translation>इस डिवाइस पर स्थानीय नेटवर्क के लिए बिना एन्क्रिप्शन वाला http:// अवरुद्ध है। https:// (जैसे रिवर्स प्रॉक्सी के ज़रिए) या localhost का उपयोग करें।</translation>
+    </message>
+    <message>
         <source>Could not sample the collection: %1</source>
         <translation>कलेक्शन का नमूना नहीं लिया जा सका: %1</translation>
     </message>
     <message>
+        <source>Pick or type a model for %1 in Preferences.</source>
+        <translation>प्राथमिकताओं में %1 के लिए मॉडल चुनें या लिखें।</translation>
+    </message>
+    <message>
         <source>Turn on the AI assistant and add an API key for %1 in Preferences.</source>
         <translation>AI असिस्टेंट चालू करें और प्राथमिकताओं में %1 के लिए API कुंजी जोड़ें।</translation>
+    </message>
+    <message>
+        <source>Turn on the AI assistant and set up %1 in Preferences.</source>
+        <translation>प्राथमिकताओं में AI सहायक चालू करें और %1 सेट अप करें।</translation>
     </message>
     <message>
         <source>%1 skipped: %2.</source>
@@ -3732,8 +3894,17 @@
         <translation>अभी कोई %1 मॉडल उपलब्ध नहीं है: उनका कोटा खत्म हो गया था या पहले दर सीमा लग गई थी। &quot;पुनः प्रयास करें&quot; इसे भुलाकर फिर से पूछता है।</translation>
     </message>
     <message>
-        <source>The RagoShell session expired; sign in again.</source>
-        <translation>RagoShell सत्र की अवधि समाप्त हो गई; फिर से साइन इन करें।</translation>
+        <source>The saved API key has spaces or characters an API key does not contain. Enter it again in Preferences.</source>
+        <translation>सहेजी गई API कुंजी में स्पेस या ऐसे वर्ण हैं जो API कुंजी में नहीं होते। इसे प्राथमिकताओं में फिर से डालें।</translation>
+    </message>
+    <message>
+        <source>The server sent a response that is too large (over %1 MB).</source>
+        <translation>सर्वर ने बहुत बड़ा जवाब भेजा (%1 MB से अधिक)।</translation>
+    </message>
+    <message>
+        <source>No answer within %1 seconds. A local model can be slow, especially while it loads; you can raise the time limit in Preferences.</source>
+        <extracomment>%1 = seconds. Local models can take long, especially while loading.</extracomment>
+        <translation>%1 सेकंड में कोई उत्तर नहीं आया। स्थानीय मॉडल, खासकर लोड होते समय, धीमा हो सकता है; आप प्राथमिकताओं में समय सीमा बढ़ा सकते हैं।</translation>
     </message>
     <message>
         <source>The request timed out.</source>
@@ -3759,8 +3930,56 @@
         <translation>पहले API कुंजी दर्ज करें।</translation>
     </message>
     <message>
-        <source>Cannot reach the API: %1</source>
-        <translation>API तक नहीं पहुँचा जा सका: %1</translation>
+        <source>The key has spaces or characters an API key does not contain.</source>
+        <translation>कुंजी में स्पेस या ऐसे वर्ण हैं जो API कुंजी में नहीं होते।</translation>
+    </message>
+    <message>
+        <source>The model list is too large (over %1 MB).</source>
+        <translation>मॉडल सूची बहुत बड़ी है (%1 MB से अधिक)।</translation>
+    </message>
+    <message numerus="yes">
+        <source>Connected. %n model(s) available.</source>
+        <extracomment>Preferences › AI › Test connection succeeded.</extracomment>
+        <translation>
+            <numerusform>कनेक्ट हो गया। %n मॉडल उपलब्ध है।</numerusform>
+            <numerusform>कनेक्ट हो गया। %n मॉडल उपलब्ध हैं।</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Connected, but the provider listed no model this app can use.</source>
+        <translation>कनेक्ट हो गया, लेकिन प्रदाता ने ऐसा कोई मॉडल नहीं बताया जिसे यह ऐप उपयोग कर सके।</translation>
+    </message>
+    <message>
+        <source>Ollama is running, but no model is installed. Download one in a terminal with &quot;ollama pull &lt;model&gt;&quot;, then test again.</source>
+        <translation>Ollama चल रहा है, लेकिन कोई मॉडल इंस्टॉल नहीं है। टर्मिनल में "ollama pull &lt;model&gt;" से एक मॉडल डाउनलोड करें, फिर दोबारा जाँचें।</translation>
+    </message>
+    <message>
+        <source>The server is running but lists no models. Download or load a model on the server, then test again.</source>
+        <translation>सर्वर चल रहा है, लेकिन कोई मॉडल सूचीबद्ध नहीं करता। सर्वर पर कोई मॉडल डाउनलोड या लोड करें, फिर दोबारा जाँचें।</translation>
+    </message>
+    <message>
+        <source>The API key was rejected (HTTP %1). Check it and try again.</source>
+        <translation>API कुंजी अस्वीकार कर दी गई (HTTP %1)। इसे जाँचें और फिर से प्रयास करें।</translation>
+    </message>
+    <message>
+        <source>The server is reachable but has no model list (HTTP 404).</source>
+        <translation>सर्वर तक पहुँच है, लेकिन उसके पास मॉडल सूची नहीं है (HTTP 404)।</translation>
+    </message>
+    <message>
+        <source>The provider&apos;s rate limit was reached (HTTP 429). Try again in a moment.</source>
+        <translation>प्रदाता की दर सीमा पूरी हो गई (HTTP 429)। थोड़ी देर बाद फिर से प्रयास करें।</translation>
+    </message>
+    <message>
+        <source>The server answered with a redirect (HTTP %1). It was not followed, so the key was not sent anywhere else.</source>
+        <translation>सर्वर ने रीडायरेक्ट के साथ जवाब दिया (HTTP %1)। उसका पालन नहीं किया गया, इसलिए कुंजी कहीं और नहीं भेजी गई।</translation>
+    </message>
+    <message>
+        <source>The server did not answer in time.</source>
+        <translation>सर्वर ने समय पर जवाब नहीं दिया।</translation>
+    </message>
+    <message>
+        <source>Cannot reach the server: %1</source>
+        <translation>सर्वर तक नहीं पहुँच सके: %1</translation>
     </message>
 </context>
 <context>
@@ -3811,14 +4030,6 @@
     <message>
         <source>Canceled</source>
         <translation>रद्द</translation>
-    </message>
-    <message>
-        <source>Local BYOK AI only</source>
-        <translation>केवल लोकल BYOK AI</translation>
-    </message>
-    <message>
-        <source>%1 tokens / month</source>
-        <translation>%1 टोकन / माह</translation>
     </message>
     <message>
         <source>Offline grace valid until %1</source>
@@ -4083,6 +4294,22 @@
     <message>
         <source>Index &quot;%1&quot; dropped from %2.%3.</source>
         <translation>इंडेक्स &quot;%1&quot; को %2.%3 से हटा दिया गया।</translation>
+    </message>
+    <message>
+        <source>The clipboard has no text.</source>
+        <translation>क्लिपबोर्ड में कोई टेक्स्ट नहीं है।</translation>
+    </message>
+    <message>
+        <source>The clipboard holds more than one line. Copy only the key.</source>
+        <translation>क्लिपबोर्ड में एक से अधिक पंक्तियाँ हैं। केवल कुंजी कॉपी करें।</translation>
+    </message>
+    <message>
+        <source>The clipboard text is too long for an API key (over %1 characters).</source>
+        <translation>क्लिपबोर्ड का टेक्स्ट API कुंजी के लिए बहुत लंबा है (%1 वर्णों से अधिक)।</translation>
+    </message>
+    <message>
+        <source>The clipboard text has spaces or characters an API key does not contain.</source>
+        <translation>क्लिपबोर्ड के टेक्स्ट में स्पेस या ऐसे वर्ण हैं जो API कुंजी में नहीं होते।</translation>
     </message>
     <message numerus="yes">
         <source>Replica Set (%n seed node(s))</source>

@@ -24,19 +24,99 @@ namespace RagoShell
      */
     namespace AiQueryAssistant
     {
-        /// RagoCloud = hosted "RagoShell AI": no user key, the API proxy picks
-        /// the upstream provider/model (roadmap 6.2 / A8).
-        enum class Provider { Anthropic, Gemini, RagoCloud };
+        /// Bring-your-own-key only: requests go from the device straight to
+        /// the provider the user chose, never through a RagoShell server.
+        /// OpenAiCompatible talks to any server with the OpenAI Chat
+        /// Completions API (OpenAI, OpenRouter, DeepSeek, LM Studio, ...) at a
+        /// base address the user picks (docs: B6). Ollama uses the same API
+        /// at http://localhost:11434/v1 by default and never sends a key
+        /// (docs: B7).
+        enum class Provider { Anthropic, Gemini, OpenAiCompatible, Ollama };
 
-        /// Stable ids used in settings: "anthropic", "gemini".
+        /// True for providers whose base address is a setting.
+        bool hasConfigurableBaseUrl(Provider provider);
+        /// True for providers spoken to with the OpenAI Chat Completions API.
+        bool usesOpenAiApi(Provider provider);
+        /// False for Ollama: no key is stored, read from the environment or sent.
+        bool usesApiKey(Provider provider);
+        /// Address used while none is saved (Ollama); empty for the others.
+        QString defaultBaseUrl(Provider provider);
+
+        /// Where an address points, for "data stays on this device" notes.
+        enum class HostScope { ThisDevice, LocalNetwork, Internet };
+        HostScope hostScope(const QString &url);
+
+        /// Seconds to wait for an answer. Settable for providers with a base
+        /// address, as local models can be slow (docs: B7); fixed otherwise.
+        inline constexpr int kMinTimeoutSec = 30;
+        inline constexpr int kMaxTimeoutSec = 300;
+        int defaultTimeoutSec(Provider provider);
+        int clampTimeoutSec(int seconds);
+
+        /// Ready-made base addresses for OpenAiCompatible. A preset only
+        /// fills the address field; the user sees and may change it.
+        struct Preset
+        {
+            QString id;            ///< "openai", "openrouter", "deepseek", "lmstudio"
+            QString name;          ///< shown in Preferences
+            QString baseUrl;       ///< normalized (see checkBaseUrl)
+            QString keyPageUrl;    ///< where a key is created; empty = no key needed
+            QStringList envVars;   ///< used only at exactly this baseUrl (docs: T12)
+        };
+        QList<Preset> openAiPresets();
+        /// The preset whose baseUrl equals this (normalized) address, or
+        /// nullptr: a custom address.
+        const Preset *presetForBaseUrl(const QString &baseUrl);
+
+        /// Base address check (docs: T2, T3). https everywhere; plain http
+        /// only to the loopback address, or (key empty, platform allows it)
+        /// to a private network address. No user name / password, query or
+        /// fragment; at most kMaxBaseUrlLength; trailing '/' removed.
+        enum class BaseUrlError
+        {
+            None,
+            Empty,
+            TooLong,
+            Malformed,            ///< not an absolute http(s) address with a host
+            HasCredentials,       ///< user:password@
+            HasQueryOrFragment,
+            PlainHttpPublic,      ///< http to an address outside loopback / private ranges
+            PlainHttpWithKey,     ///< http to a private address while a key is set
+            PlainHttpBlocked,     ///< http to a private address where the platform forbids it (Android)
+        };
+        inline constexpr int kMaxBaseUrlLength = 2048;
+        struct BaseUrlCheck
+        {
+            BaseUrlError error = BaseUrlError::Empty;
+            QString normalized;   ///< valid only when error == None
+            bool ok() const { return error == BaseUrlError::None; }
+        };
+        /// hasKey: a key would be sent. allowPrivateHttp: the platform lets
+        /// the app use plain http on the local network (not Android).
+        BaseUrlCheck checkBaseUrl(const QString &input, bool hasKey, bool allowPrivateHttp);
+        /// "scheme://host:port" of an address (port always written), empty
+        /// when invalid. A saved key belongs to one origin (docs: T1).
+        QString urlOrigin(const QString &url);
+        /// Host shown as "data goes to <host>" (punycode for look-alike names).
+        QString urlHost(const QString &url);
+        /// Text for the log with key-looking parts replaced by "[redacted]".
+        QString redactSecrets(const QString &text);
+
+        /// Stable ids used in settings: "anthropic", "gemini", "openai_compat", "ollama".
         QStringList providerIds();
         QString providerId(Provider provider);
         Provider providerFromId(const QString &id);   ///< unknown → Anthropic
+        /// Settings id of the hosted "RagoShell AI" provider, which was
+        /// removed. A saved value is migrated by SettingsManager (assistant
+        /// turned off) so it never silently becomes Anthropic.
+        inline constexpr const char *kRemovedHostedProviderId = "ragoshell_cloud";
         /// "Anthropic Claude", "Google Gemini".
         QString providerName(Provider provider);
-        /// Environment variables checked when no key is saved, in order.
-        QStringList apiKeyEnvironmentVariables(Provider provider);
-        QString apiKeyFromEnvironment(Provider provider);
+        /// Environment variables checked when no key is saved, in order. For
+        /// OpenAiCompatible only those of the preset at exactly baseUrl, so a
+        /// personal OPENAI_API_KEY never goes to a custom address (docs: T12).
+        QStringList apiKeyEnvironmentVariables(Provider provider, const QString &baseUrl = {});
+        QString apiKeyFromEnvironment(Provider provider, const QString &baseUrl = {});
 
         /// Built-in models, the default first, in fallback order. Providers
         /// retire models often, so the UI also offers the list fetched with
@@ -49,14 +129,23 @@ namespace RagoShell
         QStringList fallbackCandidates(Provider provider, const QString &preferred,
                                        const QStringList &available, int maxModels = 3);
 
-        /// Generation endpoint, overridable with RAGOSHELL_AI_BASE_URL
-        /// (tests point it at a local mock server).
-        QString endpointUrl(Provider provider = Provider::Anthropic, const QString &model = {});
+        /// Generation endpoint. Anthropic / Gemini: overridable with
+        /// RAGOSHELL_AI_BASE_URL (tests point it at a local mock server).
+        /// OpenAiCompatible: baseUrl (already checked) + "/chat/completions".
+        QString endpointUrl(Provider provider = Provider::Anthropic, const QString &model = {},
+                            const QString &baseUrl = {});
 
         /// Model list endpoint (GET).
-        QString modelsUrl(Provider provider);
+        QString modelsUrl(Provider provider, const QString &baseUrl = {});
+
+        /// Most bytes read from a generation / model list response (docs: T4).
+        inline constexpr qint64 kMaxResponseBytes = 1024 * 1024;
+        inline constexpr qint64 kMaxModelListBytes = 4 * 1024 * 1024;
+        inline constexpr int kMaxListedModels = 1000;
 
         /// HTTP headers for a request with the given key and model.
+        /// OpenAiCompatible: "Authorization: Bearer" only when the key is not
+        /// empty, and no other identifying header.
         std::vector<std::pair<QByteArray, QByteArray>> requestHeaders(const QString &apiKey,
                                                                       const QString &model);
         std::vector<std::pair<QByteArray, QByteArray>> requestHeaders(Provider provider,
@@ -162,18 +251,6 @@ namespace RagoShell
                                  const QString &database, const QByteArray &retryAfter = {},
                                  const QStringList &knownCollections = {});
 
-        /// Hosted-proxy request envelope for POST /v1/ai/generate: system +
-        /// user messages, max_tokens capped to the API limit.
-        QByteArray cloudRequestBody(const Context &context, const QString &question);
-
-        /// Interprets a hosted-proxy response: 200 carries `content` (the
-        /// model's JSON answer), 402 ai_quota_exceeded, 403 entitlement,
-        /// 429 rate_limited, 502/504 upstream.
-        Suggestion parseCloudResponse(int httpStatus, const QByteArray &body,
-                                      const QString &database,
-                                      const QByteArray &retryAfter = {},
-                                      const QStringList &knownCollections = {});
-
         struct ModelList
         {
             bool ok = false;
@@ -183,6 +260,41 @@ namespace RagoShell
 
         /// Interprets a modelsUrl() response.
         ModelList parseModelList(Provider provider, int httpStatus, const QByteArray &body);
+
+        /// Provider page where a user creates an API key (Preferences ›
+        /// "How to get a key"). The only place these links are kept; for
+        /// OpenAiCompatible the preset at baseUrl decides (empty for none).
+        QString apiKeyPageUrl(Provider provider, const QString &baseUrl = {});
+
+        /// Preferences › Paste: checks clipboard text before it becomes the
+        /// key. The clipboard is read only when the user presses the button.
+        enum class PastedKey { Ok, Empty, MultiLine, TooLong, InvalidCharacters };
+        inline constexpr int kMaxApiKeyLength = 512;
+        /// Trims the text; on Ok, *key receives it. A key is one line of
+        /// printable ASCII without spaces, at most kMaxApiKeyLength long.
+        PastedKey checkPastedKey(const QString &clipboardText, QString *key);
+
+        /// Preferences › Test connection. Only the model list is requested:
+        /// no schema, no prompt. httpStatus 0 means no HTTP response (DNS,
+        /// TLS, refused, timeout). Redirects are not followed, so a 3xx
+        /// arrives here as RedirectRefused.
+        enum class ConnectionStatus {
+            Connected,        ///< list.models is filled
+            NoUsableModels,   ///< 200, but nothing usable in the list
+            NoModelsInstalled,///< 200 with an empty list: a local server with no model yet
+            KeyRejected,      ///< 401 / 403 or the provider's "invalid key"
+            NoModelList,      ///< 404: reachable, no model list endpoint
+            RateLimited,      ///< 429
+            RedirectRefused,  ///< 3xx
+            ProviderError,    ///< any other HTTP error; list.error has details
+            Unreachable,      ///< no HTTP response
+        };
+        struct ConnectionCheck
+        {
+            ConnectionStatus status = ConnectionStatus::Unreachable;
+            ModelList list;
+        };
+        ConnectionCheck checkConnection(Provider provider, int httpStatus, const QByteArray &body);
 
         /// Next midnight in Pacific time, when Gemini daily quotas reset.
         QDateTime dailyQuotaReset(const QDateTime &now);

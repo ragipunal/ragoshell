@@ -10,7 +10,11 @@
 #include <QRegularExpression>
 #include <QTimeZone>
 
+#include <bsoncxx/json.hpp>
+#include <bsoncxx/types.hpp>
+
 #include "ragoshell/core/utils/AppPaths.h"
+#include "ragoshell/core/utils/MongoJsonUtils.h"
 #include "ragoshell/core/utils/QueryCodeExport.h"
 
 namespace RagoShell::AiQueryAssistant
@@ -48,7 +52,6 @@ namespace RagoShell::AiQueryAssistant
                                    {"additionalProperties", false}};
             }
 
-            // Cloud requests go through /v1/ai/generate instead.
             // Gemini's responseSchema is an OpenAPI subset: upper-case types, no
             // additionalProperties.
             QJsonObject geminiOutputSchema()
@@ -216,16 +219,137 @@ namespace RagoShell::AiQueryAssistant
                     s.error += QStringLiteral(" (%1)").arg(message.left(300));
             }
 
+            // OpenAI Chat Completions style: {"error":{"message","type","code"}};
+            // some servers send "error" as a plain string.
+            void openAiError(Suggestion &s, int status, const QJsonObject &root, const QByteArray &retryAfter)
+            {
+                const QJsonValue errorValue = root.value("error");
+                const QJsonObject error = errorValue.toObject();
+                const QString message = errorValue.isString() ? errorValue.toString()
+                                                              : error.value("message").toString();
+                const QString code = error.value("code").toVariant().toString();
+                const QString type = error.value("type").toString();
+                QString hint;
+                if (status == 401 || status == 403) {
+                    s.failure = Failure::Auth;
+                    hint = QCoreApplication::translate("AiQueryAssistant", "The API key was rejected. Check it in Preferences.");
+                } else if (status == 402 || code == QLatin1String("insufficient_quota")
+                           || type == QLatin1String("insufficient_quota")) {
+                    s.failure = Failure::QuotaExhausted;
+                    s.allModels = true;
+                    hint = QCoreApplication::translate("AiQueryAssistant", "The account at this provider has no credit or quota left.");
+                } else if (status == 404) {
+                    s.failure = Failure::ModelUnavailable;
+                    hint = QCoreApplication::translate("AiQueryAssistant", "The server does not know this model or address. Check both in Preferences.");
+                } else if (status == 429) {
+                    s.failure = Failure::RateLimited;
+                    s.retryAfterSec = parseRetryAfter(retryAfter);
+                    hint = s.retryAfterSec > 0
+                               ? QCoreApplication::translate("AiQueryAssistant", "Rate limit reached. Try again in %1 s.").arg(s.retryAfterSec)
+                               : QCoreApplication::translate("AiQueryAssistant", "Rate limit reached. Try again in a moment.");
+                } else if (status >= 500) {
+                    s.failure = Failure::Overloaded;
+                    hint = QCoreApplication::translate("AiQueryAssistant", "The API reported a server error. Try again in a moment.");
+                } else {
+                    s.failure = Failure::Other;
+                }
+                s.error = hint.isEmpty() ? QCoreApplication::translate("AiQueryAssistant", "Request failed (HTTP %1).").arg(status) : hint;
+                if (!message.isEmpty())
+                    s.error += QStringLiteral(" (%1)").arg(message.left(300));
+            }
+
             void httpError(Suggestion &s, Provider provider, int status, const QJsonObject &root,
                            const QByteArray &retryAfter)
             {
+                if (status >= 300 && status < 400) {
+                    // Redirects are never followed: the key header would go
+                    // along to the other server (docs: T6).
+                    s.failure = Failure::Other;
+                    s.error = QCoreApplication::translate("AiQueryAssistant",
+                                                          "The server answered with a redirect (HTTP %1). It was not "
+                                                          "followed, so nothing was sent anywhere else. Check the address.")
+                                  .arg(status);
+                    s.retryable = false;
+                    return;
+                }
                 if (provider == Provider::Gemini)
                     geminiError(s, status, root.value("error").toObject());
+                else if (usesOpenAiApi(provider))
+                    openAiError(s, status, root, retryAfter);
                 else
                     anthropicError(s, status, root.value("error").toObject(), retryAfter);
                 if (s.retryAfterSec == 0)
                     s.retryAfterSec = parseRetryAfter(retryAfter);
                 s.retryable = s.failure == Failure::RateLimited || s.failure == Failure::Overloaded;
+            }
+
+            // Operators found in the parsed query: the keys the server will see,
+            // with any JSON escape already decoded (docs: B6 review).
+            struct OperatorScan
+            {
+                bool writes = false;     ///< $out / $merge
+                QString javascript;      ///< $where / $function / $accumulator
+                bool tooDeep = false;
+            };
+
+            void scanArray(bsoncxx::array::view arr, OperatorScan &scan, int depth);
+
+            void scanDocument(bsoncxx::document::view doc, OperatorScan &scan, int depth)
+            {
+                if (depth > 64) {
+                    scan.tooDeep = true;
+                    return;
+                }
+                for (auto &&el : doc) {
+                    const std::string key(el.key());
+                    if (key == "$out" || key == "$merge")
+                        scan.writes = true;
+                    else if (key == "$where" || key == "$function" || key == "$accumulator")
+                        scan.javascript = QString::fromStdString(key);
+                    if (el.type() == bsoncxx::type::k_document)
+                        scanDocument(el.get_document().value, scan, depth + 1);
+                    else if (el.type() == bsoncxx::type::k_array)
+                        scanArray(el.get_array().value, scan, depth + 1);
+                }
+            }
+
+            void scanArray(bsoncxx::array::view arr, OperatorScan &scan, int depth)
+            {
+                if (depth > 64) {
+                    scan.tooDeep = true;
+                    return;
+                }
+                for (auto &&el : arr) {
+                    if (el.type() == bsoncxx::type::k_document)
+                        scanDocument(el.get_document().value, scan, depth + 1);
+                    else if (el.type() == bsoncxx::type::k_array)
+                        scanArray(el.get_array().value, scan, depth + 1);
+                }
+            }
+
+            // Parses the script the way the shell will and scans every part.
+            OperatorScan scanScript(const QString &script)
+            {
+                OperatorScan scan;
+                std::vector<bsoncxx::document::value> docs;
+                const auto find = MongoJsonUtils::parseFindQueryChain(script);
+                if (find.valid) {
+                    for (const QString &part : {find.filter, find.projection, find.sort}) {
+                        if (part.trimmed().isEmpty())
+                            continue;
+                        bsoncxx::document::value doc = bsoncxx::from_json("{}");
+                        QString err;
+                        if (MongoJsonUtils::parseSingleDocument(part, doc, err))
+                            docs.push_back(std::move(doc));
+                    }
+                } else {
+                    const auto agg = MongoJsonUtils::parseAggregateChain(script);
+                    if (agg.valid)
+                        MongoJsonUtils::parseDocuments(agg.pipeline, docs, nullptr);
+                }
+                for (const auto &doc : docs)
+                    scanDocument(doc.view(), scan, 0);
+                return scan;
             }
 
             // The structured answer, shared by both providers.
@@ -277,8 +401,19 @@ namespace RagoShell::AiQueryAssistant
                     }
                 }
 
+                const OperatorScan scan = scanScript(s.script);
+                if (!scan.javascript.isEmpty() || scan.tooDeep) {
+                    s.failure = Failure::Other;
+                    s.error = scan.tooDeep
+                                  ? QCoreApplication::translate("AiQueryAssistant", "The generated query is nested too deeply.")
+                                  : QCoreApplication::translate("AiQueryAssistant",
+                                                                "The generated query uses %1, which runs JavaScript on the "
+                                                                "server. It was not accepted.")
+                                        .arg(scan.javascript);
+                    return;
+                }
                 static const QRegularExpression writeStage(QStringLiteral("[\"']?\\$(out|merge)[\"']?\\s*:"));
-                s.writesData = writeStage.match(s.script).hasMatch();
+                s.writesData = scan.writes || writeStage.match(s.script).hasMatch();
                 s.ok = true;
             }
 
@@ -337,6 +472,46 @@ namespace RagoShell::AiQueryAssistant
                 readAnswer(s, text, database, knownCollections);
             }
 
+            // Without a schema-enforced response, models may wrap the JSON in a
+            // Markdown fence or add a sentence: keep the outermost {...}.
+            QString extractJsonObject(const QString &text)
+            {
+                const qsizetype open = text.indexOf(QLatin1Char('{'));
+                const qsizetype close = text.lastIndexOf(QLatin1Char('}'));
+                return open >= 0 && close > open ? text.mid(open, close - open + 1) : text;
+            }
+
+            void openAiAnswer(Suggestion &s, const QJsonObject &root, const QString &database,
+                              const QStringList &knownCollections)
+            {
+                const QJsonObject choice = root.value("choices").toArray().first().toObject();
+                const QJsonObject message = choice.value("message").toObject();
+                const QString finish = choice.value("finish_reason").toString();
+                if (!message.value("refusal").toString().isEmpty() || finish == QLatin1String("content_filter")) {
+                    s.failure = Failure::Blocked;
+                    s.error = QCoreApplication::translate("AiQueryAssistant", "The model declined this request.");
+                    return;
+                }
+                if (finish == QLatin1String("length")) {
+                    s.failure = Failure::Other;
+                    s.error = QCoreApplication::translate("AiQueryAssistant", "The answer was cut off. Try a shorter or simpler request.");
+                    return;
+                }
+                readAnswer(s, extractJsonObject(message.value("content").toString()), database, knownCollections);
+            }
+
+            // Chat models only: the OpenAI list also has embedding, speech,
+            // image and moderation models.
+            bool usableOpenAiModel(const QString &id)
+            {
+                static const QStringList excluded{"embed", "tts", "whisper", "dall-e", "moderation", "transcribe",
+                                                  "image", "audio", "realtime", "speech"};
+                for (const QString &word : excluded)
+                    if (id.contains(word, Qt::CaseInsensitive))
+                        return false;
+                return !id.isEmpty();
+            }
+
             // "gemini-3.8-flash" → 3.8; aliases without a number sort first.
             double geminiVersion(const QString &id)
             {
@@ -365,46 +540,67 @@ namespace RagoShell::AiQueryAssistant
 
         QStringList providerIds()
         {
-            return {QStringLiteral("ragoshell_cloud"), QStringLiteral("anthropic"),
-                    QStringLiteral("gemini")};
+            return {QStringLiteral("anthropic"), QStringLiteral("gemini"), QStringLiteral("openai_compat"),
+                    QStringLiteral("ollama")};
         }
 
         QString providerId(Provider provider)
         {
-            if (provider == Provider::RagoCloud)
-                return QStringLiteral("ragoshell_cloud");
-            return provider == Provider::Gemini ? QStringLiteral("gemini") : QStringLiteral("anthropic");
+            switch (provider) {
+            case Provider::Gemini:
+                return QStringLiteral("gemini");
+            case Provider::OpenAiCompatible:
+                return QStringLiteral("openai_compat");
+            case Provider::Ollama:
+                return QStringLiteral("ollama");
+            case Provider::Anthropic:
+                break;
+            }
+            return QStringLiteral("anthropic");
         }
 
         Provider providerFromId(const QString &id)
         {
             if (id == QLatin1String("gemini"))
                 return Provider::Gemini;
-            if (id == QLatin1String("ragoshell_cloud"))
-                return Provider::RagoCloud;
+            if (id == QLatin1String("openai_compat"))
+                return Provider::OpenAiCompatible;
+            if (id == QLatin1String("ollama"))
+                return Provider::Ollama;
             return Provider::Anthropic;
         }
 
         QString providerName(Provider provider)
         {
-            if (provider == Provider::RagoCloud)
-                return QStringLiteral("RagoShell AI");
-            return provider == Provider::Gemini ? QStringLiteral("Google Gemini")
-                                                : QStringLiteral("Anthropic Claude");
+            switch (provider) {
+            case Provider::Gemini:
+                return QStringLiteral("Google Gemini");
+            case Provider::OpenAiCompatible:
+                return QCoreApplication::translate("AiQueryAssistant", "OpenAI-compatible");
+            case Provider::Ollama:
+                return QStringLiteral("Ollama");
+            case Provider::Anthropic:
+                break;
+            }
+            return QStringLiteral("Anthropic Claude");
         }
 
-        QStringList apiKeyEnvironmentVariables(Provider provider)
+        QStringList apiKeyEnvironmentVariables(Provider provider, const QString &baseUrl)
         {
-            if (provider == Provider::RagoCloud)
-                return {};
             if (provider == Provider::Gemini)
                 return {QStringLiteral("GEMINI_API_KEY"), QStringLiteral("GOOGLE_API_KEY")};
+            if (!usesApiKey(provider))
+                return {};
+            if (provider == Provider::OpenAiCompatible) {
+                const Preset *preset = presetForBaseUrl(baseUrl);
+                return preset ? preset->envVars : QStringList();
+            }
             return {QStringLiteral("ANTHROPIC_API_KEY")};
         }
 
-        QString apiKeyFromEnvironment(Provider provider)
+        QString apiKeyFromEnvironment(Provider provider, const QString &baseUrl)
         {
-            for (const QString &name : apiKeyEnvironmentVariables(provider)) {
+            for (const QString &name : apiKeyEnvironmentVariables(provider, baseUrl)) {
                 const QString value = qEnvironmentVariable(name.toUtf8().constData()).trimmed();
                 if (!value.isEmpty())
                     return value;
@@ -414,10 +610,6 @@ namespace RagoShell::AiQueryAssistant
 
         QStringList modelIds(Provider provider)
         {
-            if (provider == Provider::RagoCloud) {
-                // Server-side allowlist decides; shown as one stable choice.
-                return {QStringLiteral("ragoshell-ai")};
-            }
             if (provider == Provider::Gemini) {
                 // gemini-flash-latest follows each new Flash release, so it
                 // survives model retirements; flash-lite first after it, as it
@@ -425,13 +617,16 @@ namespace RagoShell::AiQueryAssistant
                 return {QStringLiteral("gemini-flash-latest"), QStringLiteral("gemini-3.5-flash-lite"),
                         QStringLiteral("gemini-3.8-flash"), QStringLiteral("gemini-4-argon")};
             }
+            if (usesOpenAiApi(provider))
+                return {};   // every server has its own models: picked or typed in Preferences
             return {QStringLiteral("claude-opus-5-5"), QStringLiteral("claude-sonnet-5-5"),
                     QStringLiteral("claude-haiku-5-5")};
         }
 
         QString defaultModel(Provider provider)
         {
-            return modelIds(provider).first();
+            const QStringList models = modelIds(provider);
+            return models.isEmpty() ? QString() : models.first();
         }
 
         QStringList fallbackCandidates(Provider provider, const QString &preferred,
@@ -451,16 +646,10 @@ namespace RagoShell::AiQueryAssistant
             return models;
         }
 
-        QString endpointUrl(Provider provider, const QString &model)
+        QString endpointUrl(Provider provider, const QString &model, const QString &base)
         {
-            if (provider == Provider::RagoCloud) {
-                // Resolved by AiAssistant from CloudClient::effectiveApiUrl();
-                // the env override still applies to tests.
-                QString base = productEnv("AI_BASE_URL");
-                while (base.endsWith('/'))
-                    base.chop(1);
-                return base + QStringLiteral("/v1/ai/generate");
-            }
+            if (usesOpenAiApi(provider))
+                return base + QStringLiteral("/chat/completions");
             if (provider == Provider::Gemini) {
                 const QString m = model.isEmpty() ? defaultModel(provider) : model;
                 return baseUrl(provider) + QStringLiteral("/v1beta/models/%1:generateContent").arg(m);
@@ -468,8 +657,10 @@ namespace RagoShell::AiQueryAssistant
             return baseUrl(provider) + QStringLiteral("/v1/messages");
         }
 
-        QString modelsUrl(Provider provider)
+        QString modelsUrl(Provider provider, const QString &base)
         {
+            if (usesOpenAiApi(provider))
+                return base + QStringLiteral("/models");
             return baseUrl(provider) + (provider == Provider::Gemini
                                             ? QStringLiteral("/v1beta/models?pageSize=1000")
                                             : QStringLiteral("/v1/models?limit=1000"));
@@ -487,6 +678,12 @@ namespace RagoShell::AiQueryAssistant
         {
             if (provider == Provider::Gemini)
                 return {{"content-type", "application/json"}, {"x-goog-api-key", apiKey.toUtf8()}};
+            if (usesOpenAiApi(provider)) {
+                std::vector<std::pair<QByteArray, QByteArray>> headers{{"content-type", "application/json"}};
+                if (!apiKey.isEmpty() && usesApiKey(provider))
+                    headers.emplace_back("authorization", "Bearer " + apiKey.toUtf8());
+                return headers;
+            }
             std::vector<std::pair<QByteArray, QByteArray>> headers{
                 {"content-type", "application/json"},
                 {"x-api-key", apiKey.toUtf8()},
@@ -523,6 +720,8 @@ namespace RagoShell::AiQueryAssistant
             }
             if (provider == Provider::Gemini)
                 geminiAnswer(s, root, database, knownCollections);
+            else if (usesOpenAiApi(provider))
+                openAiAnswer(s, root, database, knownCollections);
             else
                 anthropicAnswer(s, root, database, knownCollections);
             return s;
@@ -558,6 +757,16 @@ namespace RagoShell::AiQueryAssistant
                         return !pa;
                     return a < b;
                 });
+            } else if (usesOpenAiApi(provider)) {
+                const QJsonArray data = root.value("data").toArray();
+                for (const QJsonValue &v : data) {
+                    const QString id = v.toObject().value("id").toString().trimmed();
+                    if (usableOpenAiModel(id) && id.size() <= 200 && !list.models.contains(id))
+                        list.models << id;
+                    if (list.models.size() >= kMaxListedModels)
+                        break;
+                }
+                list.models.sort(Qt::CaseInsensitive);
             } else {
                 // Already newest first.
                 for (const QJsonValue &v : root.value("data").toArray()) {
@@ -570,6 +779,78 @@ namespace RagoShell::AiQueryAssistant
             if (!list.ok)
                 list.error = QCoreApplication::translate("AiQueryAssistant", "The API listed no usable models.");
             return list;
+        }
+
+        QString apiKeyPageUrl(Provider provider, const QString &base)
+        {
+            if (!usesApiKey(provider))
+                return {};
+            if (provider == Provider::OpenAiCompatible) {
+                const Preset *preset = presetForBaseUrl(base);
+                return preset ? preset->keyPageUrl : QString();
+            }
+            if (provider == Provider::Gemini)
+                return QStringLiteral("https://aistudio.google.com/apikey");
+            return QStringLiteral("https://platform.claude.com/settings/keys");
+        }
+
+        PastedKey checkPastedKey(const QString &clipboardText, QString *key)
+        {
+            const QString text = clipboardText.trimmed();
+            if (text.isEmpty())
+                return PastedKey::Empty;
+            if (text.contains(QLatin1Char('\n')) || text.contains(QLatin1Char('\r')))
+                return PastedKey::MultiLine;
+            if (text.size() > kMaxApiKeyLength)
+                return PastedKey::TooLong;
+            for (const QChar c : text) {
+                // Printable ASCII, no space: catches tabs, zero-width and
+                // other characters copied from a web page along with the key.
+                if (c.unicode() < 0x21 || c.unicode() > 0x7e)
+                    return PastedKey::InvalidCharacters;
+            }
+            if (key)
+                *key = text;
+            return PastedKey::Ok;
+        }
+
+        ConnectionCheck checkConnection(Provider provider, int httpStatus, const QByteArray &body)
+        {
+            ConnectionCheck c;
+            if (httpStatus <= 0) {
+                c.status = ConnectionStatus::Unreachable;
+                return c;
+            }
+            if (httpStatus >= 300 && httpStatus < 400) {
+                c.status = ConnectionStatus::RedirectRefused;
+                return c;
+            }
+            c.list = parseModelList(provider, httpStatus, body);
+            if (c.list.ok) {
+                c.status = ConnectionStatus::Connected;
+                return c;
+            }
+            if (httpStatus == 200) {
+                // Ollama answers "data": null (older versions) or [] before
+                // the first "ollama pull".
+                const QJsonValue data = QJsonDocument::fromJson(body).object().value("data");
+                const bool empty = data.isNull() || (data.isArray() && data.toArray().isEmpty());
+                c.status = usesOpenAiApi(provider) && empty ? ConnectionStatus::NoModelsInstalled
+                                                            : ConnectionStatus::NoUsableModels;
+                return c;
+            }
+
+            Suggestion s;
+            httpError(s, provider, httpStatus, QJsonDocument::fromJson(body).object(), {});
+            if (httpStatus == 401 || httpStatus == 403 || s.failure == Failure::Auth)
+                c.status = ConnectionStatus::KeyRejected;
+            else if (httpStatus == 404)
+                c.status = ConnectionStatus::NoModelList;
+            else if (httpStatus == 429 || s.failure == Failure::RateLimited)
+                c.status = ConnectionStatus::RateLimited;
+            else
+                c.status = ConnectionStatus::ProviderError;
+            return c;
         }
 
         QDateTime dailyQuotaReset(const QDateTime &now)
@@ -666,64 +947,6 @@ namespace RagoShell::AiQueryAssistant
             default:
                 return failure.error;
             }
-        }
-
-        QByteArray cloudRequestBody(const Context &context, const QString &question)
-        {
-            QJsonObject body{
-                {"provider", QStringLiteral("anthropic")},
-                {"messages", QJsonArray{
-                    QJsonObject{{"role", "system"}, {"content", systemPrompt()}},
-                    QJsonObject{{"role", "user"}, {"content", userPrompt(context, question)}}}},
-                {"max_tokens", 4096},
-            };
-            return QJsonDocument(body).toJson(QJsonDocument::Compact);
-        }
-
-        Suggestion parseCloudResponse(int httpStatus, const QByteArray &body,
-                                      const QString &database, const QByteArray &retryAfter,
-                                      const QStringList &knownCollections)
-        {
-            Suggestion s;
-            const QJsonObject root = QJsonDocument::fromJson(body).object();
-            if (httpStatus != 200) {
-                const QString code = root.value("error").toObject().value("code").toString();
-                if (httpStatus == 402 || code == QLatin1String("ai_quota_exceeded")) {
-                    s.failure = Failure::QuotaExhausted;
-                    s.allModels = true;
-                    s.error = QCoreApplication::translate(
-                        "AiQueryAssistant",
-                        "The monthly RagoShell AI quota is used up. Upgrade or wait for the next month.");
-                } else if (httpStatus == 429 || code == QLatin1String("rate_limited")) {
-                    s.failure = Failure::RateLimited;
-                    s.error = QCoreApplication::translate(
-                        "AiQueryAssistant", "Too many requests; retry shortly.");
-                } else if (httpStatus == 403 || code == QLatin1String("ai_entitlement_required")) {
-                    s.failure = Failure::Auth;
-                    s.error = QCoreApplication::translate(
-                        "AiQueryAssistant", "RagoShell AI requires a Pro or Team plan.");
-                } else if (httpStatus == 401) {
-                    s.failure = Failure::Auth;
-                    s.error = QCoreApplication::translate(
-                        "AiQueryAssistant", "The RagoShell session expired; sign in again.");
-                } else {
-                    s.failure = Failure::Overloaded;
-                    s.error = QCoreApplication::translate(
-                        "AiQueryAssistant", "The AI service is temporarily unavailable.");
-                }
-                s.retryAfterSec = parseRetryAfter(retryAfter);
-                s.retryable = s.failure == Failure::RateLimited || s.failure == Failure::Overloaded;
-                return s;
-            }
-            const QString text = root.value("content").toString();
-            if (text.isEmpty()) {
-                s.failure = Failure::Other;
-                s.error = QCoreApplication::translate(
-                    "AiQueryAssistant", "The API returned an unreadable response.");
-                return s;
-            }
-            readAnswer(s, text, database, knownCollections);
-            return s;
         }
 
 }

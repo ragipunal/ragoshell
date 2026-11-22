@@ -88,7 +88,12 @@
     </message>
     <message>
         <source>off</source>
+        <extracomment>AI assistant header: provider · model · host the request goes to.</extracomment>
         <translation>desactivado</translation>
+    </message>
+    <message>
+        <source>sends to %1</source>
+        <translation>envía a %1</translation>
     </message>
     <message>
         <source>Sampling the collection…</source>
@@ -103,8 +108,8 @@
         <translation>Datos enviados</translation>
     </message>
     <message>
-        <source>The AI assistant is off or has no API key for %1. When it is on, Generate sends your request and this collection&apos;s field names and types (no document values unless you allow them) to the selected provider&apos;s API (Anthropic Claude or Google Gemini). Turn it on and add an API key in Preferences.</source>
-        <translation>El asistente de IA está desactivado o no tiene clave de API para %1. Cuando está activado, Generar envía la solicitud y los nombres y tipos de campo de esta colección (sin valores de documentos, salvo que se permitan) a la API del proveedor seleccionado (Anthropic Claude o Google Gemini). Actívelo y añada una clave de API en Preferencias.</translation>
+        <source>The AI assistant is off or not set up for %1. When it is on, Generate sends your request and this collection&apos;s field names and types (no document values unless you allow them) to the selected provider&apos;s API (Anthropic Claude, Google Gemini, an OpenAI-compatible server or Ollama). Turn it on and set it up in Preferences.</source>
+        <translation>El asistente de IA está desactivado o no está configurado para %1. Cuando está activado, Generar envía tu solicitud y los nombres y tipos de campo de esta colección (sin valores de documentos, salvo que lo permitas) a la API del proveedor elegido (Anthropic Claude, Google Gemini, un servidor compatible con OpenAI u Ollama). Actívalo y configúralo en Preferencias.</translation>
     </message>
     <message>
         <source>Preferences…</source>
@@ -202,6 +207,18 @@
         <translation>El modelo está sobrecargado en este momento. Inténtelo de nuevo en unos instantes.</translation>
     </message>
     <message>
+        <source>The account at this provider has no credit or quota left.</source>
+        <translation>La cuenta en este proveedor no tiene crédito ni cuota disponible.</translation>
+    </message>
+    <message>
+        <source>The server does not know this model or address. Check both in Preferences.</source>
+        <translation>El servidor no reconoce este modelo o esta dirección. Revisa ambos en Preferencias.</translation>
+    </message>
+    <message>
+        <source>The server answered with a redirect (HTTP %1). It was not followed, so nothing was sent anywhere else. Check the address.</source>
+        <translation>El servidor respondió con una redirección (HTTP %1). No se siguió, así que no se envió nada a ningún otro sitio. Revisa la dirección.</translation>
+    </message>
+    <message>
         <source>The model did not return a query.</source>
         <translation>El modelo no devolvió ninguna consulta.</translation>
     </message>
@@ -216,6 +233,14 @@
     <message>
         <source>The generated query reads the collection &quot;%1&quot;, which was not described to the model.</source>
         <translation>La consulta generada lee la colección &quot;%1&quot;, que no se describió al modelo.</translation>
+    </message>
+    <message>
+        <source>The generated query is nested too deeply.</source>
+        <translation>La consulta generada está anidada demasiado profundamente.</translation>
+    </message>
+    <message>
+        <source>The generated query uses %1, which runs JavaScript on the server. It was not accepted.</source>
+        <translation>La consulta generada usa %1, que ejecuta JavaScript en el servidor. No se aceptó.</translation>
     </message>
     <message>
         <source>The model declined this request.</source>
@@ -234,32 +259,16 @@
         <translation>El modelo rechazó esta solicitud (%1).</translation>
     </message>
     <message>
+        <source>OpenAI-compatible</source>
+        <translation>Compatible con OpenAI</translation>
+    </message>
+    <message>
         <source>The API returned an unreadable response.</source>
         <translation>La API devolvió una respuesta ilegible.</translation>
     </message>
     <message>
         <source>The API listed no usable models.</source>
         <translation>La API no listó ningún modelo utilizable.</translation>
-    </message>
-    <message>
-        <source>The monthly RagoShell AI quota is used up. Upgrade or wait for the next month.</source>
-        <translation>Se agotó la cuota mensual de RagoShell AI. Mejore su plan o espere al próximo mes.</translation>
-    </message>
-    <message>
-        <source>Too many requests; retry shortly.</source>
-        <translation>Demasiadas solicitudes; vuelva a intentarlo en breve.</translation>
-    </message>
-    <message>
-        <source>RagoShell AI requires a Pro or Team plan.</source>
-        <translation>RagoShell AI requiere un plan Pro o Team.</translation>
-    </message>
-    <message>
-        <source>The RagoShell session expired; sign in again.</source>
-        <translation>La sesión de RagoShell caducó; vuelva a iniciar sesión.</translation>
-    </message>
-    <message>
-        <source>The AI service is temporarily unavailable.</source>
-        <translation>El servicio de IA no está disponible temporalmente.</translation>
     </message>
 </context>
 <context>
@@ -3003,8 +3012,8 @@
         <translation>CUENTA EN LA NUBE (OPCIONAL)</translation>
     </message>
     <message>
-        <source>All local MongoDB connections, SSH/TLS tunnels, the embedded shell, schema analysis, and bring-your-own-key AI work without an account. Sign in only if you want optional encrypted cross-device sync or hosted cloud AI.</source>
-        <translation>Todas las conexiones locales a MongoDB, túneles SSH/TLS, el shell integrado, el análisis de esquemas y la IA con clave propia funcionan sin cuenta. Inicia sesión solo si deseas sincronización cifrada opcional o IA en la nube.</translation>
+        <source>All local MongoDB connections, SSH/TLS tunnels, the embedded shell, schema analysis, and bring-your-own-key AI work without an account. Sign in only if you want optional encrypted cross-device sync or the hosted connection bridge.</source>
+        <translation>Todas las conexiones locales a MongoDB, túneles SSH/TLS, el shell integrado, el análisis de esquemas y la IA con clave propia funcionan sin cuenta. Inicia sesión solo si deseas sincronización cifrada opcional o el puente de conexión alojado.</translation>
     </message>
     <message>
         <source>OS keychain is unavailable; cloud sign-in will apply to this session only and will never write tokens to disk.</source>
@@ -3171,10 +3180,6 @@
         <translation>Todas las colecciones cifradas almacenadas en el servidor se eliminarán definitivamente. La configuración local permanece en este dispositivo.</translation>
     </message>
     <message>
-        <source>Cloud AI quota</source>
-        <translation>Cuota de IA en la nube</translation>
-    </message>
-    <message>
         <source>Refreshing…</source>
         <translation>Actualizando…</translation>
     </message>
@@ -3212,6 +3217,10 @@
     <message>
         <source>%1 is used</source>
         <translation>Se usa %1</translation>
+    </message>
+    <message>
+        <source>Not needed for a local server</source>
+        <translation>No es necesaria para un servidor local</translation>
     </message>
     <message>
         <source>Language</source>
@@ -3347,32 +3356,101 @@
         <translation>ASISTENTE DE CONSULTAS CON IA</translation>
     </message>
     <message>
-        <source>Turns a request in plain language into a find() or aggregate() query (Tools › AI Query Assistant). Generate sends the request and the collection&apos;s field names and types from a 1000-document sample to the selected provider: Anthropic&apos;s Claude API or Google&apos;s Gemini API (an API key from Google AI Studio). Nothing is sent until you press Generate.</source>
-        <translation>Convierte una solicitud en lenguaje natural en una consulta find() o aggregate() (Herramientas › Asistente de consultas con IA). Generar envía la solicitud y los nombres y tipos de campo de la colección, obtenidos de una muestra de 1000 documentos, al proveedor seleccionado: la API de Claude de Anthropic o la API de Gemini de Google (una clave de API de Google AI Studio). No se envía nada hasta que pulse Generar.</translation>
-    </message>
-    <message>
         <source>Enable the AI query assistant</source>
         <translation>Activar el asistente de consultas con IA</translation>
+    </message>
+    <message>
+        <source>%1 AI (the hosted assistant) is no longer offered, so the assistant was turned off. Pick a provider, enter your own API key and turn it on again.</source>
+        <extracomment>Preferences › AI assistant notice after an update (%1 = product name).</extracomment>
+        <translation>%1 AI (el asistente alojado) ya no se ofrece, por lo que el asistente se desactivó. Elige un proveedor, introduce tu propia clave de API y vuelve a activarlo.</translation>
     </message>
     <message>
         <source>Provider</source>
         <translation>Proveedor</translation>
     </message>
     <message>
+        <source>Service</source>
+        <translation>Servicio</translation>
+    </message>
+    <message>
+        <source>Custom address</source>
+        <translation>Dirección personalizada</translation>
+    </message>
+    <message>
+        <source>Server address</source>
+        <translation>Dirección del servidor</translation>
+    </message>
+    <message>
+        <source>The address points to another server now, so the key was cleared. Enter the key for this server.</source>
+        <translation>La dirección apunta ahora a otro servidor, así que se borró la clave. Introduce la clave de este servidor.</translation>
+    </message>
+    <message>
+        <source>Requests go to %1 on this device. A model that runs here is free and the data stays on this device; a cloud model or proxy behind this address sends it on.</source>
+        <extracomment>Preferences › AI, server on this computer (%1 = host name, e.g. localhost).</extracomment>
+        <translation>Las solicitudes van a %1 en este dispositivo. Un modelo que se ejecuta aquí es gratuito y los datos se quedan en este dispositivo; un modelo en la nube o un proxy detrás de esta dirección los reenvía.</translation>
+    </message>
+    <message>
+        <source>Requests go to %1 on your local network. A model that runs there is free and the data stays on your network; a cloud model or proxy behind this address sends it on.</source>
+        <extracomment>Preferences › AI, server on the local network (%1 = host name or IP address).</extracomment>
+        <translation>Las solicitudes van a %1 en tu red local. Un modelo que se ejecuta allí es gratuito y los datos se quedan en tu red; un modelo en la nube o un proxy detrás de esta dirección los reenvía.</translation>
+    </message>
+    <message>
+        <source>Requests go to %1. Usage is billed by that provider, if it charges.</source>
+        <extracomment>Preferences › AI, OpenAI-compatible (%1 = host name).</extracomment>
+        <translation>Las solicitudes van a %1. Ese proveedor factura el uso, si cobra.</translation>
+    </message>
+    <message>
         <source>Google AI Studio API key</source>
         <translation>Clave de API de Google AI Studio</translation>
+    </message>
+    <message>
+        <source>API key (optional)</source>
+        <translation>Clave de API (opcional)</translation>
     </message>
     <message>
         <source>Anthropic API key</source>
         <translation>Clave de API de Anthropic</translation>
     </message>
     <message>
-        <source>Signed in — requests run through your RagoShell account quota; no API key needed.</source>
-        <translation>Sesión iniciada: las solicitudes usan la cuota de su cuenta de RagoShell; no se necesita clave de API.</translation>
+        <source>Hide key</source>
+        <translation>Ocultar clave</translation>
     </message>
     <message>
-        <source>Sign in on the Account tab to use RagoShell AI, or pick another provider and enter its key.</source>
-        <translation>Inicie sesión en la pestaña Cuenta para usar RagoShell AI, o elija otro proveedor e introduzca su clave.</translation>
+        <source>Show key</source>
+        <translation>Mostrar clave</translation>
+    </message>
+    <message>
+        <source>Paste</source>
+        <extracomment>Preferences › AI: paste the API key from the clipboard.</extracomment>
+        <translation>Pegar</translation>
+    </message>
+    <message>
+        <source>Paste the API key from the clipboard</source>
+        <translation>Pegar la clave de API desde el portapapeles</translation>
+    </message>
+    <message>
+        <source>Test connection</source>
+        <translation>Probar conexión</translation>
+    </message>
+    <message>
+        <source>Asks the provider for its model list with this key. No query or schema is sent.</source>
+        <translation>Pide al proveedor su lista de modelos con esta clave. No se envía ninguna consulta ni esquema.</translation>
+    </message>
+    <message>
+        <source>Asks the server for its model list. No query or schema is sent.</source>
+        <translation>Pide al servidor su lista de modelos. No se envía ninguna consulta ni esquema.</translation>
+    </message>
+    <message>
+        <source>How to get a key ↗</source>
+        <translation>Cómo obtener una clave ↗</translation>
+    </message>
+    <message>
+        <source>Open the provider&apos;s API key page</source>
+        <translation>Abrir la página de claves de API del proveedor</translation>
+    </message>
+    <message>
+        <source>Clear clipboard</source>
+        <translation>Vaciar portapapeles</translation>
     </message>
     <message>
         <source>Using the key entered here (saved with your settings).</source>
@@ -3383,6 +3461,10 @@
         <translation>Se usa la clave de la variable de entorno %1.</translation>
     </message>
     <message>
+        <source>No key: requests are sent without one (enough for a local server).</source>
+        <translation>Sin clave: las solicitudes se envían sin ella (suficiente para un servidor local).</translation>
+    </message>
+    <message>
         <source>No key yet. Enter one above.</source>
         <translation>Aún no hay clave. Introduzca una arriba.</translation>
     </message>
@@ -3391,24 +3473,56 @@
         <translation>Modelo</translation>
     </message>
     <message>
-        <source>Load the provider&apos;s current model list</source>
-        <translation>Cargar la lista actual de modelos del proveedor</translation>
+        <source>Installed model, e.g. llama3.2</source>
+        <translation>Modelo instalado, p. ej. llama3.2</translation>
     </message>
     <message>
-        <source>Loading the model list…</source>
-        <translation>Cargando la lista de modelos…</translation>
+        <source>Model name, e.g. gpt-5.5</source>
+        <translation>Nombre del modelo, p. ej. gpt-5.5</translation>
+    </message>
+    <message>
+        <source>Pick from the server&apos;s list…</source>
+        <translation>Elegir de la lista del servidor…</translation>
+    </message>
+    <message>
+        <source>Models listed by the server</source>
+        <translation>Modelos que lista el servidor</translation>
+    </message>
+    <message>
+        <source>Testing the connection…</source>
+        <translation>Probando la conexión…</translation>
+    </message>
+    <message>
+        <source>Type the model name, or use Test connection to list the server&apos;s models.</source>
+        <translation>Escribe el nombre del modelo o usa «Probar conexión» para listar los modelos del servidor.</translation>
+    </message>
+    <message>
+        <source>Built-in list. Test connection loads the models this key can use now.</source>
+        <translation>Lista integrada. «Probar conexión» carga los modelos que esta clave puede usar ahora.</translation>
     </message>
     <message>
         <source>The selected model is no longer in the provider&apos;s list (retired?). Pick another one.</source>
         <translation>El modelo seleccionado ya no figura en la lista del proveedor (¿retirado?). Elija otro.</translation>
     </message>
     <message>
+        <source>Turns a request in plain language into a find() or aggregate() query (Tools › AI Query Assistant). Generate sends the request and the collection&apos;s field names and types from a 1000-document sample to the selected provider: Anthropic&apos;s Claude API, Google&apos;s Gemini API (an API key from Google AI Studio) or any OpenAI-compatible server you choose. Nothing is sent until you press Generate.</source>
+        <translation>Convierte una solicitud en lenguaje natural en una consulta find() o aggregate() (Herramientas › Asistente de consultas con IA). Generar envía la solicitud y los nombres y tipos de campo de la colección, obtenidos de una muestra de 1000 documentos, al proveedor seleccionado: la API Claude de Anthropic, la API Gemini de Google (una clave de API de Google AI Studio) o cualquier servidor compatible con OpenAI que elijas. No se envía nada hasta que pulses Generar.</translation>
+    </message>
+    <message>
+        <source>Key pasted. Clear it from the clipboard? (A clipboard history may still keep a copy.)</source>
+        <translation>Clave pegada. ¿Quitarla del portapapeles? (Un historial del portapapeles aún puede guardar una copia.)</translation>
+    </message>
+    <message>
         <source>Models from the provider&apos;s current list.</source>
         <translation>Modelos de la lista actual del proveedor.</translation>
     </message>
     <message>
-        <source>Built-in list. ⟳ loads the models this key can use now.</source>
-        <translation>Lista integrada. ⟳ carga los modelos que esta clave puede usar ahora.</translation>
+        <source>Answer time limit (sec)</source>
+        <translation>Tiempo límite de respuesta (s)</translation>
+    </message>
+    <message>
+        <source>How long to wait for an answer. A local model can need minutes, especially while it loads.</source>
+        <translation>Cuánto esperar una respuesta. Un modelo local puede tardar minutos, sobre todo mientras se carga.</translation>
     </message>
     <message>
         <source>When a model runs out of quota, hits a rate limit or is retired, try another model of the same provider</source>
@@ -3715,12 +3829,60 @@
 <context>
     <name>RagoShell::AiAssistant</name>
     <message>
+        <source>Is Ollama running? Start the Ollama app, or run &quot;ollama serve&quot; in a terminal.</source>
+        <translation>¿Ollama está en ejecución? Inicia la aplicación Ollama o ejecuta "ollama serve" en una terminal.</translation>
+    </message>
+    <message>
+        <source>In the browser the server must also allow this page (CORS): for Ollama set OLLAMA_ORIGINS to this page&apos;s address; in LM Studio turn on CORS in the server settings.</source>
+        <translation>En el navegador, el servidor también debe permitir esta página (CORS): para Ollama, establece OLLAMA_ORIGINS con la dirección de esta página; en LM Studio, activa CORS en la configuración del servidor.</translation>
+    </message>
+    <message>
+        <source>Enter the server address.</source>
+        <translation>Introduce la dirección del servidor.</translation>
+    </message>
+    <message>
+        <source>The address is too long.</source>
+        <translation>La dirección es demasiado larga.</translation>
+    </message>
+    <message>
+        <source>Enter a full address that starts with https://, for example https://api.openai.com/v1.</source>
+        <translation>Introduce una dirección completa que empiece por https://, por ejemplo https://api.openai.com/v1.</translation>
+    </message>
+    <message>
+        <source>The address must not contain a user name or password. Put the key in the key field.</source>
+        <translation>La dirección no debe contener usuario ni contraseña. Pon la clave en el campo de la clave.</translation>
+    </message>
+    <message>
+        <source>The address must not contain ? or #.</source>
+        <translation>La dirección no debe contener ? ni #.</translation>
+    </message>
+    <message>
+        <source>Use https://. Plain http:// is allowed only for this device (localhost) or, without a key, for the local network.</source>
+        <translation>Usa https://. http:// sin cifrar solo se permite para este dispositivo (localhost) o, sin clave, para la red local.</translation>
+    </message>
+    <message>
+        <source>A key is never sent over plain http:// on the network. Use https://, or clear the key for a local server that needs none.</source>
+        <translation>Una clave nunca se envía por http:// sin cifrar en la red. Usa https:// o borra la clave para un servidor local que no la necesite.</translation>
+    </message>
+    <message>
+        <source>Plain http:// to the local network is blocked on this device. Use https:// (for example through a reverse proxy) or localhost.</source>
+        <translation>http:// sin cifrar hacia la red local está bloqueado en este dispositivo. Usa https:// (por ejemplo, mediante un proxy inverso) o localhost.</translation>
+    </message>
+    <message>
         <source>Could not sample the collection: %1</source>
         <translation>No se pudo muestrear la colección: %1</translation>
     </message>
     <message>
+        <source>Pick or type a model for %1 in Preferences.</source>
+        <translation>Elige o escribe un modelo para %1 en Preferencias.</translation>
+    </message>
+    <message>
         <source>Turn on the AI assistant and add an API key for %1 in Preferences.</source>
         <translation>Active el asistente de IA y añada una clave de API para %1 en Preferencias.</translation>
+    </message>
+    <message>
+        <source>Turn on the AI assistant and set up %1 in Preferences.</source>
+        <translation>Activa el asistente de IA y configura %1 en Preferencias.</translation>
     </message>
     <message>
         <source>%1 skipped: %2.</source>
@@ -3731,8 +3893,17 @@
         <translation>No hay ningún modelo de %1 disponible en este momento: agotaron su cuota o alcanzaron un límite de solicitudes antes. Reintentar lo olvida y vuelve a preguntar.</translation>
     </message>
     <message>
-        <source>The RagoShell session expired; sign in again.</source>
-        <translation>La sesión de RagoShell caducó; vuelva a iniciar sesión.</translation>
+        <source>The saved API key has spaces or characters an API key does not contain. Enter it again in Preferences.</source>
+        <translation>La clave de API guardada contiene espacios o caracteres que una clave de API no tiene. Vuelve a introducirla en Preferencias.</translation>
+    </message>
+    <message>
+        <source>The server sent a response that is too large (over %1 MB).</source>
+        <translation>El servidor envió una respuesta demasiado grande (más de %1 MB).</translation>
+    </message>
+    <message>
+        <source>No answer within %1 seconds. A local model can be slow, especially while it loads; you can raise the time limit in Preferences.</source>
+        <extracomment>%1 = seconds. Local models can take long, especially while loading.</extracomment>
+        <translation>Sin respuesta en %1 segundos. Un modelo local puede ser lento, sobre todo mientras se carga; puedes aumentar el tiempo límite en Preferencias.</translation>
     </message>
     <message>
         <source>The request timed out.</source>
@@ -3758,8 +3929,56 @@
         <translation>Introduzca primero una clave de API.</translation>
     </message>
     <message>
-        <source>Cannot reach the API: %1</source>
-        <translation>No se puede acceder a la API: %1</translation>
+        <source>The key has spaces or characters an API key does not contain.</source>
+        <translation>La clave contiene espacios o caracteres que una clave de API no tiene.</translation>
+    </message>
+    <message>
+        <source>The model list is too large (over %1 MB).</source>
+        <translation>La lista de modelos es demasiado grande (más de %1 MB).</translation>
+    </message>
+    <message numerus="yes">
+        <source>Connected. %n model(s) available.</source>
+        <extracomment>Preferences › AI › Test connection succeeded.</extracomment>
+        <translation>
+            <numerusform>Conectado. %n modelo disponible.</numerusform>
+            <numerusform>Conectado. %n modelos disponibles.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Connected, but the provider listed no model this app can use.</source>
+        <translation>Conectado, pero el proveedor no listó ningún modelo que esta app pueda usar.</translation>
+    </message>
+    <message>
+        <source>Ollama is running, but no model is installed. Download one in a terminal with &quot;ollama pull &lt;model&gt;&quot;, then test again.</source>
+        <translation>Ollama está en ejecución, pero no hay ningún modelo instalado. Descarga uno en una terminal con "ollama pull &lt;model&gt;" y vuelve a probar.</translation>
+    </message>
+    <message>
+        <source>The server is running but lists no models. Download or load a model on the server, then test again.</source>
+        <translation>El servidor está en ejecución, pero no muestra ningún modelo. Descarga o carga un modelo en el servidor y vuelve a probar.</translation>
+    </message>
+    <message>
+        <source>The API key was rejected (HTTP %1). Check it and try again.</source>
+        <translation>Se rechazó la clave de API (HTTP %1). Revísala e inténtalo de nuevo.</translation>
+    </message>
+    <message>
+        <source>The server is reachable but has no model list (HTTP 404).</source>
+        <translation>El servidor responde, pero no tiene lista de modelos (HTTP 404).</translation>
+    </message>
+    <message>
+        <source>The provider&apos;s rate limit was reached (HTTP 429). Try again in a moment.</source>
+        <translation>Se alcanzó el límite de solicitudes del proveedor (HTTP 429). Inténtalo de nuevo en un momento.</translation>
+    </message>
+    <message>
+        <source>The server answered with a redirect (HTTP %1). It was not followed, so the key was not sent anywhere else.</source>
+        <translation>El servidor respondió con una redirección (HTTP %1). No se siguió, así que la clave no se envió a ningún otro sitio.</translation>
+    </message>
+    <message>
+        <source>The server did not answer in time.</source>
+        <translation>El servidor no respondió a tiempo.</translation>
+    </message>
+    <message>
+        <source>Cannot reach the server: %1</source>
+        <translation>No se puede acceder al servidor: %1</translation>
     </message>
 </context>
 <context>
@@ -3810,14 +4029,6 @@
     <message>
         <source>Canceled</source>
         <translation>Cancelado</translation>
-    </message>
-    <message>
-        <source>Local BYOK AI only</source>
-        <translation>Solo IA local con clave propia</translation>
-    </message>
-    <message>
-        <source>%1 tokens / month</source>
-        <translation>%1 tokens / mes</translation>
     </message>
     <message>
         <source>Offline grace valid until %1</source>
@@ -4082,6 +4293,22 @@
     <message>
         <source>Index &quot;%1&quot; dropped from %2.%3.</source>
         <translation>Índice «%1» eliminado de %2.%3.</translation>
+    </message>
+    <message>
+        <source>The clipboard has no text.</source>
+        <translation>El portapapeles no contiene texto.</translation>
+    </message>
+    <message>
+        <source>The clipboard holds more than one line. Copy only the key.</source>
+        <translation>El portapapeles contiene más de una línea. Copia solo la clave.</translation>
+    </message>
+    <message>
+        <source>The clipboard text is too long for an API key (over %1 characters).</source>
+        <translation>El texto del portapapeles es demasiado largo para una clave de API (más de %1 caracteres).</translation>
+    </message>
+    <message>
+        <source>The clipboard text has spaces or characters an API key does not contain.</source>
+        <translation>El texto del portapapeles contiene espacios o caracteres que una clave de API no tiene.</translation>
     </message>
     <message numerus="yes">
         <source>Replica Set (%n seed node(s))</source>

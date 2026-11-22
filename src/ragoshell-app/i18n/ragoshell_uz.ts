@@ -88,7 +88,12 @@
     </message>
     <message>
         <source>off</source>
+        <extracomment>AI assistant header: provider · model · host the request goes to.</extracomment>
         <translation>oʻchiq</translation>
+    </message>
+    <message>
+        <source>sends to %1</source>
+        <translation>%1 manziliga yuboradi</translation>
     </message>
     <message>
         <source>Sampling the collection…</source>
@@ -103,8 +108,8 @@
         <translation>Yuborilgan maʼlumotlar</translation>
     </message>
     <message>
-        <source>The AI assistant is off or has no API key for %1. When it is on, Generate sends your request and this collection&apos;s field names and types (no document values unless you allow them) to the selected provider&apos;s API (Anthropic Claude or Google Gemini). Turn it on and add an API key in Preferences.</source>
-        <translation>AI yordamchisi oʻchirilgan yoki %1 uchun API kaliti yoʻq. Yoqilganda, &quot;Yaratish&quot; tugmasi talabingizni hamda ushbu kolleksiyaning maydon nomlari va turlarini (ruxsat bermasangiz, hujjat qiymatlarisiz) tanlangan provayderning API siga (Anthropic Claude yoki Google Gemini) yuboradi. Uni Sozlamalarda yoqing va API kalitini kiriting.</translation>
+        <source>The AI assistant is off or not set up for %1. When it is on, Generate sends your request and this collection&apos;s field names and types (no document values unless you allow them) to the selected provider&apos;s API (Anthropic Claude, Google Gemini, an OpenAI-compatible server or Ollama). Turn it on and set it up in Preferences.</source>
+        <translation>AI yordamchisi oʻchiq yoki %1 uchun sozlanmagan. Yoqilganda Yaratish soʻrovingizni va bu toʻplamning maydon nomlari va turlarini (ruxsat bermasangiz, hujjat qiymatlarisiz) tanlangan provayderning API'siga (Anthropic Claude, Google Gemini, OpenAI bilan mos server yoki Ollama) yuboradi. Uni Sozlamalarda yoqing va sozlang.</translation>
     </message>
     <message>
         <source>Preferences…</source>
@@ -202,6 +207,18 @@
         <translation>Model hozir ortiqcha yuklangan. Birozdan keyin qayta urinib koʻring.</translation>
     </message>
     <message>
+        <source>The account at this provider has no credit or quota left.</source>
+        <translation>Bu provayderdagi hisobda kredit yoki kvota qolmadi.</translation>
+    </message>
+    <message>
+        <source>The server does not know this model or address. Check both in Preferences.</source>
+        <translation>Server bu modelni yoki manzilni tanimaydi. Ikkalasini ham Sozlamalarda tekshiring.</translation>
+    </message>
+    <message>
+        <source>The server answered with a redirect (HTTP %1). It was not followed, so nothing was sent anywhere else. Check the address.</source>
+        <translation>Server qayta yoʻnaltirish bilan javob berdi (HTTP %1). U bajarilmadi, shuning uchun hech narsa boshqa joyga yuborilmadi. Manzilni tekshiring.</translation>
+    </message>
+    <message>
         <source>The model did not return a query.</source>
         <translation>Model soʻrov qaytarmadi.</translation>
     </message>
@@ -216,6 +233,14 @@
     <message>
         <source>The generated query reads the collection &quot;%1&quot;, which was not described to the model.</source>
         <translation>Yaratilgan soʻrov modelga tavsiflanmagan &quot;%1&quot; kolleksiyasini oʻqiydi.</translation>
+    </message>
+    <message>
+        <source>The generated query is nested too deeply.</source>
+        <translation>Yaratilgan soʻrov juda chuqur ichma-ich joylashgan.</translation>
+    </message>
+    <message>
+        <source>The generated query uses %1, which runs JavaScript on the server. It was not accepted.</source>
+        <translation>Yaratilgan soʻrov serverda JavaScript bajaradigan %1 dan foydalanadi. U qabul qilinmadi.</translation>
     </message>
     <message>
         <source>The model declined this request.</source>
@@ -234,32 +259,16 @@
         <translation>Model bu talabni rad etdi (%1).</translation>
     </message>
     <message>
+        <source>OpenAI-compatible</source>
+        <translation>OpenAI bilan mos</translation>
+    </message>
+    <message>
         <source>The API returned an unreadable response.</source>
         <translation>API oʻqib boʻlmaydigan javob qaytardi.</translation>
     </message>
     <message>
         <source>The API listed no usable models.</source>
         <translation>API foydalanish mumkin boʻlgan modellarni qaytarmadi.</translation>
-    </message>
-    <message>
-        <source>The monthly RagoShell AI quota is used up. Upgrade or wait for the next month.</source>
-        <translation>Oylik RagoShell AI kvotasi tugadi. Tarifni yangilang yoki keyingi oyni kuting.</translation>
-    </message>
-    <message>
-        <source>Too many requests; retry shortly.</source>
-        <translation>Soʻrovlar juda koʻp; birozdan keyin qayta urinib koʻring.</translation>
-    </message>
-    <message>
-        <source>RagoShell AI requires a Pro or Team plan.</source>
-        <translation>RagoShell AI uchun Pro yoki Team tarifi kerak.</translation>
-    </message>
-    <message>
-        <source>The RagoShell session expired; sign in again.</source>
-        <translation>RagoShell seansi muddati tugadi; qaytadan tizimga kiring.</translation>
-    </message>
-    <message>
-        <source>The AI service is temporarily unavailable.</source>
-        <translation>SI xizmati vaqtincha mavjud emas.</translation>
     </message>
 </context>
 <context>
@@ -3004,8 +3013,8 @@
         <translation>BULUT HISOBI (IXTIYORIY)</translation>
     </message>
     <message>
-        <source>All local MongoDB connections, SSH/TLS tunnels, the embedded shell, schema analysis, and bring-your-own-key AI work without an account. Sign in only if you want optional encrypted cross-device sync or hosted cloud AI.</source>
-        <translation>Barcha mahalliy MongoDB ulanishlari, SSH/TLS tunnellari, oʻrnatilgan qobiq, sxema tahlili va oʻz kalitingiz bilan (BYOK) SI hisobsiz ishlaydi. Faqat shifrlangan sinxronlash yoki bulutli SI kerak boʻlsagina tizimga kiring.</translation>
+        <source>All local MongoDB connections, SSH/TLS tunnels, the embedded shell, schema analysis, and bring-your-own-key AI work without an account. Sign in only if you want optional encrypted cross-device sync or the hosted connection bridge.</source>
+        <translation>Barcha mahalliy MongoDB ulanishlari, SSH/TLS tunnellari, oʻrnatilgan qobiq, sxema tahlili va oʻz kalitingiz bilan (BYOK) SI hisobsiz ishlaydi. Faqat shifrlangan sinxronlash yoki joylashtirilgan ulanish koʻprigi kerak boʻlsagina tizimga kiring.</translation>
     </message>
     <message>
         <source>OS keychain is unavailable; cloud sign-in will apply to this session only and will never write tokens to disk.</source>
@@ -3172,10 +3181,6 @@
         <translation>Serverda saqlangan barcha shifrlangan maʼlumotlar toʻplamlari butunlay oʻchiriladi. Mahalliy sozlamalar shu qurilmada qoladi.</translation>
     </message>
     <message>
-        <source>Cloud AI quota</source>
-        <translation>Bulutli SI kvotasi</translation>
-    </message>
-    <message>
         <source>Refreshing…</source>
         <translation>Yangilanmoqda…</translation>
     </message>
@@ -3213,6 +3218,10 @@
     <message>
         <source>%1 is used</source>
         <translation>%1 ishlatiladi</translation>
+    </message>
+    <message>
+        <source>Not needed for a local server</source>
+        <translation>Mahalliy server uchun kerak emas</translation>
     </message>
     <message>
         <source>Language</source>
@@ -3348,32 +3357,101 @@
         <translation>AI SOʻROV YORDAMCHISI</translation>
     </message>
     <message>
-        <source>Turns a request in plain language into a find() or aggregate() query (Tools › AI Query Assistant). Generate sends the request and the collection&apos;s field names and types from a 1000-document sample to the selected provider: Anthropic&apos;s Claude API or Google&apos;s Gemini API (an API key from Google AI Studio). Nothing is sent until you press Generate.</source>
-        <translation>Oddiy tildagi talabni find() yoki aggregate() soʻroviga aylantiradi (Asboblar › AI soʻrov yordamchisi). &quot;Yaratish&quot; tugmasi talabni va 1000 ta hujjatlik namunadagi kolleksiya maydon nomlari va turlarini tanlangan provayderga yuboradi: Anthropic Claude API si yoki Google Gemini API si (Google AI Studio dan olingan API kaliti). &quot;Yaratish&quot; tugmasini bosmaguningizcha hech narsa yuborilmaydi.</translation>
-    </message>
-    <message>
         <source>Enable the AI query assistant</source>
         <translation>AI soʻrov yordamchisini yoqish</translation>
+    </message>
+    <message>
+        <source>%1 AI (the hosted assistant) is no longer offered, so the assistant was turned off. Pick a provider, enter your own API key and turn it on again.</source>
+        <extracomment>Preferences › AI assistant notice after an update (%1 = product name).</extracomment>
+        <translation>%1 AI (joylashtirilgan yordamchi) endi taklif qilinmaydi, shuning uchun yordamchi oʻchirildi. Provayderni tanlang, oʻz API kalitingizni kiriting va uni qayta yoqing.</translation>
     </message>
     <message>
         <source>Provider</source>
         <translation>Provayder</translation>
     </message>
     <message>
+        <source>Service</source>
+        <translation>Xizmat</translation>
+    </message>
+    <message>
+        <source>Custom address</source>
+        <translation>Maxsus manzil</translation>
+    </message>
+    <message>
+        <source>Server address</source>
+        <translation>Server manzili</translation>
+    </message>
+    <message>
+        <source>The address points to another server now, so the key was cleared. Enter the key for this server.</source>
+        <translation>Manzil endi boshqa serverni koʻrsatadi, shuning uchun kalit oʻchirildi. Bu serverning kalitini kiriting.</translation>
+    </message>
+    <message>
+        <source>Requests go to %1 on this device. A model that runs here is free and the data stays on this device; a cloud model or proxy behind this address sends it on.</source>
+        <extracomment>Preferences › AI, server on this computer (%1 = host name, e.g. localhost).</extracomment>
+        <translation>Soʻrovlar shu qurilmadagi %1 manziliga boradi. Bu yerda ishlaydigan model bepul va maʼlumotlar shu qurilmada qoladi; bu manzil ortidagi bulut modeli yoki proksi ularni tashqariga uzatadi.</translation>
+    </message>
+    <message>
+        <source>Requests go to %1 on your local network. A model that runs there is free and the data stays on your network; a cloud model or proxy behind this address sends it on.</source>
+        <extracomment>Preferences › AI, server on the local network (%1 = host name or IP address).</extracomment>
+        <translation>Soʻrovlar mahalliy tarmogʻingizdagi %1 manziliga boradi. U yerda ishlaydigan model bepul va maʼlumotlar tarmogʻingizda qoladi; bu manzil ortidagi bulut modeli yoki proksi ularni tashqariga uzatadi.</translation>
+    </message>
+    <message>
+        <source>Requests go to %1. Usage is billed by that provider, if it charges.</source>
+        <extracomment>Preferences › AI, OpenAI-compatible (%1 = host name).</extracomment>
+        <translation>Soʻrovlar %1 manziliga boradi. Pullik boʻlsa, foydalanish uchun oʻsha provayder hisob chiqaradi.</translation>
+    </message>
+    <message>
         <source>Google AI Studio API key</source>
         <translation>Google AI Studio API kaliti</translation>
+    </message>
+    <message>
+        <source>API key (optional)</source>
+        <translation>API kaliti (ixtiyoriy)</translation>
     </message>
     <message>
         <source>Anthropic API key</source>
         <translation>Anthropic API kaliti</translation>
     </message>
     <message>
-        <source>Signed in — requests run through your RagoShell account quota; no API key needed.</source>
-        <translation>Tizimga kirilgan — soʻrovlar RagoShell hisobingiz kvotasi orqali bajariladi; API kaliti kerak emas.</translation>
+        <source>Hide key</source>
+        <translation>Kalitni yashirish</translation>
     </message>
     <message>
-        <source>Sign in on the Account tab to use RagoShell AI, or pick another provider and enter its key.</source>
-        <translation>RagoShell AI dan foydalanish uchun «Hisob» yorligʻida tizimga kiring yoki boshqa provayderni tanlab, uning kalitini kiriting.</translation>
+        <source>Show key</source>
+        <translation>Kalitni koʻrsatish</translation>
+    </message>
+    <message>
+        <source>Paste</source>
+        <extracomment>Preferences › AI: paste the API key from the clipboard.</extracomment>
+        <translation>Qoʻyish</translation>
+    </message>
+    <message>
+        <source>Paste the API key from the clipboard</source>
+        <translation>API kalitini almashuv buferidan qoʻyish</translation>
+    </message>
+    <message>
+        <source>Test connection</source>
+        <translation>Ulanishni tekshirish</translation>
+    </message>
+    <message>
+        <source>Asks the provider for its model list with this key. No query or schema is sent.</source>
+        <translation>Shu kalit bilan provayderdan modellar roʻyxatini soʻraydi. Soʻrov yoki sxema yuborilmaydi.</translation>
+    </message>
+    <message>
+        <source>Asks the server for its model list. No query or schema is sent.</source>
+        <translation>Serverdan modellar roʻyxatini soʻraydi. Hech qanday soʻrov yoki sxema yuborilmaydi.</translation>
+    </message>
+    <message>
+        <source>How to get a key ↗</source>
+        <translation>Kalitni qanday olish mumkin ↗</translation>
+    </message>
+    <message>
+        <source>Open the provider&apos;s API key page</source>
+        <translation>Provayderning API kalitlari sahifasini ochish</translation>
+    </message>
+    <message>
+        <source>Clear clipboard</source>
+        <translation>Buferni tozalash</translation>
     </message>
     <message>
         <source>Using the key entered here (saved with your settings).</source>
@@ -3384,6 +3462,10 @@
         <translation>%1 muhit oʻzgaruvchisidagi kalit ishlatilmoqda.</translation>
     </message>
     <message>
+        <source>No key: requests are sent without one (enough for a local server).</source>
+        <translation>Kalit yoʻq: soʻrovlar kalitsiz yuboriladi (mahalliy server uchun yetarli).</translation>
+    </message>
+    <message>
         <source>No key yet. Enter one above.</source>
         <translation>Hozircha kalit yoʻq. Yuqoriga bittasini kiriting.</translation>
     </message>
@@ -3392,24 +3474,56 @@
         <translation>Model</translation>
     </message>
     <message>
-        <source>Load the provider&apos;s current model list</source>
-        <translation>Provayderning joriy modellar roʻyxatini yuklash</translation>
+        <source>Installed model, e.g. llama3.2</source>
+        <translation>Oʻrnatilgan model, masalan llama3.2</translation>
     </message>
     <message>
-        <source>Loading the model list…</source>
-        <translation>Modellar roʻyxati yuklanmoqda…</translation>
+        <source>Model name, e.g. gpt-5.5</source>
+        <translation>Model nomi, masalan gpt-5.5</translation>
+    </message>
+    <message>
+        <source>Pick from the server&apos;s list…</source>
+        <translation>Server roʻyxatidan tanlash…</translation>
+    </message>
+    <message>
+        <source>Models listed by the server</source>
+        <translation>Server koʻrsatgan modellar</translation>
+    </message>
+    <message>
+        <source>Testing the connection…</source>
+        <translation>Ulanish tekshirilmoqda…</translation>
+    </message>
+    <message>
+        <source>Type the model name, or use Test connection to list the server&apos;s models.</source>
+        <translation>Model nomini yozing yoki server modellarini roʻyxatlash uchun «Ulanishni tekshirish» tugmasidan foydalaning.</translation>
+    </message>
+    <message>
+        <source>Built-in list. Test connection loads the models this key can use now.</source>
+        <translation>Ichki roʻyxat. “Ulanishni tekshirish” bu kalit hozir foydalana oladigan modellarni yuklaydi.</translation>
     </message>
     <message>
         <source>The selected model is no longer in the provider&apos;s list (retired?). Pick another one.</source>
         <translation>Tanlangan model provayder roʻyxatida endi yoʻq (nofaol qilinganmi?). Boshqasini tanlang.</translation>
     </message>
     <message>
+        <source>Turns a request in plain language into a find() or aggregate() query (Tools › AI Query Assistant). Generate sends the request and the collection&apos;s field names and types from a 1000-document sample to the selected provider: Anthropic&apos;s Claude API, Google&apos;s Gemini API (an API key from Google AI Studio) or any OpenAI-compatible server you choose. Nothing is sent until you press Generate.</source>
+        <translation>Oddiy tildagi soʻrovni find() yoki aggregate() soʻroviga aylantiradi (Vositalar › AI soʻrov yordamchisi). «Yaratish» soʻrovni va 1000 hujjatlik namunadan olingan toʻplamning maydon nomlari va turlarini tanlangan provayderga yuboradi: Anthropic&apos;ning Claude API&apos;si, Google&apos;ning Gemini API&apos;si (Google AI Studio API kaliti bilan) yoki siz tanlagan istalgan OpenAI bilan mos server. «Yaratish» tugmasini bosmaguningizcha hech narsa yuborilmaydi.</translation>
+    </message>
+    <message>
+        <source>Key pasted. Clear it from the clipboard? (A clipboard history may still keep a copy.)</source>
+        <translation>Kalit qoʻyildi. Uni almashuv buferidan oʻchirish kerakmi? (Bufer tarixida baribir nusxasi qolishi mumkin.)</translation>
+    </message>
+    <message>
         <source>Models from the provider&apos;s current list.</source>
         <translation>Provayderning joriy roʻyxatidagi modellar.</translation>
     </message>
     <message>
-        <source>Built-in list. ⟳ loads the models this key can use now.</source>
-        <translation>Oʻrnatilgan roʻyxat. ⟳ bu kalit hozir foydalana oladigan modellarni yuklaydi.</translation>
+        <source>Answer time limit (sec)</source>
+        <translation>Javob vaqt chegarasi (son)</translation>
+    </message>
+    <message>
+        <source>How long to wait for an answer. A local model can need minutes, especially while it loads.</source>
+        <translation>Javobni qancha kutish kerak. Mahalliy model, ayniqsa yuklanayotganda, bir necha daqiqa talab qilishi mumkin.</translation>
     </message>
     <message>
         <source>When a model runs out of quota, hits a rate limit or is retired, try another model of the same provider</source>
@@ -3716,12 +3830,60 @@
 <context>
     <name>RagoShell::AiAssistant</name>
     <message>
+        <source>Is Ollama running? Start the Ollama app, or run &quot;ollama serve&quot; in a terminal.</source>
+        <translation>Ollama ishlayaptimi? Ollama ilovasini ishga tushiring yoki terminalda "ollama serve" buyrugʻini bajaring.</translation>
+    </message>
+    <message>
+        <source>In the browser the server must also allow this page (CORS): for Ollama set OLLAMA_ORIGINS to this page&apos;s address; in LM Studio turn on CORS in the server settings.</source>
+        <translation>Brauzerda server bu sahifaga ham ruxsat berishi kerak (CORS): Ollama uchun OLLAMA_ORIGINS qiymatini bu sahifa manziliga oʻrnating; LM Studio'da server sozlamalarida CORS'ni yoqing.</translation>
+    </message>
+    <message>
+        <source>Enter the server address.</source>
+        <translation>Server manzilini kiriting.</translation>
+    </message>
+    <message>
+        <source>The address is too long.</source>
+        <translation>Manzil juda uzun.</translation>
+    </message>
+    <message>
+        <source>Enter a full address that starts with https://, for example https://api.openai.com/v1.</source>
+        <translation>https:// bilan boshlanadigan toʻliq manzilni kiriting, masalan https://api.openai.com/v1.</translation>
+    </message>
+    <message>
+        <source>The address must not contain a user name or password. Put the key in the key field.</source>
+        <translation>Manzilda foydalanuvchi nomi yoki parol boʻlmasligi kerak. Kalitni kalit maydoniga yozing.</translation>
+    </message>
+    <message>
+        <source>The address must not contain ? or #.</source>
+        <translation>Manzilda ? yoki # boʻlmasligi kerak.</translation>
+    </message>
+    <message>
+        <source>Use https://. Plain http:// is allowed only for this device (localhost) or, without a key, for the local network.</source>
+        <translation>https:// dan foydalaning. Shifrlanmagan http:// faqat shu qurilma (localhost) uchun yoki kalitsiz mahalliy tarmoq uchun ruxsat etiladi.</translation>
+    </message>
+    <message>
+        <source>A key is never sent over plain http:// on the network. Use https://, or clear the key for a local server that needs none.</source>
+        <translation>Kalit tarmoq orqali hech qachon shifrlanmagan http:// bilan yuborilmaydi. https:// dan foydalaning yoki kalit kerak boʻlmagan mahalliy server uchun kalitni oʻchiring.</translation>
+    </message>
+    <message>
+        <source>Plain http:// to the local network is blocked on this device. Use https:// (for example through a reverse proxy) or localhost.</source>
+        <translation>Bu qurilmada mahalliy tarmoqqa shifrlanmagan http:// bloklangan. https:// (masalan, teskari proksi orqali) yoki localhost dan foydalaning.</translation>
+    </message>
+    <message>
         <source>Could not sample the collection: %1</source>
         <translation>Kolleksiyadan namuna olib boʻlmadi: %1</translation>
     </message>
     <message>
+        <source>Pick or type a model for %1 in Preferences.</source>
+        <translation>Sozlamalarda %1 uchun model tanlang yoki yozing.</translation>
+    </message>
+    <message>
         <source>Turn on the AI assistant and add an API key for %1 in Preferences.</source>
         <translation>AI yordamchisini yoqing va Sozlamalarda %1 uchun API kalitini kiriting.</translation>
+    </message>
+    <message>
+        <source>Turn on the AI assistant and set up %1 in Preferences.</source>
+        <translation>Sozlamalarda AI yordamchisini yoqing va %1 ni sozlang.</translation>
     </message>
     <message>
         <source>%1 skipped: %2.</source>
@@ -3732,8 +3894,17 @@
         <translation>Hozir %1 modellaridan hech biri mavjud emas: ular avval kvotasi tugagan yoki limitga yetgan. &quot;Qayta urinish&quot; buni unutib, qaytadan soʻraydi.</translation>
     </message>
     <message>
-        <source>The RagoShell session expired; sign in again.</source>
-        <translation>RagoShell seansi muddati tugadi; qaytadan tizimga kiring.</translation>
+        <source>The saved API key has spaces or characters an API key does not contain. Enter it again in Preferences.</source>
+        <translation>Saqlangan API kalitida boʻsh joy yoki API kalitida boʻlmaydigan belgilar bor. Uni Sozlamalarda qayta kiriting.</translation>
+    </message>
+    <message>
+        <source>The server sent a response that is too large (over %1 MB).</source>
+        <translation>Server juda katta javob yubordi (%1 MB dan ortiq).</translation>
+    </message>
+    <message>
+        <source>No answer within %1 seconds. A local model can be slow, especially while it loads; you can raise the time limit in Preferences.</source>
+        <extracomment>%1 = seconds. Local models can take long, especially while loading.</extracomment>
+        <translation>%1 soniya ichida javob kelmadi. Mahalliy model, ayniqsa yuklanayotganda, sekin boʻlishi mumkin; vaqt chegarasini Sozlamalarda oshirishingiz mumkin.</translation>
     </message>
     <message>
         <source>The request timed out.</source>
@@ -3759,8 +3930,56 @@
         <translation>Avval API kalitini kiriting.</translation>
     </message>
     <message>
-        <source>Cannot reach the API: %1</source>
-        <translation>API ga ulanib boʻlmadi: %1</translation>
+        <source>The key has spaces or characters an API key does not contain.</source>
+        <translation>Kalitda boʻsh joy yoki API kalitida boʻlmaydigan belgilar bor.</translation>
+    </message>
+    <message>
+        <source>The model list is too large (over %1 MB).</source>
+        <translation>Modellar roʻyxati juda katta (%1 MB dan ortiq).</translation>
+    </message>
+    <message numerus="yes">
+        <source>Connected. %n model(s) available.</source>
+        <extracomment>Preferences › AI › Test connection succeeded.</extracomment>
+        <translation>
+            <numerusform>Ulandi. %n ta model mavjud.</numerusform>
+            <numerusform>Ulandi. %n ta model mavjud.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Connected, but the provider listed no model this app can use.</source>
+        <translation>Ulandi, lekin provayder bu ilova foydalana oladigan birorta model koʻrsatmadi.</translation>
+    </message>
+    <message>
+        <source>Ollama is running, but no model is installed. Download one in a terminal with &quot;ollama pull &lt;model&gt;&quot;, then test again.</source>
+        <translation>Ollama ishlayapti, lekin oʻrnatilgan model yoʻq. Terminalda "ollama pull &lt;model&gt;" bilan model yuklab oling, soʻng qayta sinab koʻring.</translation>
+    </message>
+    <message>
+        <source>The server is running but lists no models. Download or load a model on the server, then test again.</source>
+        <translation>Server ishlayapti, lekin hech qanday model koʻrsatmayapti. Serverda model yuklab oling yoki yuklang, soʻng qayta sinab koʻring.</translation>
+    </message>
+    <message>
+        <source>The API key was rejected (HTTP %1). Check it and try again.</source>
+        <translation>API kaliti rad etildi (HTTP %1). Uni tekshirib, qayta urinib koʻring.</translation>
+    </message>
+    <message>
+        <source>The server is reachable but has no model list (HTTP 404).</source>
+        <translation>Serverga ulanish mumkin, lekin modellar roʻyxati yoʻq (HTTP 404).</translation>
+    </message>
+    <message>
+        <source>The provider&apos;s rate limit was reached (HTTP 429). Try again in a moment.</source>
+        <translation>Provayderning soʻrovlar chegarasiga yetildi (HTTP 429). Birozdan keyin qayta urinib koʻring.</translation>
+    </message>
+    <message>
+        <source>The server answered with a redirect (HTTP %1). It was not followed, so the key was not sent anywhere else.</source>
+        <translation>Server qayta yoʻnaltirish bilan javob berdi (HTTP %1). U bajarilmadi, shuning uchun kalit boshqa joyga yuborilmadi.</translation>
+    </message>
+    <message>
+        <source>The server did not answer in time.</source>
+        <translation>Server oʻz vaqtida javob bermadi.</translation>
+    </message>
+    <message>
+        <source>Cannot reach the server: %1</source>
+        <translation>Serverga ulanib boʻlmadi: %1</translation>
     </message>
 </context>
 <context>
@@ -3811,14 +4030,6 @@
     <message>
         <source>Canceled</source>
         <translation>Bekor qilingan</translation>
-    </message>
-    <message>
-        <source>Local BYOK AI only</source>
-        <translation>Faqat mahalliy BYOK SI</translation>
-    </message>
-    <message>
-        <source>%1 tokens / month</source>
-        <translation>Oyiga %1 token</translation>
     </message>
     <message>
         <source>Offline grace valid until %1</source>
@@ -4083,6 +4294,22 @@
     <message>
         <source>Index &quot;%1&quot; dropped from %2.%3.</source>
         <translation>&quot;%1&quot; indeksi %2.%3 dan oʻchirildi.</translation>
+    </message>
+    <message>
+        <source>The clipboard has no text.</source>
+        <translation>Almashuv buferida matn yoʻq.</translation>
+    </message>
+    <message>
+        <source>The clipboard holds more than one line. Copy only the key.</source>
+        <translation>Almashuv buferida bir nechta qator bor. Faqat kalitni nusxalang.</translation>
+    </message>
+    <message>
+        <source>The clipboard text is too long for an API key (over %1 characters).</source>
+        <translation>Buferdagi matn API kaliti uchun juda uzun (%1 belgidan ortiq).</translation>
+    </message>
+    <message>
+        <source>The clipboard text has spaces or characters an API key does not contain.</source>
+        <translation>Buferdagi matnda boʻsh joy yoki API kalitida boʻlmaydigan belgilar bor.</translation>
     </message>
     <message numerus="yes">
         <source>Replica Set (%n seed node(s))</source>

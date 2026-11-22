@@ -66,7 +66,7 @@ ColumnLayout {
         wrapMode: Text.WordWrap
         font.pixelSize: 12
         color: Theme.disabledTextColor
-        text: qsTr("All local MongoDB connections, SSH/TLS tunnels, the embedded shell, schema analysis, and bring-your-own-key AI work without an account. Sign in only if you want optional encrypted cross-device sync or hosted cloud AI.")
+        text: qsTr("All local MongoDB connections, SSH/TLS tunnels, the embedded shell, schema analysis, and bring-your-own-key AI work without an account. Sign in only if you want optional encrypted cross-device sync or the hosted connection bridge.")
     }
 
     Rectangle {
@@ -307,20 +307,6 @@ ColumnLayout {
                     text: CloudService.syncActive
                           ? qsTr("On · %1").arg(CloudService.syncLastSyncText)
                           : qsTr("Off")
-                }
-
-                Label {
-                    text: qsTr("Cloud AI quota")
-                    font.pixelSize: 12
-                    color: Theme.disabledTextColor
-                }
-                Label {
-                    Layout.fillWidth: true
-                    Layout.minimumWidth: 0
-                    wrapMode: Text.WordWrap
-                    font.pixelSize: 13
-                    color: CloudService.hostedAiEnabled ? Theme.textColor : Theme.disabledTextColor
-                    text: CloudService.aiQuotaSummary
                 }
             }
 

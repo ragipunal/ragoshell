@@ -88,7 +88,12 @@
     </message>
     <message>
         <source>off</source>
+        <extracomment>AI assistant header: provider · model · host the request goes to.</extracomment>
         <translation>выкл.</translation>
+    </message>
+    <message>
+        <source>sends to %1</source>
+        <translation>отправляет на %1</translation>
     </message>
     <message>
         <source>Sampling the collection…</source>
@@ -103,8 +108,8 @@
         <translation>Передаваемые данные</translation>
     </message>
     <message>
-        <source>The AI assistant is off or has no API key for %1. When it is on, Generate sends your request and this collection&apos;s field names and types (no document values unless you allow them) to the selected provider&apos;s API (Anthropic Claude or Google Gemini). Turn it on and add an API key in Preferences.</source>
-        <translation>ИИ-помощник выключен или для %1 не задан API-ключ. Когда он включён, кнопка «Создать» отправляет ваш запрос, а также имена и типы полей этой коллекции (без значений документов, если вы их не разрешили) в API выбранного провайдера (Anthropic Claude или Google Gemini). Включите помощник и добавьте API-ключ в настройках.</translation>
+        <source>The AI assistant is off or not set up for %1. When it is on, Generate sends your request and this collection&apos;s field names and types (no document values unless you allow them) to the selected provider&apos;s API (Anthropic Claude, Google Gemini, an OpenAI-compatible server or Ollama). Turn it on and set it up in Preferences.</source>
+        <translation>ИИ-ассистент выключен или не настроен для %1. Когда он включён, «Создать» отправляет ваш запрос, а также имена и типы полей этой коллекции (без значений документов, если вы их не разрешили) в API выбранного поставщика (Anthropic Claude, Google Gemini, OpenAI-совместимый сервер или Ollama). Включите и настройте его в параметрах.</translation>
     </message>
     <message>
         <source>Preferences…</source>
@@ -202,6 +207,18 @@
         <translation>Модель сейчас перегружена. Повторите чуть позже.</translation>
     </message>
     <message>
+        <source>The account at this provider has no credit or quota left.</source>
+        <translation>На счёте у этого провайдера закончились средства или квота.</translation>
+    </message>
+    <message>
+        <source>The server does not know this model or address. Check both in Preferences.</source>
+        <translation>Сервер не знает эту модель или этот адрес. Проверьте и то, и другое в параметрах.</translation>
+    </message>
+    <message>
+        <source>The server answered with a redirect (HTTP %1). It was not followed, so nothing was sent anywhere else. Check the address.</source>
+        <translation>Сервер ответил перенаправлением (HTTP %1). Оно не выполнено, поэтому ничего никуда больше не отправлено. Проверьте адрес.</translation>
+    </message>
+    <message>
         <source>The model did not return a query.</source>
         <translation>Модель не вернула запрос.</translation>
     </message>
@@ -216,6 +233,14 @@
     <message>
         <source>The generated query reads the collection &quot;%1&quot;, which was not described to the model.</source>
         <translation>Сгенерированный запрос читает коллекцию «%1», которая не была описана модели.</translation>
+    </message>
+    <message>
+        <source>The generated query is nested too deeply.</source>
+        <translation>Сгенерированный запрос слишком глубоко вложен.</translation>
+    </message>
+    <message>
+        <source>The generated query uses %1, which runs JavaScript on the server. It was not accepted.</source>
+        <translation>Сгенерированный запрос использует %1, который выполняет JavaScript на сервере. Он не принят.</translation>
     </message>
     <message>
         <source>The model declined this request.</source>
@@ -234,32 +259,16 @@
         <translation>Модель отклонила этот запрос (%1).</translation>
     </message>
     <message>
+        <source>OpenAI-compatible</source>
+        <translation>Совместимый с OpenAI</translation>
+    </message>
+    <message>
         <source>The API returned an unreadable response.</source>
         <translation>API вернул нечитаемый ответ.</translation>
     </message>
     <message>
         <source>The API listed no usable models.</source>
         <translation>API не вернул ни одной подходящей модели.</translation>
-    </message>
-    <message>
-        <source>The monthly RagoShell AI quota is used up. Upgrade or wait for the next month.</source>
-        <translation>Месячная квота RagoShell AI исчерпана. Перейдите на более высокий тариф или дождитесь следующего месяца.</translation>
-    </message>
-    <message>
-        <source>Too many requests; retry shortly.</source>
-        <translation>Слишком много запросов; повторите чуть позже.</translation>
-    </message>
-    <message>
-        <source>RagoShell AI requires a Pro or Team plan.</source>
-        <translation>Для RagoShell AI нужен тариф Pro или Team.</translation>
-    </message>
-    <message>
-        <source>The RagoShell session expired; sign in again.</source>
-        <translation>Сеанс RagoShell истёк; войдите снова.</translation>
-    </message>
-    <message>
-        <source>The AI service is temporarily unavailable.</source>
-        <translation>Служба ИИ временно недоступна.</translation>
     </message>
 </context>
 <context>
@@ -3010,8 +3019,8 @@
         <translation>ОБЛАЧНЫЙ АККАУНТ (НЕОБЯЗАТЕЛЬНО)</translation>
     </message>
     <message>
-        <source>All local MongoDB connections, SSH/TLS tunnels, the embedded shell, schema analysis, and bring-your-own-key AI work without an account. Sign in only if you want optional encrypted cross-device sync or hosted cloud AI.</source>
-        <translation>Все локальные подключения MongoDB, туннели SSH/TLS, встроенная оболочка, анализ схем и ИИ со своим ключом работают без аккаунта. Входите только для зашифрованной синхронизации между устройствами или облачного ИИ.</translation>
+        <source>All local MongoDB connections, SSH/TLS tunnels, the embedded shell, schema analysis, and bring-your-own-key AI work without an account. Sign in only if you want optional encrypted cross-device sync or the hosted connection bridge.</source>
+        <translation>Все локальные подключения MongoDB, туннели SSH/TLS, встроенная оболочка, анализ схем и ИИ со своим ключом работают без аккаунта. Входите только для зашифрованной синхронизации между устройствами или размещённого моста подключений.</translation>
     </message>
     <message>
         <source>OS keychain is unavailable; cloud sign-in will apply to this session only and will never write tokens to disk.</source>
@@ -3178,10 +3187,6 @@
         <translation>Все зашифрованные наборы данных на сервере будут удалены безвозвратно. Локальные настройки останутся на этом устройстве.</translation>
     </message>
     <message>
-        <source>Cloud AI quota</source>
-        <translation>Квота облачного ИИ</translation>
-    </message>
-    <message>
         <source>Refreshing…</source>
         <translation>Обновление…</translation>
     </message>
@@ -3219,6 +3224,10 @@
     <message>
         <source>%1 is used</source>
         <translation>Используется: %1</translation>
+    </message>
+    <message>
+        <source>Not needed for a local server</source>
+        <translation>Для локального сервера не нужен</translation>
     </message>
     <message>
         <source>Language</source>
@@ -3354,32 +3363,101 @@
         <translation>ИИ-ПОМОЩНИК ЗАПРОСОВ</translation>
     </message>
     <message>
-        <source>Turns a request in plain language into a find() or aggregate() query (Tools › AI Query Assistant). Generate sends the request and the collection&apos;s field names and types from a 1000-document sample to the selected provider: Anthropic&apos;s Claude API or Google&apos;s Gemini API (an API key from Google AI Studio). Nothing is sent until you press Generate.</source>
-        <translation>Преобразует запрос на обычном языке в запрос find() или aggregate() (Инструменты › ИИ-помощник запросов). Кнопка «Создать» отправляет запрос, а также имена и типы полей коллекции из выборки в 1000 документов выбранному провайдеру: Claude API от Anthropic или Gemini API от Google (API-ключ из Google AI Studio). Пока вы не нажмёте «Создать», ничего не отправляется.</translation>
-    </message>
-    <message>
         <source>Enable the AI query assistant</source>
         <translation>Включить ИИ-помощник запросов</translation>
+    </message>
+    <message>
+        <source>%1 AI (the hosted assistant) is no longer offered, so the assistant was turned off. Pick a provider, enter your own API key and turn it on again.</source>
+        <extracomment>Preferences › AI assistant notice after an update (%1 = product name).</extracomment>
+        <translation>%1 AI (размещённый ассистент) больше не предоставляется, поэтому ассистент отключён. Выберите провайдера, введите свой ключ API и снова включите его.</translation>
     </message>
     <message>
         <source>Provider</source>
         <translation>Провайдер</translation>
     </message>
     <message>
+        <source>Service</source>
+        <translation>Сервис</translation>
+    </message>
+    <message>
+        <source>Custom address</source>
+        <translation>Свой адрес</translation>
+    </message>
+    <message>
+        <source>Server address</source>
+        <translation>Адрес сервера</translation>
+    </message>
+    <message>
+        <source>The address points to another server now, so the key was cleared. Enter the key for this server.</source>
+        <translation>Адрес теперь указывает на другой сервер, поэтому ключ удалён. Введите ключ для этого сервера.</translation>
+    </message>
+    <message>
+        <source>Requests go to %1 on this device. A model that runs here is free and the data stays on this device; a cloud model or proxy behind this address sends it on.</source>
+        <extracomment>Preferences › AI, server on this computer (%1 = host name, e.g. localhost).</extracomment>
+        <translation>Запросы идут на %1 на этом устройстве. Модель, работающая здесь, бесплатна, и данные остаются на этом устройстве; облачная модель или прокси за этим адресом передают их дальше.</translation>
+    </message>
+    <message>
+        <source>Requests go to %1 on your local network. A model that runs there is free and the data stays on your network; a cloud model or proxy behind this address sends it on.</source>
+        <extracomment>Preferences › AI, server on the local network (%1 = host name or IP address).</extracomment>
+        <translation>Запросы идут на %1 в вашей локальной сети. Модель, работающая там, бесплатна, и данные остаются в вашей сети; облачная модель или прокси за этим адресом передают их дальше.</translation>
+    </message>
+    <message>
+        <source>Requests go to %1. Usage is billed by that provider, if it charges.</source>
+        <extracomment>Preferences › AI, OpenAI-compatible (%1 = host name).</extracomment>
+        <translation>Запросы отправляются на %1. Использование оплачивается у этого провайдера, если он берёт плату.</translation>
+    </message>
+    <message>
         <source>Google AI Studio API key</source>
         <translation>API-ключ Google AI Studio</translation>
+    </message>
+    <message>
+        <source>API key (optional)</source>
+        <translation>Ключ API (необязательно)</translation>
     </message>
     <message>
         <source>Anthropic API key</source>
         <translation>API-ключ Anthropic</translation>
     </message>
     <message>
-        <source>Signed in — requests run through your RagoShell account quota; no API key needed.</source>
-        <translation>Вход выполнен — запросы идут через квоту вашего аккаунта RagoShell; API-ключ не нужен.</translation>
+        <source>Hide key</source>
+        <translation>Скрыть ключ</translation>
     </message>
     <message>
-        <source>Sign in on the Account tab to use RagoShell AI, or pick another provider and enter its key.</source>
-        <translation>Войдите на вкладке «Аккаунт», чтобы использовать RagoShell AI, или выберите другого провайдера и введите его ключ.</translation>
+        <source>Show key</source>
+        <translation>Показать ключ</translation>
+    </message>
+    <message>
+        <source>Paste</source>
+        <extracomment>Preferences › AI: paste the API key from the clipboard.</extracomment>
+        <translation>Вставить</translation>
+    </message>
+    <message>
+        <source>Paste the API key from the clipboard</source>
+        <translation>Вставить ключ API из буфера обмена</translation>
+    </message>
+    <message>
+        <source>Test connection</source>
+        <translation>Проверить подключение</translation>
+    </message>
+    <message>
+        <source>Asks the provider for its model list with this key. No query or schema is sent.</source>
+        <translation>Запрашивает у провайдера список моделей с этим ключом. Запрос и схема не отправляются.</translation>
+    </message>
+    <message>
+        <source>Asks the server for its model list. No query or schema is sent.</source>
+        <translation>Запрашивает у сервера список моделей. Запрос и схема не отправляются.</translation>
+    </message>
+    <message>
+        <source>How to get a key ↗</source>
+        <translation>Как получить ключ ↗</translation>
+    </message>
+    <message>
+        <source>Open the provider&apos;s API key page</source>
+        <translation>Открыть страницу ключей API провайдера</translation>
+    </message>
+    <message>
+        <source>Clear clipboard</source>
+        <translation>Очистить буфер обмена</translation>
     </message>
     <message>
         <source>Using the key entered here (saved with your settings).</source>
@@ -3390,6 +3468,10 @@
         <translation>Используется ключ из переменной окружения %1.</translation>
     </message>
     <message>
+        <source>No key: requests are sent without one (enough for a local server).</source>
+        <translation>Без ключа: запросы отправляются без него (достаточно для локального сервера).</translation>
+    </message>
+    <message>
         <source>No key yet. Enter one above.</source>
         <translation>Ключа пока нет. Введите его выше.</translation>
     </message>
@@ -3398,24 +3480,56 @@
         <translation>Модель</translation>
     </message>
     <message>
-        <source>Load the provider&apos;s current model list</source>
-        <translation>Загрузить актуальный список моделей провайдера</translation>
+        <source>Installed model, e.g. llama3.2</source>
+        <translation>Установленная модель, например llama3.2</translation>
     </message>
     <message>
-        <source>Loading the model list…</source>
-        <translation>Загрузка списка моделей…</translation>
+        <source>Model name, e.g. gpt-5.5</source>
+        <translation>Имя модели, например gpt-5.5</translation>
+    </message>
+    <message>
+        <source>Pick from the server&apos;s list…</source>
+        <translation>Выбрать из списка сервера…</translation>
+    </message>
+    <message>
+        <source>Models listed by the server</source>
+        <translation>Модели, указанные сервером</translation>
+    </message>
+    <message>
+        <source>Testing the connection…</source>
+        <translation>Проверка подключения…</translation>
+    </message>
+    <message>
+        <source>Type the model name, or use Test connection to list the server&apos;s models.</source>
+        <translation>Введите имя модели или нажмите «Проверить подключение», чтобы получить список моделей сервера.</translation>
+    </message>
+    <message>
+        <source>Built-in list. Test connection loads the models this key can use now.</source>
+        <translation>Встроенный список. «Проверить подключение» загрузит модели, доступные этому ключу сейчас.</translation>
     </message>
     <message>
         <source>The selected model is no longer in the provider&apos;s list (retired?). Pick another one.</source>
         <translation>Выбранной модели больше нет в списке провайдера (снята с поддержки?). Выберите другую.</translation>
     </message>
     <message>
+        <source>Turns a request in plain language into a find() or aggregate() query (Tools › AI Query Assistant). Generate sends the request and the collection&apos;s field names and types from a 1000-document sample to the selected provider: Anthropic&apos;s Claude API, Google&apos;s Gemini API (an API key from Google AI Studio) or any OpenAI-compatible server you choose. Nothing is sent until you press Generate.</source>
+        <translation>Превращает запрос на обычном языке в запрос find() или aggregate() (Инструменты › ИИ-помощник запросов). «Сгенерировать» отправляет запрос, а также имена и типы полей коллекции по выборке из 1000 документов выбранному провайдеру: Claude API от Anthropic, Gemini API от Google (ключ API из Google AI Studio) или любому выбранному вами серверу, совместимому с OpenAI. Пока вы не нажмёте «Сгенерировать», ничего не отправляется.</translation>
+    </message>
+    <message>
+        <source>Key pasted. Clear it from the clipboard? (A clipboard history may still keep a copy.)</source>
+        <translation>Ключ вставлен. Удалить его из буфера обмена? (Журнал буфера обмена всё равно может хранить копию.)</translation>
+    </message>
+    <message>
         <source>Models from the provider&apos;s current list.</source>
         <translation>Модели из актуального списка провайдера.</translation>
     </message>
     <message>
-        <source>Built-in list. ⟳ loads the models this key can use now.</source>
-        <translation>Встроенный список. ⟳ загружает модели, доступные этому ключу сейчас.</translation>
+        <source>Answer time limit (sec)</source>
+        <translation>Время ожидания ответа (с)</translation>
+    </message>
+    <message>
+        <source>How long to wait for an answer. A local model can need minutes, especially while it loads.</source>
+        <translation>Сколько ждать ответа. Локальной модели могут понадобиться минуты, особенно во время загрузки.</translation>
     </message>
     <message>
         <source>When a model runs out of quota, hits a rate limit or is retired, try another model of the same provider</source>
@@ -3722,12 +3836,60 @@
 <context>
     <name>RagoShell::AiAssistant</name>
     <message>
+        <source>Is Ollama running? Start the Ollama app, or run &quot;ollama serve&quot; in a terminal.</source>
+        <translation>Ollama запущена? Запустите приложение Ollama или выполните «ollama serve» в терминале.</translation>
+    </message>
+    <message>
+        <source>In the browser the server must also allow this page (CORS): for Ollama set OLLAMA_ORIGINS to this page&apos;s address; in LM Studio turn on CORS in the server settings.</source>
+        <translation>В браузере сервер также должен разрешать эту страницу (CORS): для Ollama задайте в OLLAMA_ORIGINS адрес этой страницы; в LM Studio включите CORS в настройках сервера.</translation>
+    </message>
+    <message>
+        <source>Enter the server address.</source>
+        <translation>Введите адрес сервера.</translation>
+    </message>
+    <message>
+        <source>The address is too long.</source>
+        <translation>Адрес слишком длинный.</translation>
+    </message>
+    <message>
+        <source>Enter a full address that starts with https://, for example https://api.openai.com/v1.</source>
+        <translation>Введите полный адрес, начинающийся с https://, например https://api.openai.com/v1.</translation>
+    </message>
+    <message>
+        <source>The address must not contain a user name or password. Put the key in the key field.</source>
+        <translation>Адрес не должен содержать имя пользователя или пароль. Укажите ключ в поле ключа.</translation>
+    </message>
+    <message>
+        <source>The address must not contain ? or #.</source>
+        <translation>Адрес не должен содержать ? или #.</translation>
+    </message>
+    <message>
+        <source>Use https://. Plain http:// is allowed only for this device (localhost) or, without a key, for the local network.</source>
+        <translation>Используйте https://. Незащищённый http:// разрешён только для этого устройства (localhost) или, без ключа, для локальной сети.</translation>
+    </message>
+    <message>
+        <source>A key is never sent over plain http:// on the network. Use https://, or clear the key for a local server that needs none.</source>
+        <translation>Ключ никогда не отправляется по незащищённому http:// через сеть. Используйте https:// или удалите ключ для локального сервера, которому он не нужен.</translation>
+    </message>
+    <message>
+        <source>Plain http:// to the local network is blocked on this device. Use https:// (for example through a reverse proxy) or localhost.</source>
+        <translation>Незащищённый http:// в локальную сеть на этом устройстве заблокирован. Используйте https:// (например, через обратный прокси) или localhost.</translation>
+    </message>
+    <message>
         <source>Could not sample the collection: %1</source>
         <translation>Не удалось получить выборку из коллекции: %1</translation>
     </message>
     <message>
+        <source>Pick or type a model for %1 in Preferences.</source>
+        <translation>Выберите или введите модель для %1 в параметрах.</translation>
+    </message>
+    <message>
         <source>Turn on the AI assistant and add an API key for %1 in Preferences.</source>
         <translation>Включите ИИ-помощник и добавьте API-ключ для %1 в настройках.</translation>
+    </message>
+    <message>
+        <source>Turn on the AI assistant and set up %1 in Preferences.</source>
+        <translation>Включите ИИ-ассистент и настройте %1 в параметрах.</translation>
     </message>
     <message>
         <source>%1 skipped: %2.</source>
@@ -3738,8 +3900,17 @@
         <translation>Сейчас нет доступных моделей %1: у них закончилась квота или ранее был достигнут лимит запросов. Повтор сбрасывает это и запрашивает снова.</translation>
     </message>
     <message>
-        <source>The RagoShell session expired; sign in again.</source>
-        <translation>Сеанс RagoShell истёк; войдите снова.</translation>
+        <source>The saved API key has spaces or characters an API key does not contain. Enter it again in Preferences.</source>
+        <translation>Сохранённый ключ API содержит пробелы или символы, которых нет в ключе API. Введите его заново в параметрах.</translation>
+    </message>
+    <message>
+        <source>The server sent a response that is too large (over %1 MB).</source>
+        <translation>Сервер прислал слишком большой ответ (более %1 МБ).</translation>
+    </message>
+    <message>
+        <source>No answer within %1 seconds. A local model can be slow, especially while it loads; you can raise the time limit in Preferences.</source>
+        <extracomment>%1 = seconds. Local models can take long, especially while loading.</extracomment>
+        <translation>Нет ответа в течение %1 с. Локальная модель может работать медленно, особенно во время загрузки; время ожидания можно увеличить в параметрах.</translation>
     </message>
     <message>
         <source>The request timed out.</source>
@@ -3765,8 +3936,57 @@
         <translation>Сначала введите API-ключ.</translation>
     </message>
     <message>
-        <source>Cannot reach the API: %1</source>
-        <translation>Не удаётся связаться с API: %1</translation>
+        <source>The key has spaces or characters an API key does not contain.</source>
+        <translation>Ключ содержит пробелы или символы, которых нет в ключе API.</translation>
+    </message>
+    <message>
+        <source>The model list is too large (over %1 MB).</source>
+        <translation>Список моделей слишком большой (более %1 МБ).</translation>
+    </message>
+    <message numerus="yes">
+        <source>Connected. %n model(s) available.</source>
+        <extracomment>Preferences › AI › Test connection succeeded.</extracomment>
+        <translation>
+            <numerusform>Подключено. Доступна %n модель.</numerusform>
+            <numerusform>Подключено. Доступны %n модели.</numerusform>
+            <numerusform>Подключено. Доступно %n моделей.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Connected, but the provider listed no model this app can use.</source>
+        <translation>Подключено, но провайдер не указал ни одной модели, которую может использовать это приложение.</translation>
+    </message>
+    <message>
+        <source>Ollama is running, but no model is installed. Download one in a terminal with &quot;ollama pull &lt;model&gt;&quot;, then test again.</source>
+        <translation>Ollama запущена, но ни одна модель не установлена. Скачайте модель в терминале командой «ollama pull &lt;model&gt;», затем проверьте снова.</translation>
+    </message>
+    <message>
+        <source>The server is running but lists no models. Download or load a model on the server, then test again.</source>
+        <translation>Сервер работает, но не показывает ни одной модели. Скачайте или загрузите модель на сервере, затем проверьте снова.</translation>
+    </message>
+    <message>
+        <source>The API key was rejected (HTTP %1). Check it and try again.</source>
+        <translation>Ключ API отклонён (HTTP %1). Проверьте его и попробуйте снова.</translation>
+    </message>
+    <message>
+        <source>The server is reachable but has no model list (HTTP 404).</source>
+        <translation>Сервер доступен, но списка моделей нет (HTTP 404).</translation>
+    </message>
+    <message>
+        <source>The provider&apos;s rate limit was reached (HTTP 429). Try again in a moment.</source>
+        <translation>Достигнут лимит запросов провайдера (HTTP 429). Повторите попытку чуть позже.</translation>
+    </message>
+    <message>
+        <source>The server answered with a redirect (HTTP %1). It was not followed, so the key was not sent anywhere else.</source>
+        <translation>Сервер ответил перенаправлением (HTTP %1). Оно не выполнено, поэтому ключ никуда больше не отправлен.</translation>
+    </message>
+    <message>
+        <source>The server did not answer in time.</source>
+        <translation>Сервер не ответил вовремя.</translation>
+    </message>
+    <message>
+        <source>Cannot reach the server: %1</source>
+        <translation>Сервер недоступен: %1</translation>
     </message>
 </context>
 <context>
@@ -3817,14 +4037,6 @@
     <message>
         <source>Canceled</source>
         <translation>Отменён</translation>
-    </message>
-    <message>
-        <source>Local BYOK AI only</source>
-        <translation>Только локальный ИИ со своим ключом</translation>
-    </message>
-    <message>
-        <source>%1 tokens / month</source>
-        <translation>%1 токенов / мес.</translation>
     </message>
     <message>
         <source>Offline grace valid until %1</source>
@@ -4095,6 +4307,22 @@
     <message>
         <source>Index &quot;%1&quot; dropped from %2.%3.</source>
         <translation>Индекс &quot;%1&quot; удалён из %2.%3.</translation>
+    </message>
+    <message>
+        <source>The clipboard has no text.</source>
+        <translation>В буфере обмена нет текста.</translation>
+    </message>
+    <message>
+        <source>The clipboard holds more than one line. Copy only the key.</source>
+        <translation>В буфере обмена больше одной строки. Скопируйте только ключ.</translation>
+    </message>
+    <message>
+        <source>The clipboard text is too long for an API key (over %1 characters).</source>
+        <translation>Текст в буфере обмена слишком длинный для ключа API (более %1 символов).</translation>
+    </message>
+    <message>
+        <source>The clipboard text has spaces or characters an API key does not contain.</source>
+        <translation>Текст в буфере обмена содержит пробелы или символы, которых нет в ключе API.</translation>
     </message>
     <message numerus="yes">
         <source>Replica Set (%n seed node(s))</source>

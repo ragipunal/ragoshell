@@ -373,6 +373,22 @@ namespace RagoShell::AiQueryAssistant
         QByteArray requestBody(Provider provider, const QString &model, const Context &context,
                                const QString &question)
         {
+            if (usesOpenAiApi(provider)) {
+                // Plain Chat Completions: response_format and temperature are
+                // not sent, as support differs from server to server; the
+                // system prompt spells out the JSON instead.
+                const QString system = systemPrompt()
+                                       + QStringLiteral("\n\nAnswer with one JSON object and nothing else (no Markdown "
+                                                        "fence): {\"kind\": \"find\" | \"aggregate\" | \"unsupported\", "
+                                                        "\"script\": string, \"explanation\": string}.");
+                QJsonObject body{
+                    {"model", model},
+                    {"max_tokens", kCompatMaxTokens},
+                    {"messages", QJsonArray{QJsonObject{{"role", "system"}, {"content", system}},
+                                            QJsonObject{{"role", "user"}, {"content", userPrompt(context, question)}}}},
+                };
+                return QJsonDocument(body).toJson(QJsonDocument::Compact);
+            }
             if (provider == Provider::Gemini) {
                 // The model goes in the URL.
                 QJsonObject generationConfig{

@@ -88,7 +88,12 @@
     </message>
     <message>
         <source>off</source>
+        <extracomment>AI assistant header: provider · model · host the request goes to.</extracomment>
         <translation>متوقف</translation>
+    </message>
+    <message>
+        <source>sends to %1</source>
+        <translation>يرسل إلى %1</translation>
     </message>
     <message>
         <source>Sampling the collection…</source>
@@ -103,8 +108,8 @@
         <translation>البيانات المرسلة</translation>
     </message>
     <message>
-        <source>The AI assistant is off or has no API key for %1. When it is on, Generate sends your request and this collection&apos;s field names and types (no document values unless you allow them) to the selected provider&apos;s API (Anthropic Claude or Google Gemini). Turn it on and add an API key in Preferences.</source>
-        <translation>المساعد الذكي متوقف أو لا يملك مفتاح API لـ %1. عند تشغيله، يرسل «إنشاء» طلبك وأسماء حقول هذه المجموعة وأنواعها (دون قيم المستندات ما لم تسمح بذلك) إلى واجهة API للمزوّد المحدد (Anthropic Claude أو Google Gemini). فعّله وأضف مفتاح API في التفضيلات.</translation>
+        <source>The AI assistant is off or not set up for %1. When it is on, Generate sends your request and this collection&apos;s field names and types (no document values unless you allow them) to the selected provider&apos;s API (Anthropic Claude, Google Gemini, an OpenAI-compatible server or Ollama). Turn it on and set it up in Preferences.</source>
+        <translation>مساعد الذكاء الاصطناعي متوقف أو غير مُعدّ لـ %1. عند تشغيله، يرسل «إنشاء» طلبك وأسماء حقول هذه المجموعة وأنواعها (دون قيم المستندات ما لم تسمح بها) إلى واجهة API الخاصة بالمزوّد المختار (Anthropic Claude أو Google Gemini أو خادم متوافق مع OpenAI أو Ollama). شغّله واضبطه في التفضيلات.</translation>
     </message>
     <message>
         <source>Preferences…</source>
@@ -202,6 +207,18 @@
         <translation>النموذج مشغول جدًا حاليًا. حاول مرة أخرى بعد قليل.</translation>
     </message>
     <message>
+        <source>The account at this provider has no credit or quota left.</source>
+        <translation>لم يتبقَّ رصيد أو حصة في الحساب لدى هذا المزود.</translation>
+    </message>
+    <message>
+        <source>The server does not know this model or address. Check both in Preferences.</source>
+        <translation>لا يعرف الخادم هذا النموذج أو هذا العنوان. تحقق من كليهما في التفضيلات.</translation>
+    </message>
+    <message>
+        <source>The server answered with a redirect (HTTP %1). It was not followed, so nothing was sent anywhere else. Check the address.</source>
+        <translation>ردّ الخادم بإعادة توجيه (HTTP %1). لم تتم متابعتها، لذا لم يُرسل أي شيء إلى مكان آخر. تحقق من العنوان.</translation>
+    </message>
+    <message>
         <source>The model did not return a query.</source>
         <translation>لم يُرجع النموذج استعلامًا.</translation>
     </message>
@@ -216,6 +233,14 @@
     <message>
         <source>The generated query reads the collection &quot;%1&quot;, which was not described to the model.</source>
         <translation>يقرأ الاستعلام المُنشأ المجموعة &quot;%1&quot; التي لم تُوصف للنموذج.</translation>
+    </message>
+    <message>
+        <source>The generated query is nested too deeply.</source>
+        <translation>الاستعلام المُنشأ متداخل بعمق زائد.</translation>
+    </message>
+    <message>
+        <source>The generated query uses %1, which runs JavaScript on the server. It was not accepted.</source>
+        <translation>يستخدم الاستعلام المُنشأ %1 الذي يشغّل JavaScript على الخادم. لم يتم قبوله.</translation>
     </message>
     <message>
         <source>The model declined this request.</source>
@@ -234,32 +259,16 @@
         <translation>رفض النموذج هذا الطلب (%1).</translation>
     </message>
     <message>
+        <source>OpenAI-compatible</source>
+        <translation>متوافق مع OpenAI</translation>
+    </message>
+    <message>
         <source>The API returned an unreadable response.</source>
         <translation>أعادت واجهة API استجابة غير قابلة للقراءة.</translation>
     </message>
     <message>
         <source>The API listed no usable models.</source>
         <translation>لم تعرض واجهة API أي نماذج صالحة للاستخدام.</translation>
-    </message>
-    <message>
-        <source>The monthly RagoShell AI quota is used up. Upgrade or wait for the next month.</source>
-        <translation>نفدت الحصة الشهرية من RagoShell AI. قم بالترقية أو انتظر حتى الشهر القادم.</translation>
-    </message>
-    <message>
-        <source>Too many requests; retry shortly.</source>
-        <translation>طلبات كثيرة جدًا؛ أعد المحاولة بعد قليل.</translation>
-    </message>
-    <message>
-        <source>RagoShell AI requires a Pro or Team plan.</source>
-        <translation>يتطلب RagoShell AI خطة Pro أو Team.</translation>
-    </message>
-    <message>
-        <source>The RagoShell session expired; sign in again.</source>
-        <translation>انتهت صلاحية جلسة RagoShell؛ سجّل الدخول مرة أخرى.</translation>
-    </message>
-    <message>
-        <source>The AI service is temporarily unavailable.</source>
-        <translation>خدمة الذكاء الاصطناعي غير متوفرة مؤقتًا.</translation>
     </message>
 </context>
 <context>
@@ -3028,8 +3037,8 @@
         <translation>الحساب السحابي (اختياري)</translation>
     </message>
     <message>
-        <source>All local MongoDB connections, SSH/TLS tunnels, the embedded shell, schema analysis, and bring-your-own-key AI work without an account. Sign in only if you want optional encrypted cross-device sync or hosted cloud AI.</source>
-        <translation>تعمل جميع اتصالات MongoDB المحلية وأنفاق SSH/TLS والصدفة المدمجة وتحليل المخطط والذكاء الاصطناعي بمفتاحك الخاص دون حساب. سجّل الدخول فقط إذا أردت المزامنة المشفرة الاختيارية أو الذكاء الاصطناعي السحابي.</translation>
+        <source>All local MongoDB connections, SSH/TLS tunnels, the embedded shell, schema analysis, and bring-your-own-key AI work without an account. Sign in only if you want optional encrypted cross-device sync or the hosted connection bridge.</source>
+        <translation>تعمل جميع اتصالات MongoDB المحلية وأنفاق SSH/TLS والصدفة المدمجة وتحليل المخطط والذكاء الاصطناعي بمفتاحك الخاص دون حساب. سجّل الدخول فقط إذا أردت المزامنة المشفرة الاختيارية أو جسر الاتصال المستضاف.</translation>
     </message>
     <message>
         <source>OS keychain is unavailable; cloud sign-in will apply to this session only and will never write tokens to disk.</source>
@@ -3196,10 +3205,6 @@
         <translation>ستُحذف جميع المجموعات المشفرة المخزنة على الخادم نهائيًا. تبقى الإعدادات المحلية على هذا الجهاز.</translation>
     </message>
     <message>
-        <source>Cloud AI quota</source>
-        <translation>حصة الذكاء الاصطناعي السحابي</translation>
-    </message>
-    <message>
         <source>Refreshing…</source>
         <translation>جارٍ التحديث…</translation>
     </message>
@@ -3237,6 +3242,10 @@
     <message>
         <source>%1 is used</source>
         <translation>يُستخدم %1</translation>
+    </message>
+    <message>
+        <source>Not needed for a local server</source>
+        <translation>غير مطلوب لخادم محلي</translation>
     </message>
     <message>
         <source>Language</source>
@@ -3372,32 +3381,101 @@
         <translation>مساعد الاستعلامات بالذكاء الاصطناعي</translation>
     </message>
     <message>
-        <source>Turns a request in plain language into a find() or aggregate() query (Tools › AI Query Assistant). Generate sends the request and the collection&apos;s field names and types from a 1000-document sample to the selected provider: Anthropic&apos;s Claude API or Google&apos;s Gemini API (an API key from Google AI Studio). Nothing is sent until you press Generate.</source>
-        <translation>يحوّل طلبًا بلغة عادية إلى استعلام find() أو aggregate() (الأدوات › مساعد الاستعلامات بالذكاء الاصطناعي). يرسل «إنشاء» الطلب وأسماء حقول المجموعة وأنواعها من عينة مكوّنة من 1000 مستند إلى المزوّد المحدد: واجهة Claude API من Anthropic أو واجهة Gemini API من Google (مفتاح API من Google AI Studio). لا يُرسل شيء حتى تضغط «إنشاء».</translation>
-    </message>
-    <message>
         <source>Enable the AI query assistant</source>
         <translation>تفعيل مساعد الاستعلامات بالذكاء الاصطناعي</translation>
+    </message>
+    <message>
+        <source>%1 AI (the hosted assistant) is no longer offered, so the assistant was turned off. Pick a provider, enter your own API key and turn it on again.</source>
+        <extracomment>Preferences › AI assistant notice after an update (%1 = product name).</extracomment>
+        <translation>لم يعد %1 AI (المساعد المستضاف) متاحًا، لذا تم إيقاف المساعد. اختر مزودًا وأدخل مفتاح API الخاص بك ثم شغّله مجددًا.</translation>
     </message>
     <message>
         <source>Provider</source>
         <translation>المزوّد</translation>
     </message>
     <message>
+        <source>Service</source>
+        <translation>الخدمة</translation>
+    </message>
+    <message>
+        <source>Custom address</source>
+        <translation>عنوان مخصص</translation>
+    </message>
+    <message>
+        <source>Server address</source>
+        <translation>عنوان الخادم</translation>
+    </message>
+    <message>
+        <source>The address points to another server now, so the key was cleared. Enter the key for this server.</source>
+        <translation>يشير العنوان الآن إلى خادم آخر، لذا تم مسح المفتاح. أدخل مفتاح هذا الخادم.</translation>
+    </message>
+    <message>
+        <source>Requests go to %1 on this device. A model that runs here is free and the data stays on this device; a cloud model or proxy behind this address sends it on.</source>
+        <extracomment>Preferences › AI, server on this computer (%1 = host name, e.g. localhost).</extracomment>
+        <translation>تُرسل الطلبات إلى %1 على هذا الجهاز. النموذج الذي يعمل هنا مجاني وتبقى البيانات على هذا الجهاز؛ أما النموذج السحابي أو الوكيل خلف هذا العنوان فيمرّرها إلى الخارج.</translation>
+    </message>
+    <message>
+        <source>Requests go to %1 on your local network. A model that runs there is free and the data stays on your network; a cloud model or proxy behind this address sends it on.</source>
+        <extracomment>Preferences › AI, server on the local network (%1 = host name or IP address).</extracomment>
+        <translation>تُرسل الطلبات إلى %1 على شبكتك المحلية. النموذج الذي يعمل هناك مجاني وتبقى البيانات على شبكتك؛ أما النموذج السحابي أو الوكيل خلف هذا العنوان فيمرّرها إلى الخارج.</translation>
+    </message>
+    <message>
+        <source>Requests go to %1. Usage is billed by that provider, if it charges.</source>
+        <extracomment>Preferences › AI, OpenAI-compatible (%1 = host name).</extracomment>
+        <translation>تذهب الطلبات إلى %1. يحاسب ذلك المزود على الاستخدام إن كان يفرض رسومًا.</translation>
+    </message>
+    <message>
         <source>Google AI Studio API key</source>
         <translation>مفتاح API لـ Google AI Studio</translation>
+    </message>
+    <message>
+        <source>API key (optional)</source>
+        <translation>مفتاح API (اختياري)</translation>
     </message>
     <message>
         <source>Anthropic API key</source>
         <translation>مفتاح API لـ Anthropic</translation>
     </message>
     <message>
-        <source>Signed in — requests run through your RagoShell account quota; no API key needed.</source>
-        <translation>تم تسجيل الدخول — تُنفَّذ الطلبات عبر حصة حسابك في RagoShell؛ لا حاجة إلى مفتاح API.</translation>
+        <source>Hide key</source>
+        <translation>إخفاء المفتاح</translation>
     </message>
     <message>
-        <source>Sign in on the Account tab to use RagoShell AI, or pick another provider and enter its key.</source>
-        <translation>سجّل الدخول من علامة التبويب «الحساب» لاستخدام RagoShell AI، أو اختر مزودًا آخر وأدخل مفتاحه.</translation>
+        <source>Show key</source>
+        <translation>إظهار المفتاح</translation>
+    </message>
+    <message>
+        <source>Paste</source>
+        <extracomment>Preferences › AI: paste the API key from the clipboard.</extracomment>
+        <translation>لصق</translation>
+    </message>
+    <message>
+        <source>Paste the API key from the clipboard</source>
+        <translation>لصق مفتاح API من الحافظة</translation>
+    </message>
+    <message>
+        <source>Test connection</source>
+        <translation>اختبار الاتصال</translation>
+    </message>
+    <message>
+        <source>Asks the provider for its model list with this key. No query or schema is sent.</source>
+        <translation>يطلب من المزود قائمة النماذج باستخدام هذا المفتاح. لا يُرسل أي استعلام أو مخطط.</translation>
+    </message>
+    <message>
+        <source>Asks the server for its model list. No query or schema is sent.</source>
+        <translation>يطلب من الخادم قائمة النماذج. لا يُرسل أي استعلام أو مخطط.</translation>
+    </message>
+    <message>
+        <source>How to get a key ↗</source>
+        <translation>كيف تحصل على مفتاح ↗</translation>
+    </message>
+    <message>
+        <source>Open the provider&apos;s API key page</source>
+        <translation>فتح صفحة مفاتيح API لدى المزود</translation>
+    </message>
+    <message>
+        <source>Clear clipboard</source>
+        <translation>مسح الحافظة</translation>
     </message>
     <message>
         <source>Using the key entered here (saved with your settings).</source>
@@ -3408,6 +3486,10 @@
         <translation>يتم استخدام المفتاح من متغير البيئة %1.</translation>
     </message>
     <message>
+        <source>No key: requests are sent without one (enough for a local server).</source>
+        <translation>بلا مفتاح: تُرسل الطلبات من دونه (يكفي لخادم محلي).</translation>
+    </message>
+    <message>
         <source>No key yet. Enter one above.</source>
         <translation>لا يوجد مفتاح بعد. أدخل واحدًا أعلاه.</translation>
     </message>
@@ -3416,24 +3498,56 @@
         <translation>النموذج</translation>
     </message>
     <message>
-        <source>Load the provider&apos;s current model list</source>
-        <translation>تحميل قائمة النماذج الحالية للمزوّد</translation>
+        <source>Installed model, e.g. llama3.2</source>
+        <translation>نموذج مثبّت، مثل llama3.2</translation>
     </message>
     <message>
-        <source>Loading the model list…</source>
-        <translation>جارٍ تحميل قائمة النماذج…</translation>
+        <source>Model name, e.g. gpt-5.5</source>
+        <translation>اسم النموذج، مثل gpt-5.5</translation>
+    </message>
+    <message>
+        <source>Pick from the server&apos;s list…</source>
+        <translation>اختر من قائمة الخادم…</translation>
+    </message>
+    <message>
+        <source>Models listed by the server</source>
+        <translation>النماذج التي يذكرها الخادم</translation>
+    </message>
+    <message>
+        <source>Testing the connection…</source>
+        <translation>جارٍ اختبار الاتصال…</translation>
+    </message>
+    <message>
+        <source>Type the model name, or use Test connection to list the server&apos;s models.</source>
+        <translation>اكتب اسم النموذج، أو استخدم «اختبار الاتصال» لعرض نماذج الخادم.</translation>
+    </message>
+    <message>
+        <source>Built-in list. Test connection loads the models this key can use now.</source>
+        <translation>قائمة مضمّنة. يحمّل «اختبار الاتصال» النماذج التي يمكن لهذا المفتاح استخدامها الآن.</translation>
     </message>
     <message>
         <source>The selected model is no longer in the provider&apos;s list (retired?). Pick another one.</source>
         <translation>لم يعد النموذج المحدد في قائمة المزوّد (ربما أُلغي). اختر نموذجًا آخر.</translation>
     </message>
     <message>
+        <source>Turns a request in plain language into a find() or aggregate() query (Tools › AI Query Assistant). Generate sends the request and the collection&apos;s field names and types from a 1000-document sample to the selected provider: Anthropic&apos;s Claude API, Google&apos;s Gemini API (an API key from Google AI Studio) or any OpenAI-compatible server you choose. Nothing is sent until you press Generate.</source>
+        <translation>يحوّل طلبًا بلغة عادية إلى استعلام find() أو aggregate() (الأدوات › مساعد الاستعلامات بالذكاء الاصطناعي). يرسل «إنشاء» الطلب وأسماء حقول المجموعة وأنواعها من عينة من 1000 مستند إلى المزود المحدد: واجهة Claude API من Anthropic، أو واجهة Gemini API من Google (بمفتاح API من Google AI Studio)، أو أي خادم متوافق مع OpenAI تختاره. لا يُرسل أي شيء حتى تضغط «إنشاء».</translation>
+    </message>
+    <message>
+        <source>Key pasted. Clear it from the clipboard? (A clipboard history may still keep a copy.)</source>
+        <translation>تم لصق المفتاح. هل تريد إزالته من الحافظة؟ (قد يحتفظ سجل الحافظة بنسخة منه مع ذلك.)</translation>
+    </message>
+    <message>
         <source>Models from the provider&apos;s current list.</source>
         <translation>نماذج من القائمة الحالية للمزوّد.</translation>
     </message>
     <message>
-        <source>Built-in list. ⟳ loads the models this key can use now.</source>
-        <translation>قائمة مدمجة. ⟳ يحمّل النماذج التي يمكن لهذا المفتاح استخدامها الآن.</translation>
+        <source>Answer time limit (sec)</source>
+        <translation>مهلة الإجابة (ثانية)</translation>
+    </message>
+    <message>
+        <source>How long to wait for an answer. A local model can need minutes, especially while it loads.</source>
+        <translation>مدة انتظار الإجابة. قد يحتاج النموذج المحلي إلى دقائق، خاصة أثناء تحميله.</translation>
     </message>
     <message>
         <source>When a model runs out of quota, hits a rate limit or is retired, try another model of the same provider</source>
@@ -3740,12 +3854,60 @@
 <context>
     <name>RagoShell::AiAssistant</name>
     <message>
+        <source>Is Ollama running? Start the Ollama app, or run &quot;ollama serve&quot; in a terminal.</source>
+        <translation>هل Ollama قيد التشغيل؟ شغّل تطبيق Ollama أو نفّذ "ollama serve" في الطرفية.</translation>
+    </message>
+    <message>
+        <source>In the browser the server must also allow this page (CORS): for Ollama set OLLAMA_ORIGINS to this page&apos;s address; in LM Studio turn on CORS in the server settings.</source>
+        <translation>في المتصفح يجب أن يسمح الخادم أيضًا بهذه الصفحة (CORS): في Ollama اضبط OLLAMA_ORIGINS على عنوان هذه الصفحة؛ وفي LM Studio فعّل CORS من إعدادات الخادم.</translation>
+    </message>
+    <message>
+        <source>Enter the server address.</source>
+        <translation>أدخل عنوان الخادم.</translation>
+    </message>
+    <message>
+        <source>The address is too long.</source>
+        <translation>العنوان طويل جدًا.</translation>
+    </message>
+    <message>
+        <source>Enter a full address that starts with https://, for example https://api.openai.com/v1.</source>
+        <translation>أدخل عنوانًا كاملًا يبدأ بـ https://، مثل https://api.openai.com/v1.</translation>
+    </message>
+    <message>
+        <source>The address must not contain a user name or password. Put the key in the key field.</source>
+        <translation>يجب ألا يحتوي العنوان على اسم مستخدم أو كلمة مرور. ضع المفتاح في حقل المفتاح.</translation>
+    </message>
+    <message>
+        <source>The address must not contain ? or #.</source>
+        <translation>يجب ألا يحتوي العنوان على ? أو #.</translation>
+    </message>
+    <message>
+        <source>Use https://. Plain http:// is allowed only for this device (localhost) or, without a key, for the local network.</source>
+        <translation>استخدم https://. يُسمح بـ http:// غير المشفر فقط لهذا الجهاز (localhost) أو، بلا مفتاح، للشبكة المحلية.</translation>
+    </message>
+    <message>
+        <source>A key is never sent over plain http:// on the network. Use https://, or clear the key for a local server that needs none.</source>
+        <translation>لا يُرسل المفتاح أبدًا عبر http:// غير المشفر على الشبكة. استخدم https:// أو امسح المفتاح لخادم محلي لا يحتاج إليه.</translation>
+    </message>
+    <message>
+        <source>Plain http:// to the local network is blocked on this device. Use https:// (for example through a reverse proxy) or localhost.</source>
+        <translation>استخدام http:// غير المشفر نحو الشبكة المحلية محظور على هذا الجهاز. استخدم https:// (مثلًا عبر وكيل عكسي) أو localhost.</translation>
+    </message>
+    <message>
         <source>Could not sample the collection: %1</source>
         <translation>تعذّر أخذ عينة من المجموعة: %1</translation>
     </message>
     <message>
+        <source>Pick or type a model for %1 in Preferences.</source>
+        <translation>اختر نموذجًا لـ %1 أو اكتبه في التفضيلات.</translation>
+    </message>
+    <message>
         <source>Turn on the AI assistant and add an API key for %1 in Preferences.</source>
         <translation>فعّل المساعد الذكي وأضف مفتاح API لـ %1 في التفضيلات.</translation>
+    </message>
+    <message>
+        <source>Turn on the AI assistant and set up %1 in Preferences.</source>
+        <translation>شغّل مساعد الذكاء الاصطناعي واضبط %1 في التفضيلات.</translation>
     </message>
     <message>
         <source>%1 skipped: %2.</source>
@@ -3756,8 +3918,17 @@
         <translation>لا يتوفر أي نموذج من %1 الآن: نفدت حصصها أو بلغت حد المعدّل سابقًا. تتجاهل «إعادة المحاولة» ذلك وتطلب من جديد.</translation>
     </message>
     <message>
-        <source>The RagoShell session expired; sign in again.</source>
-        <translation>انتهت صلاحية جلسة RagoShell؛ سجّل الدخول مرة أخرى.</translation>
+        <source>The saved API key has spaces or characters an API key does not contain. Enter it again in Preferences.</source>
+        <translation>يحتوي مفتاح API المحفوظ على مسافات أو أحرف لا توجد في مفتاح API. أدخله مجددًا في التفضيلات.</translation>
+    </message>
+    <message>
+        <source>The server sent a response that is too large (over %1 MB).</source>
+        <translation>أرسل الخادم استجابة كبيرة جدًا (أكثر من %1 ميغابايت).</translation>
+    </message>
+    <message>
+        <source>No answer within %1 seconds. A local model can be slow, especially while it loads; you can raise the time limit in Preferences.</source>
+        <extracomment>%1 = seconds. Local models can take long, especially while loading.</extracomment>
+        <translation>لا توجد إجابة خلال %1 ثانية. قد يكون النموذج المحلي بطيئًا، خاصة أثناء تحميله؛ يمكنك زيادة المهلة في التفضيلات.</translation>
     </message>
     <message>
         <source>The request timed out.</source>
@@ -3783,8 +3954,60 @@
         <translation>أدخل مفتاح API أولًا.</translation>
     </message>
     <message>
-        <source>Cannot reach the API: %1</source>
-        <translation>تعذّر الوصول إلى واجهة API: %1</translation>
+        <source>The key has spaces or characters an API key does not contain.</source>
+        <translation>يحتوي المفتاح على مسافات أو أحرف لا توجد في مفتاح API.</translation>
+    </message>
+    <message>
+        <source>The model list is too large (over %1 MB).</source>
+        <translation>قائمة النماذج كبيرة جدًا (أكثر من %1 ميغابايت).</translation>
+    </message>
+    <message numerus="yes">
+        <source>Connected. %n model(s) available.</source>
+        <extracomment>Preferences › AI › Test connection succeeded.</extracomment>
+        <translation>
+            <numerusform>تم الاتصال. عدد النماذج المتاحة: %n.</numerusform>
+            <numerusform>تم الاتصال. عدد النماذج المتاحة: %n.</numerusform>
+            <numerusform>تم الاتصال. عدد النماذج المتاحة: %n.</numerusform>
+            <numerusform>تم الاتصال. عدد النماذج المتاحة: %n.</numerusform>
+            <numerusform>تم الاتصال. عدد النماذج المتاحة: %n.</numerusform>
+            <numerusform>تم الاتصال. عدد النماذج المتاحة: %n.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Connected, but the provider listed no model this app can use.</source>
+        <translation>تم الاتصال، لكن المزود لم يذكر أي نموذج يمكن لهذا التطبيق استخدامه.</translation>
+    </message>
+    <message>
+        <source>Ollama is running, but no model is installed. Download one in a terminal with &quot;ollama pull &lt;model&gt;&quot;, then test again.</source>
+        <translation>Ollama قيد التشغيل، لكن لا يوجد نموذج مثبّت. نزّل نموذجًا في الطرفية باستخدام "ollama pull &lt;model&gt;" ثم اختبر مجددًا.</translation>
+    </message>
+    <message>
+        <source>The server is running but lists no models. Download or load a model on the server, then test again.</source>
+        <translation>الخادم يعمل لكنه لا يعرض أي نموذج. نزّل نموذجًا أو حمّله على الخادم ثم اختبر مجددًا.</translation>
+    </message>
+    <message>
+        <source>The API key was rejected (HTTP %1). Check it and try again.</source>
+        <translation>تم رفض مفتاح API ‏(HTTP %1). تحقق منه وحاول مرة أخرى.</translation>
+    </message>
+    <message>
+        <source>The server is reachable but has no model list (HTTP 404).</source>
+        <translation>يمكن الوصول إلى الخادم لكن لا توجد لديه قائمة نماذج (HTTP 404).</translation>
+    </message>
+    <message>
+        <source>The provider&apos;s rate limit was reached (HTTP 429). Try again in a moment.</source>
+        <translation>تم بلوغ حد معدل الطلبات لدى المزود (HTTP 429). حاول مرة أخرى بعد قليل.</translation>
+    </message>
+    <message>
+        <source>The server answered with a redirect (HTTP %1). It was not followed, so the key was not sent anywhere else.</source>
+        <translation>ردّ الخادم بإعادة توجيه (HTTP %1). لم تتم متابعتها، لذا لم يُرسل المفتاح إلى أي مكان آخر.</translation>
+    </message>
+    <message>
+        <source>The server did not answer in time.</source>
+        <translation>لم يستجب الخادم في الوقت المحدد.</translation>
+    </message>
+    <message>
+        <source>Cannot reach the server: %1</source>
+        <translation>تعذّر الوصول إلى الخادم: %1</translation>
     </message>
 </context>
 <context>
@@ -3835,14 +4058,6 @@
     <message>
         <source>Canceled</source>
         <translation>ملغى</translation>
-    </message>
-    <message>
-        <source>Local BYOK AI only</source>
-        <translation>الذكاء الاصطناعي المحلي بمفتاحك فقط</translation>
-    </message>
-    <message>
-        <source>%1 tokens / month</source>
-        <translation>%1 رمز / شهرياً</translation>
     </message>
     <message>
         <source>Offline grace valid until %1</source>
@@ -4131,6 +4346,22 @@
     <message>
         <source>Index &quot;%1&quot; dropped from %2.%3.</source>
         <translation>تم حذف الفهرس &quot;%1&quot; من %2.%3.</translation>
+    </message>
+    <message>
+        <source>The clipboard has no text.</source>
+        <translation>لا يوجد نص في الحافظة.</translation>
+    </message>
+    <message>
+        <source>The clipboard holds more than one line. Copy only the key.</source>
+        <translation>تحتوي الحافظة على أكثر من سطر. انسخ المفتاح فقط.</translation>
+    </message>
+    <message>
+        <source>The clipboard text is too long for an API key (over %1 characters).</source>
+        <translation>النص في الحافظة أطول من أن يكون مفتاح API ‏(أكثر من %1 حرفًا).</translation>
+    </message>
+    <message>
+        <source>The clipboard text has spaces or characters an API key does not contain.</source>
+        <translation>يحتوي النص في الحافظة على مسافات أو أحرف لا توجد في مفتاح API.</translation>
     </message>
     <message numerus="yes">
         <source>Replica Set (%n seed node(s))</source>

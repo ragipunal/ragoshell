@@ -16,6 +16,16 @@ namespace RagoShell
     class ConnectionSettings;
     struct SchemaJobOutcome;
 
+    /// Plain http to private network addresses is allowed by the platform
+    /// (not on Android, whose network policy permits only loopback, nor in
+    /// the browser, which blocks http from an https page).
+    bool aiAllowsPrivateHttp();
+    /// Extra text when a server cannot be reached: "is Ollama running?" and,
+    /// in the browser, the CORS settings a local server needs (docs: T8).
+    QString aiUnreachableHint(AiQueryAssistant::Provider provider);
+    /// User-facing text for a rejected base address.
+    QString aiBaseUrlErrorText(AiQueryAssistant::BaseUrlError error);
+
     /**
      * @brief QML "AiAssistant": natural language → one read-only query for a
      * collection. The collection's schema comes from the schema catalog when
@@ -53,6 +63,8 @@ namespace RagoShell
         Q_PROPERTY(QString provider READ provider NOTIFY readyChanged FINAL)
         Q_PROPERTY(QString providerName READ providerName NOTIFY readyChanged FINAL)
         Q_PROPERTY(QString model READ model NOTIFY readyChanged FINAL)
+        /// Host the request goes to ("data goes to <host>", docs: T1).
+        Q_PROPERTY(QString endpointHost READ endpointHost NOTIFY readyChanged FINAL)
         /// Model being asked or that gave the current answer.
         Q_PROPERTY(QString activeModel READ activeModel NOTIFY stateChanged FINAL)
         /// Warnings about skipped / failed models for the current request.
@@ -87,6 +99,7 @@ namespace RagoShell
         QString provider() const;
         QString providerName() const;
         QString model() const;
+        QString endpointHost() const;
         QString activeModel() const { return _activeModel; }
         QStringList notices() const { return _notices; }
         QString alternativeProvider() const { return _alternative; }
@@ -136,7 +149,10 @@ namespace RagoShell
         void fail(const QString &error, bool retryable);
         void onFinished(QNetworkReply *reply);
         QString apiKey(AiQueryAssistant::Provider provider) const;
-        class CloudClient *cloudClient() const;
+        /// Checked base address of a configurable provider (OpenAI-compatible).
+        AiQueryAssistant::BaseUrlCheck endpointCheck(AiQueryAssistant::Provider provider) const;
+        /// Key or keyless endpoint ready, and a model known.
+        bool configured(AiQueryAssistant::Provider provider) const;
         QString modelFor(AiQueryAssistant::Provider provider) const;
         AiQueryAssistant::Provider selectedProvider() const;
         QString findAlternative() const;
@@ -172,9 +188,9 @@ namespace RagoShell
     };
 
     /**
-     * @brief QML "AiModelCatalog": fetches a provider's current model list
-     * (Preferences › Refresh) and keeps it in the settings, since providers
-     * add and retire models often.
+     * @brief QML "AiModelCatalog": Preferences › Test connection. Fetches a
+     * provider's current model list (never a schema or a prompt) and keeps it
+     * in the settings, since providers add and retire models often.
      */
     class AiModelCatalog : public QObject
     {
@@ -183,6 +199,8 @@ namespace RagoShell
 
         Q_PROPERTY(bool busy READ busy NOTIFY stateChanged FINAL)
         Q_PROPERTY(QString error READ error NOTIFY stateChanged FINAL)
+        /// Success text of the last test ("Connected. 12 models …").
+        Q_PROPERTY(QString result READ result NOTIFY stateChanged FINAL)
 
     public:
         explicit AiModelCatalog(QObject *parent = nullptr);
@@ -190,9 +208,15 @@ namespace RagoShell
 
         bool busy() const;
         QString error() const { return _error; }
+        QString result() const { return _result; }
 
-        /// An empty key uses the provider's environment variable.
-        Q_INVOKABLE void refresh(const QString &provider, const QString &apiKey);
+        /// An empty key uses the provider's environment variable (for the
+        /// OpenAI-compatible provider only at a preset's own address).
+        /// baseUrl: the address field, for providers that have one.
+        Q_INVOKABLE void refresh(const QString &provider, const QString &apiKey, const QString &baseUrl = {});
+        /// Forgets the last outcome and stops a test in progress (the
+        /// provider shown in Preferences changed).
+        Q_INVOKABLE void clear();
 
     Q_SIGNALS:
         void stateChanged();
@@ -203,5 +227,6 @@ namespace RagoShell
         QNetworkAccessManager *_network = nullptr;
         QPointer<QNetworkReply> _reply;
         QString _error;
+        QString _result;
     };
 }

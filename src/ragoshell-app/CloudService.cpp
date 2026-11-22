@@ -242,13 +242,6 @@ namespace RagoShell
         return _client && _client->isSignedIn() && _client->features().sync;
     }
 
-    bool CloudService::hostedAiEnabled() const
-    {
-        if (_debugMode == 2)
-            return true;
-        return _client && _client->isSignedIn() && _client->features().hostedAi;
-    }
-
     bool CloudService::hostedBridgeEnabled() const
     {
         if (_debugMode == 2)
@@ -258,20 +251,6 @@ namespace RagoShell
         return _client && _client->isSignedIn()
             && _client->entitlementState() == EntitlementState::ValidOnline
             && _client->features().hostedBridge;
-    }
-
-    qint64 CloudService::aiMonthlyTokenQuota() const
-    {
-        if (_debugMode == 2)
-            return 2000000;
-        return (_client && _client->isSignedIn()) ? _client->quotas().aiMonthlyTokenQuota : 0;
-    }
-
-    QString CloudService::aiQuotaSummary() const
-    {
-        if (!hostedAiEnabled() || aiMonthlyTokenQuota() <= 0)
-            return tr("Local BYOK AI only");
-        return tr("%1 tokens / month").arg(QLocale().toString(aiMonthlyTokenQuota()));
     }
 
     QString CloudService::validitySummary() const

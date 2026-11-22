@@ -88,7 +88,12 @@
     </message>
     <message>
         <source>off</source>
+        <extracomment>AI assistant header: provider · model · host the request goes to.</extracomment>
         <translation>关</translation>
+    </message>
+    <message>
+        <source>sends to %1</source>
+        <translation>发送到 %1</translation>
     </message>
     <message>
         <source>Sampling the collection…</source>
@@ -103,8 +108,8 @@
         <translation>已发送的数据</translation>
     </message>
     <message>
-        <source>The AI assistant is off or has no API key for %1. When it is on, Generate sends your request and this collection&apos;s field names and types (no document values unless you allow them) to the selected provider&apos;s API (Anthropic Claude or Google Gemini). Turn it on and add an API key in Preferences.</source>
-        <translation>AI 助手已关闭，或尚未设置 %1 的 API 密钥。启用后，“生成”会将您的请求以及此集合的字段名称和类型（除非您允许，否则不含文档值）发送到所选提供商的 API（Anthropic Claude 或 Google Gemini）。请在偏好设置中启用并添加 API 密钥。</translation>
+        <source>The AI assistant is off or not set up for %1. When it is on, Generate sends your request and this collection&apos;s field names and types (no document values unless you allow them) to the selected provider&apos;s API (Anthropic Claude, Google Gemini, an OpenAI-compatible server or Ollama). Turn it on and set it up in Preferences.</source>
+        <translation>AI 助手已关闭，或尚未为 %1 进行设置。开启后，“生成”会将您的请求以及此集合的字段名称和类型（除非您允许，否则不含文档值）发送到所选提供商的 API（Anthropic Claude、Google Gemini、OpenAI 兼容服务器或 Ollama）。请在首选项中开启并进行设置。</translation>
     </message>
     <message>
         <source>Preferences…</source>
@@ -202,6 +207,18 @@
         <translation>模型当前过载。请稍后重试。</translation>
     </message>
     <message>
+        <source>The account at this provider has no credit or quota left.</source>
+        <translation>此提供商的账户已没有余额或配额。</translation>
+    </message>
+    <message>
+        <source>The server does not know this model or address. Check both in Preferences.</source>
+        <translation>服务器不认识此模型或地址。请在首选项中检查两者。</translation>
+    </message>
+    <message>
+        <source>The server answered with a redirect (HTTP %1). It was not followed, so nothing was sent anywhere else. Check the address.</source>
+        <translation>服务器返回了重定向（HTTP %1）。未跟随该重定向，因此没有向其他地方发送任何内容。请检查地址。</translation>
+    </message>
+    <message>
         <source>The model did not return a query.</source>
         <translation>模型没有返回查询。</translation>
     </message>
@@ -216,6 +233,14 @@
     <message>
         <source>The generated query reads the collection &quot;%1&quot;, which was not described to the model.</source>
         <translation>生成的查询读取了未向模型描述的集合“%1”。</translation>
+    </message>
+    <message>
+        <source>The generated query is nested too deeply.</source>
+        <translation>生成的查询嵌套过深。</translation>
+    </message>
+    <message>
+        <source>The generated query uses %1, which runs JavaScript on the server. It was not accepted.</source>
+        <translation>生成的查询使用了 %1，它会在服务器上运行 JavaScript。未予接受。</translation>
     </message>
     <message>
         <source>The model declined this request.</source>
@@ -234,32 +259,16 @@
         <translation>模型拒绝了此请求（%1）。</translation>
     </message>
     <message>
+        <source>OpenAI-compatible</source>
+        <translation>兼容 OpenAI</translation>
+    </message>
+    <message>
         <source>The API returned an unreadable response.</source>
         <translation>API 返回了无法读取的响应。</translation>
     </message>
     <message>
         <source>The API listed no usable models.</source>
         <translation>API 未列出可用的模型。</translation>
-    </message>
-    <message>
-        <source>The monthly RagoShell AI quota is used up. Upgrade or wait for the next month.</source>
-        <translation>本月的 RagoShell AI 配额已用完。请升级套餐或等到下个月。</translation>
-    </message>
-    <message>
-        <source>Too many requests; retry shortly.</source>
-        <translation>请求过于频繁，请稍后重试。</translation>
-    </message>
-    <message>
-        <source>RagoShell AI requires a Pro or Team plan.</source>
-        <translation>RagoShell AI 需要 Pro 或 Team 套餐。</translation>
-    </message>
-    <message>
-        <source>The RagoShell session expired; sign in again.</source>
-        <translation>RagoShell 会话已过期，请重新登录。</translation>
-    </message>
-    <message>
-        <source>The AI service is temporarily unavailable.</source>
-        <translation>AI 服务暂时不可用。</translation>
     </message>
 </context>
 <context>
@@ -2998,8 +3007,8 @@
         <translation>云账户（可选）</translation>
     </message>
     <message>
-        <source>All local MongoDB connections, SSH/TLS tunnels, the embedded shell, schema analysis, and bring-your-own-key AI work without an account. Sign in only if you want optional encrypted cross-device sync or hosted cloud AI.</source>
-        <translation>所有本地 MongoDB 连接、SSH/TLS 隧道、内置 Shell、模式分析以及自带密钥（BYOK）AI 均无需登录即可使用。仅当您需要可选的跨设备加密同步或托管云端 AI 时才需登录。</translation>
+        <source>All local MongoDB connections, SSH/TLS tunnels, the embedded shell, schema analysis, and bring-your-own-key AI work without an account. Sign in only if you want optional encrypted cross-device sync or the hosted connection bridge.</source>
+        <translation>所有本地 MongoDB 连接、SSH/TLS 隧道、内置 Shell、模式分析以及自带密钥（BYOK）AI 均无需登录即可使用。仅当您需要可选的跨设备加密同步或托管连接桥时才需登录。</translation>
     </message>
     <message>
         <source>OS keychain is unavailable; cloud sign-in will apply to this session only and will never write tokens to disk.</source>
@@ -3166,10 +3175,6 @@
         <translation>服务器上存储的所有加密数据集都将被永久删除。本地设置仍保留在此设备上。</translation>
     </message>
     <message>
-        <source>Cloud AI quota</source>
-        <translation>云端 AI 配额</translation>
-    </message>
-    <message>
         <source>Refreshing…</source>
         <translation>正在刷新…</translation>
     </message>
@@ -3207,6 +3212,10 @@
     <message>
         <source>%1 is used</source>
         <translation>使用 %1</translation>
+    </message>
+    <message>
+        <source>Not needed for a local server</source>
+        <translation>本地服务器无需密钥</translation>
     </message>
     <message>
         <source>Language</source>
@@ -3342,32 +3351,101 @@
         <translation>AI 查询助手</translation>
     </message>
     <message>
-        <source>Turns a request in plain language into a find() or aggregate() query (Tools › AI Query Assistant). Generate sends the request and the collection&apos;s field names and types from a 1000-document sample to the selected provider: Anthropic&apos;s Claude API or Google&apos;s Gemini API (an API key from Google AI Studio). Nothing is sent until you press Generate.</source>
-        <translation>将自然语言请求转换为 find() 或 aggregate() 查询（工具 › AI 查询助手）。“生成”会将请求以及来自 1000 个文档样本的集合字段名称和类型发送到所选提供商：Anthropic 的 Claude API 或 Google 的 Gemini API（来自 Google AI Studio 的 API 密钥）。在您点击“生成”之前不会发送任何内容。</translation>
-    </message>
-    <message>
         <source>Enable the AI query assistant</source>
         <translation>启用 AI 查询助手</translation>
+    </message>
+    <message>
+        <source>%1 AI (the hosted assistant) is no longer offered, so the assistant was turned off. Pick a provider, enter your own API key and turn it on again.</source>
+        <extracomment>Preferences › AI assistant notice after an update (%1 = product name).</extracomment>
+        <translation>%1 AI（托管助手）已不再提供，因此助手已关闭。请选择一个提供商，输入您自己的 API 密钥，然后重新开启。</translation>
     </message>
     <message>
         <source>Provider</source>
         <translation>提供商</translation>
     </message>
     <message>
+        <source>Service</source>
+        <translation>服务</translation>
+    </message>
+    <message>
+        <source>Custom address</source>
+        <translation>自定义地址</translation>
+    </message>
+    <message>
+        <source>Server address</source>
+        <translation>服务器地址</translation>
+    </message>
+    <message>
+        <source>The address points to another server now, so the key was cleared. Enter the key for this server.</source>
+        <translation>地址现在指向另一台服务器，因此已清除密钥。请输入此服务器的密钥。</translation>
+    </message>
+    <message>
+        <source>Requests go to %1 on this device. A model that runs here is free and the data stays on this device; a cloud model or proxy behind this address sends it on.</source>
+        <extracomment>Preferences › AI, server on this computer (%1 = host name, e.g. localhost).</extracomment>
+        <translation>请求发送到此设备上的 %1。在此运行的模型免费，数据留在此设备上；但此地址背后的云端模型或代理会将数据转发出去。</translation>
+    </message>
+    <message>
+        <source>Requests go to %1 on your local network. A model that runs there is free and the data stays on your network; a cloud model or proxy behind this address sends it on.</source>
+        <extracomment>Preferences › AI, server on the local network (%1 = host name or IP address).</extracomment>
+        <translation>请求发送到您本地网络中的 %1。在那里运行的模型免费，数据留在您的网络内；但此地址背后的云端模型或代理会将数据转发出去。</translation>
+    </message>
+    <message>
+        <source>Requests go to %1. Usage is billed by that provider, if it charges.</source>
+        <extracomment>Preferences › AI, OpenAI-compatible (%1 = host name).</extracomment>
+        <translation>请求将发送到 %1。如该提供商收费，使用费用由其计费。</translation>
+    </message>
+    <message>
         <source>Google AI Studio API key</source>
         <translation>Google AI Studio API 密钥</translation>
+    </message>
+    <message>
+        <source>API key (optional)</source>
+        <translation>API 密钥（可选）</translation>
     </message>
     <message>
         <source>Anthropic API key</source>
         <translation>Anthropic API 密钥</translation>
     </message>
     <message>
-        <source>Signed in — requests run through your RagoShell account quota; no API key needed.</source>
-        <translation>已登录 — 请求将使用您的 RagoShell 账户配额，无需 API 密钥。</translation>
+        <source>Hide key</source>
+        <translation>隐藏密钥</translation>
     </message>
     <message>
-        <source>Sign in on the Account tab to use RagoShell AI, or pick another provider and enter its key.</source>
-        <translation>请在“账户”选项卡中登录以使用 RagoShell AI，或选择其他提供商并输入其密钥。</translation>
+        <source>Show key</source>
+        <translation>显示密钥</translation>
+    </message>
+    <message>
+        <source>Paste</source>
+        <extracomment>Preferences › AI: paste the API key from the clipboard.</extracomment>
+        <translation>粘贴</translation>
+    </message>
+    <message>
+        <source>Paste the API key from the clipboard</source>
+        <translation>从剪贴板粘贴 API 密钥</translation>
+    </message>
+    <message>
+        <source>Test connection</source>
+        <translation>测试连接</translation>
+    </message>
+    <message>
+        <source>Asks the provider for its model list with this key. No query or schema is sent.</source>
+        <translation>使用此密钥向提供商请求模型列表。不会发送任何查询或架构。</translation>
+    </message>
+    <message>
+        <source>Asks the server for its model list. No query or schema is sent.</source>
+        <translation>向服务器请求模型列表。不发送任何查询或架构。</translation>
+    </message>
+    <message>
+        <source>How to get a key ↗</source>
+        <translation>如何获取密钥 ↗</translation>
+    </message>
+    <message>
+        <source>Open the provider&apos;s API key page</source>
+        <translation>打开提供商的 API 密钥页面</translation>
+    </message>
+    <message>
+        <source>Clear clipboard</source>
+        <translation>清空剪贴板</translation>
     </message>
     <message>
         <source>Using the key entered here (saved with your settings).</source>
@@ -3378,6 +3456,10 @@
         <translation>正在使用环境变量 %1 中的密钥。</translation>
     </message>
     <message>
+        <source>No key: requests are sent without one (enough for a local server).</source>
+        <translation>无密钥：请求将不带密钥发送（对本地服务器已足够）。</translation>
+    </message>
+    <message>
         <source>No key yet. Enter one above.</source>
         <translation>尚无密钥。请在上方输入。</translation>
     </message>
@@ -3386,24 +3468,56 @@
         <translation>模型</translation>
     </message>
     <message>
-        <source>Load the provider&apos;s current model list</source>
-        <translation>加载提供商当前的模型列表</translation>
+        <source>Installed model, e.g. llama3.2</source>
+        <translation>已安装的模型，例如 llama3.2</translation>
     </message>
     <message>
-        <source>Loading the model list…</source>
-        <translation>正在加载模型列表…</translation>
+        <source>Model name, e.g. gpt-5.5</source>
+        <translation>模型名称，例如 gpt-5.5</translation>
+    </message>
+    <message>
+        <source>Pick from the server&apos;s list…</source>
+        <translation>从服务器列表中选择…</translation>
+    </message>
+    <message>
+        <source>Models listed by the server</source>
+        <translation>服务器列出的模型</translation>
+    </message>
+    <message>
+        <source>Testing the connection…</source>
+        <translation>正在测试连接…</translation>
+    </message>
+    <message>
+        <source>Type the model name, or use Test connection to list the server&apos;s models.</source>
+        <translation>请输入模型名称，或使用“测试连接”列出服务器的模型。</translation>
+    </message>
+    <message>
+        <source>Built-in list. Test connection loads the models this key can use now.</source>
+        <translation>内置列表。“测试连接”会加载此密钥当前可用的模型。</translation>
     </message>
     <message>
         <source>The selected model is no longer in the provider&apos;s list (retired?). Pick another one.</source>
         <translation>所选模型已不在提供商的列表中（已停用？）。请另选一个。</translation>
     </message>
     <message>
+        <source>Turns a request in plain language into a find() or aggregate() query (Tools › AI Query Assistant). Generate sends the request and the collection&apos;s field names and types from a 1000-document sample to the selected provider: Anthropic&apos;s Claude API, Google&apos;s Gemini API (an API key from Google AI Studio) or any OpenAI-compatible server you choose. Nothing is sent until you press Generate.</source>
+        <translation>将自然语言请求转换为 find() 或 aggregate() 查询（工具 › AI 查询助手）。“生成”会将请求以及从 1000 个文档样本中得到的集合字段名称和类型发送给所选提供商：Anthropic 的 Claude API、Google 的 Gemini API（使用 Google AI Studio 的 API 密钥），或您选择的任意兼容 OpenAI 的服务器。在您按下“生成”之前不会发送任何内容。</translation>
+    </message>
+    <message>
+        <source>Key pasted. Clear it from the clipboard? (A clipboard history may still keep a copy.)</source>
+        <translation>密钥已粘贴。要从剪贴板中清除吗？（剪贴板历史记录仍可能保留一份副本。）</translation>
+    </message>
+    <message>
         <source>Models from the provider&apos;s current list.</source>
         <translation>模型来自提供商当前的列表。</translation>
     </message>
     <message>
-        <source>Built-in list. ⟳ loads the models this key can use now.</source>
-        <translation>内置列表。点击 ⟳ 加载此密钥当前可用的模型。</translation>
+        <source>Answer time limit (sec)</source>
+        <translation>回答时间限制（秒）</translation>
+    </message>
+    <message>
+        <source>How long to wait for an answer. A local model can need minutes, especially while it loads.</source>
+        <translation>等待回答的时长。本地模型可能需要几分钟，尤其是在加载时。</translation>
     </message>
     <message>
         <source>When a model runs out of quota, hits a rate limit or is retired, try another model of the same provider</source>
@@ -3710,12 +3824,60 @@
 <context>
     <name>RagoShell::AiAssistant</name>
     <message>
+        <source>Is Ollama running? Start the Ollama app, or run &quot;ollama serve&quot; in a terminal.</source>
+        <translation>Ollama 是否正在运行？请启动 Ollama 应用，或在终端中运行 "ollama serve"。</translation>
+    </message>
+    <message>
+        <source>In the browser the server must also allow this page (CORS): for Ollama set OLLAMA_ORIGINS to this page&apos;s address; in LM Studio turn on CORS in the server settings.</source>
+        <translation>在浏览器中，服务器还必须允许此页面（CORS）：对于 Ollama，请将 OLLAMA_ORIGINS 设置为此页面的地址；在 LM Studio 中，请在服务器设置里开启 CORS。</translation>
+    </message>
+    <message>
+        <source>Enter the server address.</source>
+        <translation>请输入服务器地址。</translation>
+    </message>
+    <message>
+        <source>The address is too long.</source>
+        <translation>地址过长。</translation>
+    </message>
+    <message>
+        <source>Enter a full address that starts with https://, for example https://api.openai.com/v1.</source>
+        <translation>请输入以 https:// 开头的完整地址，例如 https://api.openai.com/v1。</translation>
+    </message>
+    <message>
+        <source>The address must not contain a user name or password. Put the key in the key field.</source>
+        <translation>地址中不能包含用户名或密码。请将密钥填入密钥字段。</translation>
+    </message>
+    <message>
+        <source>The address must not contain ? or #.</source>
+        <translation>地址中不能包含 ? 或 #。</translation>
+    </message>
+    <message>
+        <source>Use https://. Plain http:// is allowed only for this device (localhost) or, without a key, for the local network.</source>
+        <translation>请使用 https://。未加密的 http:// 仅允许用于本设备（localhost），或在无密钥时用于本地网络。</translation>
+    </message>
+    <message>
+        <source>A key is never sent over plain http:// on the network. Use https://, or clear the key for a local server that needs none.</source>
+        <translation>密钥绝不会通过网络上未加密的 http:// 发送。请使用 https://，或为不需要密钥的本地服务器清除密钥。</translation>
+    </message>
+    <message>
+        <source>Plain http:// to the local network is blocked on this device. Use https:// (for example through a reverse proxy) or localhost.</source>
+        <translation>此设备禁止通过未加密的 http:// 访问本地网络。请使用 https://（例如通过反向代理）或 localhost。</translation>
+    </message>
+    <message>
         <source>Could not sample the collection: %1</source>
         <translation>无法对集合采样：%1</translation>
     </message>
     <message>
+        <source>Pick or type a model for %1 in Preferences.</source>
+        <translation>请在首选项中为 %1 选择或输入模型。</translation>
+    </message>
+    <message>
         <source>Turn on the AI assistant and add an API key for %1 in Preferences.</source>
         <translation>请启用 AI 助手，并在偏好设置中添加 %1 的 API 密钥。</translation>
+    </message>
+    <message>
+        <source>Turn on the AI assistant and set up %1 in Preferences.</source>
+        <translation>请在首选项中开启 AI 助手并设置 %1。</translation>
     </message>
     <message>
         <source>%1 skipped: %2.</source>
@@ -3726,8 +3888,17 @@
         <translation>当前没有可用的 %1 模型：它们此前已用尽配额或触发速率限制。“重试”会清除该记录并重新询问。</translation>
     </message>
     <message>
-        <source>The RagoShell session expired; sign in again.</source>
-        <translation>RagoShell 会话已过期，请重新登录。</translation>
+        <source>The saved API key has spaces or characters an API key does not contain. Enter it again in Preferences.</source>
+        <translation>保存的 API 密钥包含空格或 API 密钥中不会出现的字符。请在首选项中重新输入。</translation>
+    </message>
+    <message>
+        <source>The server sent a response that is too large (over %1 MB).</source>
+        <translation>服务器发送的响应过大（超过 %1 MB）。</translation>
+    </message>
+    <message>
+        <source>No answer within %1 seconds. A local model can be slow, especially while it loads; you can raise the time limit in Preferences.</source>
+        <extracomment>%1 = seconds. Local models can take long, especially while loading.</extracomment>
+        <translation>%1 秒内未收到回答。本地模型可能较慢，尤其是在加载时；您可以在首选项中提高时间限制。</translation>
     </message>
     <message>
         <source>The request timed out.</source>
@@ -3753,8 +3924,55 @@
         <translation>请先输入 API 密钥。</translation>
     </message>
     <message>
-        <source>Cannot reach the API: %1</source>
-        <translation>无法连接到 API：%1</translation>
+        <source>The key has spaces or characters an API key does not contain.</source>
+        <translation>密钥包含空格或 API 密钥中不会出现的字符。</translation>
+    </message>
+    <message>
+        <source>The model list is too large (over %1 MB).</source>
+        <translation>模型列表过大（超过 %1 MB）。</translation>
+    </message>
+    <message numerus="yes">
+        <source>Connected. %n model(s) available.</source>
+        <extracomment>Preferences › AI › Test connection succeeded.</extracomment>
+        <translation>
+            <numerusform>已连接。可用模型 %n 个。</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Connected, but the provider listed no model this app can use.</source>
+        <translation>已连接，但提供商未列出此应用可用的任何模型。</translation>
+    </message>
+    <message>
+        <source>Ollama is running, but no model is installed. Download one in a terminal with &quot;ollama pull &lt;model&gt;&quot;, then test again.</source>
+        <translation>Ollama 正在运行，但未安装任何模型。请在终端中用 "ollama pull &lt;model&gt;" 下载一个模型，然后重新测试。</translation>
+    </message>
+    <message>
+        <source>The server is running but lists no models. Download or load a model on the server, then test again.</source>
+        <translation>服务器正在运行，但未列出任何模型。请在服务器上下载或加载一个模型，然后重新测试。</translation>
+    </message>
+    <message>
+        <source>The API key was rejected (HTTP %1). Check it and try again.</source>
+        <translation>API 密钥被拒绝（HTTP %1）。请检查后重试。</translation>
+    </message>
+    <message>
+        <source>The server is reachable but has no model list (HTTP 404).</source>
+        <translation>可以访问服务器，但它没有模型列表（HTTP 404）。</translation>
+    </message>
+    <message>
+        <source>The provider&apos;s rate limit was reached (HTTP 429). Try again in a moment.</source>
+        <translation>已达到提供商的速率限制（HTTP 429）。请稍后重试。</translation>
+    </message>
+    <message>
+        <source>The server answered with a redirect (HTTP %1). It was not followed, so the key was not sent anywhere else.</source>
+        <translation>服务器返回了重定向（HTTP %1）。未跟随该重定向，因此密钥没有被发送到其他地方。</translation>
+    </message>
+    <message>
+        <source>The server did not answer in time.</source>
+        <translation>服务器未及时响应。</translation>
+    </message>
+    <message>
+        <source>Cannot reach the server: %1</source>
+        <translation>无法访问服务器：%1</translation>
     </message>
 </context>
 <context>
@@ -3805,14 +4023,6 @@
     <message>
         <source>Canceled</source>
         <translation>已取消</translation>
-    </message>
-    <message>
-        <source>Local BYOK AI only</source>
-        <translation>仅限本地自带密钥 AI</translation>
-    </message>
-    <message>
-        <source>%1 tokens / month</source>
-        <translation>%1 令牌 / 月</translation>
     </message>
     <message>
         <source>Offline grace valid until %1</source>
@@ -4071,6 +4281,22 @@
     <message>
         <source>Index &quot;%1&quot; dropped from %2.%3.</source>
         <translation>已从 %2.%3 删除索引“%1”。</translation>
+    </message>
+    <message>
+        <source>The clipboard has no text.</source>
+        <translation>剪贴板中没有文本。</translation>
+    </message>
+    <message>
+        <source>The clipboard holds more than one line. Copy only the key.</source>
+        <translation>剪贴板中有多行内容。请只复制密钥。</translation>
+    </message>
+    <message>
+        <source>The clipboard text is too long for an API key (over %1 characters).</source>
+        <translation>剪贴板中的文本过长，不像 API 密钥（超过 %1 个字符）。</translation>
+    </message>
+    <message>
+        <source>The clipboard text has spaces or characters an API key does not contain.</source>
+        <translation>剪贴板中的文本包含空格或 API 密钥中不会出现的字符。</translation>
     </message>
     <message numerus="yes">
         <source>Replica Set (%n seed node(s))</source>

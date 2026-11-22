@@ -36,6 +36,7 @@ set(CORE_SOURCES
     core/utils/QueryCodeExport.cpp
     core/utils/AiQueryAssistant.cpp
     core/utils/AiQueryAssistantProviders.cpp
+    core/utils/AiQueryAssistantEndpoint.cpp
     core/utils/ShellSignatures.cpp
     core/utils/CollectionTransfer.cpp
     core/utils/RecordSplitter.cpp
