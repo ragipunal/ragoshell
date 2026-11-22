@@ -208,7 +208,7 @@ regression test next to the code (`SyncEngine_test`, `SyncCollections_test`, `Ke
 
 Not fixed in this round (tracked): R5 (304 path pushes the local export, dropping remote-only
 tombstones), R9 (attach runs Argon2 with server params in a nested loop on the GUI thread; empty
-vault join is a silent no-op), R11 (hosted AI cancel/duplicate during token refresh), wipe of
+vault join is a silent no-op), R11 (cancel/duplicate during token refresh), wipe of
 plaintext copies that are still shared (`cleanse` detaches), sync key surviving sign-out.
 
 ## 11. Gates

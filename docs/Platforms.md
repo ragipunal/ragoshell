@@ -291,7 +291,7 @@ Only what is not done, checked against the code.
 and `.aab`. Still open: generating the production Google Play upload keystore outside the repository, configuring CI
 secrets, installing and testing the signed Release APK on a physical Android tablet, completing the Google Play Console
 listing, Data Safety submission (no developer telemetry collected; the optional AI assistant sends prompts and schema
-summaries directly to the user-configured provider), and closed testing.
+summaries directly to the endpoint the user chooses, and with a local model the data stays on that machine), and closed testing.
 
 **iOS / iPadOS release.** The App Store needs a decision on publishing a GPLv3 app (the store terms add restrictions the GPL
 does not allow); nothing is decided, and running on one's own iPhone or iPad from Xcode does not need it. A store build, an

@@ -159,8 +159,9 @@ used, so it works with sample values off. The Autocompletion preference `Off` di
   database on connect; `WholeDatabase` is available per connection.
 - Background samples are 200 documents, enough for names, types and presence. Jobs use
   the connection's own settings (its read preference applies).
-- One shared catalog, no second cache. No local language model: the AI path stays on
-  the provider APIs (Anthropic, Gemini).
+- One shared catalog, no second cache. The app bundles no language model: the AI path
+  goes to the provider the user picks (Anthropic, Gemini, an OpenAI-compatible server or
+  Ollama, which can run locally; see `docs/AiAssistant.md`).
 
 Tests are `Schema*_test.cpp` (the service tests use a fake analysis function; one live
 collector test skips without `localhost:27017`), `FieldCompletion_test.cpp`,

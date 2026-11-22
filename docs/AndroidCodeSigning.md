@@ -216,7 +216,7 @@ Google Play Console **App content → Data safety** formu doldurulurken (Faz 7.2
    - `install/android/AndroidManifest.xml` içinde `android:allowBackup="false"` tanımlıdır; kayıtlı bağlantılar ve anahtar deposu verileri bulut yedeklemelerine aktarılmaz.
 3. **Doğrudan Kullanıcı Yapılandırmalı Ağ Bağlantıları:**
    - MongoDB TCP/TLS ve SSH tünel bağlantıları yalnızca kullanıcının kendisinin girdiği hedef sunuculara doğrudan cihazdan açılır (`install/android/res/xml/network_security_config.xml`).
-   - İsteğe bağlı AI sorgu asistanı varsayılan olarak kapalıdır; yalnızca kullanıcı kendi sağlayıcı API anahtarını girip özelliği açıkça çalıştırdığında şema özeti ve istem metnini doğrudan ilgili sağlayıcıya HTTPS (TLS) üzerinden gönderir.
+   - İsteğe bağlı AI sorgu asistanı varsayılan olarak kapalıdır. Kullanıcı açıp Oluştur'a bastığında istem metnini ve şema özetini doğrudan **kullanıcının seçtiği uç noktaya** gönderir: Anthropic, Gemini, OpenAI uyumlu bir sunucu ya da yerel model (Ollama, LM Studio). İnternetteki adreslerde HTTPS zorunludur; Android'de düz `http` yalnız cihazın kendisine izinlidir. Geliştiricinin sunucusuna hiçbir AI verisi gitmez (barındırılan AI kaldırıldı, 2026-11-22); yerel modelde veri o bilgisayardan çıkmaz. Bu aktarımın formda nasıl beyan edileceği, form doldurulurken Google'ın güncel Data Safety kılavuzuna göre karara bağlanır `(insan)`.
 4. **Cihaz İzinleri (`AndroidManifest.xml`):**
    - `INTERNET`, `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE`, `ACCESS_LOCAL_NETWORK` (Android 17 yerel ağ erişimi), ve yalnızca API 28 için sınırlandırılmış `READ/WRITE_EXTERNAL_STORAGE` (`maxSdkVersion="28"`; Android 10+ üzerinde Storage Access Framework kullanılır). Kamera, mikrofon, konum veya rehber izni yoktur.
 

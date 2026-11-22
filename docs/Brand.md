@@ -17,7 +17,7 @@ is a registered mark in the same class).
 | Environment variables | `RAGOSHELL_CONFIG_DIR`, `RAGOSHELL_KEYSTORE` |
 | Internal code prefix | `RAGO_`, `rago-core`, `rago_unit_tests`, `Rago*` QML components — unchanged, not user-visible |
 | Repositories | `ragoshell`, `ragoshell-site`, `ragoshell-api`, `ragoshell-infra`, `ragoshell-bridge` |
-| Services | "RagoShell Cloud" (subscription), "RagoShell Bridge" (the WebSocket bridge) |
+| Services | "RagoShell Cloud" (optional cloud services), "RagoShell Bridge" (the WebSocket bridge) |
 | Abbreviation | none; do not write "RS" |
 
 The brand is **never translated or transliterated**: Arabic, Russian, Japanese and Chinese text keeps the

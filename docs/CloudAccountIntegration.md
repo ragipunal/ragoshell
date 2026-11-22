@@ -36,7 +36,7 @@ verification plan for Roadmap Phase `5.1` (`docs/Roadmap.md` §3.4, §4.6, §6 `
    - Domain and product URLs are derived once in `cmake/RagoShellDefaults.cmake` -> `BrandInfo.h` ->
      `BrandBridge` (`Brand` QML singleton). No URL or product name literal is hardcoded in C++ or QML.
 4. **App Store / Play Store compliance (`Roadmap.md` §12.1)**:
-   - When `Platform.isMobile` (`SYSTEM_IOS` or `SYSTEM_ANDROID`) is true, external web checkout/billing
+   - When `Platform.isMobile` (`SYSTEM_IOS` or `SYSTEM_ANDROID`) is true, external purchase/billing
      and donation links (`Manage Account`, `Sponsor / Support`) are hidden from QML views.
    - When built with `-DRAGO_STORE_BUILD=ON`, `UpdateService` is inert (never phones home, hides self-update
      controls in `PreferencesDialog`, `AboutDialog`, and `MandatoryUpdateDialog`).
@@ -200,8 +200,8 @@ or top-level section consistent with existing `PreferencesDialog.qml` cards):
 - **Signed-In State**:
   - Account email, device name + short `device_id` prefix (`first 8 chars`), **Plan** badge (`Free`,
     `Pro`, `Team`) and **Status** badge (`Active`, `Trial`, `Offline grace`, `Past due`, `Canceled`).
-  - Feature summary row: Encrypted Sync (`Enabled` / `Not included`), Cloud AI monthly token quota,
-    and entitlement validity / offline grace timestamp.
+  - Feature summary row: Encrypted Sync (`Enabled` / `Not included`) and entitlement validity / offline
+    grace timestamp. (The hosted AI quota row was removed: the AI assistant is bring-your-own-key only.)
   - Actions: **Refresh Status**, **Manage Account** (`!Platform.isMobile`, opens `Brand.portalUrl`), and
     **Sign Out**.
 
