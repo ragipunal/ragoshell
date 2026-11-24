@@ -79,10 +79,10 @@ flowchart LR
   3. Mevcut [`ragoshell-mcp`](../src/ragoshell-mcp/) JSON-RPC mimarisiyle aynı tasarım desenini paylaşır; tarayıcı yalnızca EJSON/JSON-RPC mesajları (`openConnection`, `executeScript`, `listCollections` vb.) alıp gönderir.
 - **İki Dağıtım Seçeneği:**
   - **Self-Hosted Docker (`docker run -p 8080:8080 ragoshell/web`):** Şirketlerin kendi iç ağlarına/VPN'lerine veya geliştiricinin kendi makinesine kurduğu tek konteynerlik pakettir (statik WASM arayüzü + Gateway bir arada).
-  - **Yönetilen Bulut (`app.ragoshell.com`):** Kullanıcının doğrudan tarayıcıdan girip MongoDB Atlas veya genel IP'li sunucularına bağlandığı SaaS katmanıdır (isteğe bağlı bulut hizmetleriyle birleştirilebilir).
+  - **Yönetilen Bulut (`app.ragoshell.com.tr`):** Kullanıcının doğrudan tarayıcıdan girip MongoDB Atlas veya genel IP'li sunucularına bağlandığı SaaS katmanıdır (isteğe bağlı bulut hizmetleriyle birleştirilebilir).
 
 ### Mod C — Yerel Köprü Ajanı (`ragoshell-agent`)
-- **Amaç:** Buluttaki `app.ragoshell.com` arayüzünü kullanan bir geliştiricinin kendi bilgisayarındaki `localhost:27017` veya şirket VPN'indeki veritabanlarına erişebilmesi (Postman / Hoppscotch Desktop Agent modeli).
+- **Amaç:** Buluttaki `app.ragoshell.com.tr` arayüzünü kullanan bir geliştiricinin kendi bilgisayarındaki `localhost:27017` veya şirket VPN'indeki veritabanlarına erişebilmesi (Postman / Hoppscotch Desktop Agent modeli).
 - **Çalışma Şekli:** Kullanıcının bilgisayarında arka planda çalışan küçük (~5–10 MB), arayüzsüz `rago-core` ikilisidir. Yalnızca `127.0.0.1` üzerinde dinler; veritabanı parolaları, SSH özel anahtarları ve sorgu trafiği bulut sunucusuna hiç uğramadan doğrudan kullanıcının makinesinden hedef MongoDB'ye çıkar.
 
 ---
@@ -123,4 +123,4 @@ flowchart LR
 ### Faz 4 — `ragoshell-agent` (Yerel Köprü) ve Bulut SaaS Yayını
 - [x] **4.1.** Windows, macOS ve Linux için `127.0.0.1` üzerinde çalışan, `Origin` + eşleştirme jetonu korumalı `ragoshell-agent` ikilisinin üretilmesi. — 2026-11-03 `src/ragoshell-agent/` (Qt taşınabilir hedef; Origin+Host çift kontrolü, 0600 token dosyası, 8 oturum/1 MiB/30 sn hello/30 dk idle limitleri) — `docs/LocalAgent.md`
 - [x] **4.2.** Tarayıcı arayüzündeki Bağlantı Yöneticisi'ne **Bağlantı Kanalı** seçiminin (*Bulut Gateway* / *Yerel Ajan (`localhost`)* / *Özel Self-Hosted Gateway URL*) eklenmesi. — 2026-11-03 `ConnectionDialog.qml` channel combo (Demo / Local Agent / Custom Gateway), `transportKind`+`transportTokenEncrypted` — wasm-only görünür
-- [x] **4.3.** `app.ragoshell.com` bulut dağıtımının yapılması ve isteğe bağlı bulut hizmetlerinin hesap altyapısıyla birleştirilmesi.
+- [x] **4.3.** `app.ragoshell.com.tr` bulut dağıtımının yapılması ve isteğe bağlı bulut hizmetlerinin hesap altyapısıyla birleştirilmesi.

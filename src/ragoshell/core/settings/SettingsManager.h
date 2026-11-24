@@ -10,6 +10,7 @@
 #include <vector>
 #include <algorithm>
 #include <cstdlib>
+#include <memory>
 
 #include "ragoshell/core/Enums.h"
 #include "ragoshell/core/utils/AppPaths.h"
@@ -17,6 +18,7 @@
 namespace RagoShell
 {
     class ConnectionSettings;
+    class KeyStore;
     struct ConfigFileAndImportFunction;
         
     // Settings directory with a trailing slash (see appDataDir()).
@@ -50,6 +52,9 @@ namespace RagoShell
          *        (usually ~/.ragoshell/ragoshell.json)
          */
         SettingsManager();
+
+        /// Testable constructor with explicit KeyStore injection (nullptr disables OS storage).
+        explicit SettingsManager(std::shared_ptr<KeyStore> keyStore);
 
         /**
          * @brief Cleanup owned objects
@@ -320,11 +325,15 @@ namespace RagoShell
         int _mongoTimeoutSec;
         int _shellTimeoutSec;
 
+        bool writeConfigMap() const;
+        bool syncAiKeysToKeyStore() const;
+        void clearInMemoryAiKeys();
+
         bool _aiAssistantEnabled = false;
         bool _aiHostedProviderRemoved = false;
         QString _aiProvider;
         QHash<QString, QString> _aiModels;
-        QHash<QString, QString> _aiApiKeys;     // stored encrypted (RagoCrypt)
+        QHash<QString, QString> _aiApiKeys;     // stored in OS KeyStore, never written to ragoshell.json
         QHash<QString, QString> _aiKeyOrigins;  // origin each key was saved for (configurable providers)
         QHash<QString, QString> _aiBaseUrls;
         QHash<QString, int> _aiTimeouts;
@@ -358,5 +367,8 @@ namespace RagoShell
         static std::vector<ConnectionSettings*> _connections;
 
         ToolbarSettingsContainerType _toolbars;
+
+        std::shared_ptr<KeyStore> _keyStore;
+        bool _legacyAiKeysInFile = false;
     };
 }

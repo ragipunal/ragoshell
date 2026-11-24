@@ -42,7 +42,8 @@ namespace RagoShell
             bool remove(const QString &account, QString *error = nullptr) override
             {
                 Q_UNUSED(error);
-                return _entries.remove(account) > 0;
+                _entries.remove(account);
+                return true;
             }
 
         private:

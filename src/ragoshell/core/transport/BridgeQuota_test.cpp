@@ -5,8 +5,12 @@
 #include <QDateTime>
 #include <QDir>
 #include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QTemporaryDir>
 #include <QTimeZone>
+
+#include <limits>
 
 using namespace RagoShell;
 
@@ -269,4 +273,60 @@ TEST(BridgeQuotaTest, status_file_is_aggregate_key_value_and_world_readable)
     EXPECT_FALSE(f.permissions().testFlag(QFileDevice::WriteOther));
 #endif
     EXPECT_FALSE(writeBridgeStatus(dir.filePath(QStringLiteral("missing/dir/status")), st, &err));
+}
+
+TEST(BridgeQuotaTest, consume_or_exhaust_fills_remainder_and_clamps_limits)
+{
+    QTemporaryDir dir;
+    ASSERT_TRUE(dir.isValid());
+    const QString path = dir.filePath(QStringLiteral("quota.json"));
+    const qint64 now = utc(2026, 11, 24);
+
+    BridgeQuota q(path, 100);
+    QString err;
+    ASSERT_TRUE(q.load(&err));
+    EXPECT_TRUE(q.consumeOrExhaust(kAccountA, 85, now));
+    EXPECT_FALSE(q.exhausted(kAccountA, now));
+    EXPECT_FALSE(q.consumeOrExhaust(kAccountA, 20, now));
+    EXPECT_EQ(q.used(kAccountA, now), 100);
+    EXPECT_TRUE(q.exhausted(kAccountA, now));
+    EXPECT_TRUE(q.isDirty());
+    // Re-exhausting an already exhausted account still rejects without mutating.
+    ASSERT_TRUE(q.save(&err)) << err.toStdString();
+    EXPECT_FALSE(q.isDirty());
+    EXPECT_FALSE(q.consumeOrExhaust(kAccountA, 1, now));
+    EXPECT_FALSE(q.isDirty());
+
+    // Values above kMaxSafeJsonBytes are clamped at construction and rejected in JSON.
+    BridgeQuota clamped(QString(), BridgeQuota::kMaxSafeJsonBytes + 1000);
+    EXPECT_EQ(clamped.monthlyLimit(), BridgeQuota::kMaxSafeJsonBytes);
+    const QByteArray hash = BridgeQuota::accountKey(kAccountA).toLatin1();
+    writeFile(path, "{\"version\":1,\"month\":\"2026-11\",\"accounts\":{\"" + hash + "\":"
+                        + QByteArray::number(BridgeQuota::kMaxSafeJsonBytes + 1) + "}}");
+    BridgeQuota overJson(path, 1000);
+    EXPECT_FALSE(overJson.load(&err));
+
+    // Non-regular files (directories) and saturating totals are handled safely.
+    BridgeQuota dirPath(dir.path(), 1000);
+    EXPECT_FALSE(dirPath.load(&err));
+    AccountDenyList dirDeny(dir.path());
+    EXPECT_FALSE(dirDeny.reload(&err));
+
+    BridgeQuota sat(path, BridgeQuota::kMaxSafeJsonBytes);
+    QJsonObject satAccounts;
+    for (int i = 0; i < 1025; ++i) {
+        const QString acct = QStringLiteral("acct-%1").arg(i);
+        satAccounts.insert(BridgeQuota::accountKey(acct), double(BridgeQuota::kMaxSafeJsonBytes));
+    }
+    const QJsonObject satRoot{
+        {QStringLiteral("version"), 1},
+        {QStringLiteral("month"), BridgeQuota::monthKey(now)},
+        {QStringLiteral("accounts"), satAccounts},
+    };
+    writeFile(path, QJsonDocument(satRoot).toJson(QJsonDocument::Compact));
+    ASSERT_TRUE(sat.load(&err)) << err.toStdString();
+    const BridgeQuota::Totals t = sat.totals(now);
+    EXPECT_EQ(t.accounts, 1025);
+    EXPECT_EQ(t.exhausted, 1025);
+    EXPECT_EQ(t.bytes, std::numeric_limits<qint64>::max());
 }

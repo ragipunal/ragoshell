@@ -186,8 +186,8 @@ namespace RagoShell
     bool GatewaySession::sendFrame(const QString &frame)
     {
         if (_authed && _hosted.quota
-            && !_hosted.quota->consume(_account, utf8Length(frame),
-                                       QDateTime::currentSecsSinceEpoch())) {
+            && !_hosted.quota->consumeOrExhaust(_account, utf8Length(frame),
+                                                QDateTime::currentSecsSinceEpoch())) {
             failAndClose(kTransferLimit);
             return false;
         }
@@ -215,12 +215,8 @@ namespace RagoShell
         if (!_authed || !_hosted.quota)
             return true;
         const qint64 now = QDateTime::currentSecsSinceEpoch();
-        if (_hosted.quota->consume(_account, bytes, now))
+        if (_hosted.quota->consumeOrExhaust(_account, bytes, now))
             return true;
-        // Use up what is left, then stop: the next hello is refused anyway.
-        _hosted.quota->consume(_account,
-                               _hosted.quota->monthlyLimit() - _hosted.quota->used(_account, now),
-                               now);
         failAndClose(kTransferLimit);
         return false;
     }
@@ -288,8 +284,8 @@ namespace RagoShell
                 return;
             }
             if (_hosted.quota
-                && !_hosted.quota->consume(_account, frameBytes,
-                                           QDateTime::currentSecsSinceEpoch())) {
+                && !_hosted.quota->consumeOrExhaust(_account, frameBytes,
+                                                    QDateTime::currentSecsSinceEpoch())) {
                 failAndClose(kTransferLimit);
                 return;
             }

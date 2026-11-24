@@ -938,3 +938,184 @@ TEST(CloudClientTest, AutoRefreshRenewsPastHalfLifeDropsExpiredTokenAndBacksOff)
     else
         qunsetenv("RAGOSHELL_CONFIG_DIR");
 }
+
+TEST(CloudClientTest, DisableHttpsFeaturesBlocksAllNetworkCallsAndStillSignsOutLocally)
+{
+    EvpPkeyPtr es256Key = makeP256Key();
+    EntitlementVerifier verifier;
+    ASSERT_TRUE(verifier.addPublicKeySpkiDer(QStringLiteral("k1"), exportSpkiDer(es256Key.get())));
+
+    const qint64 issued = 1793707200LL;
+    const qint64 now = issued + 4 * 24 * 3600; // past half-life so auto-refresh would normally fire
+    const QString userId = QStringLiteral("550e8400-e29b-41d4-a716-446655440000");
+    const QString deviceId = QStringLiteral("7c9e6679-7425-40de-944b-e07fc1f90ae7");
+
+    FakeCloudServer server([](const RecordedRequest &) -> FakeHttpResponse {
+        return {500, "{}"};
+    });
+
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE(tmpDir.isValid());
+    const QByteArray prevCfg = qgetenv("RAGOSHELL_CONFIG_DIR");
+    const bool hadCfg = qEnvironmentVariableIsSet("RAGOSHELL_CONFIG_DIR");
+    qputenv("RAGOSHELL_CONFIG_DIR", tmpDir.path().toUtf8());
+
+    {
+        QFile cfg(tmpDir.filePath(QStringLiteral("ragoshell.json")));
+        ASSERT_TRUE(cfg.open(QIODevice::WriteOnly | QIODevice::Truncate));
+        const QByteArray payload = "{\"version\":\"2.0\",\"disableHttpsFeatures\":true}\n";
+        ASSERT_EQ(cfg.write(payload), payload.size());
+    }
+
+    SettingsManager settings;
+    ASSERT_TRUE(settings.disableHttpsFeatures());
+    settings.addCacheData(QStringLiteral("cloudSignedIn"), true);
+    settings.addCacheData(QStringLiteral("cloudDeviceId"), deviceId);
+    settings.addCacheData(QStringLiteral("cloudUserId"), userId);
+
+    auto creds = std::make_shared<InMemoryCloudCredentialStore>();
+    creds->writeSecret(QLatin1String(ICloudCredentialStore::kRefreshTokenSlot), QStringLiteral("Refresh_Offline"));
+    creds->writeSecret(QLatin1String(ICloudCredentialStore::kEntitlementJwtSlot),
+                       signEntitlementJwt(es256Key.get(), QStringLiteral("k1"), server.baseUrl(),
+                                          userId, deviceId, issued));
+
+    CloudClient client(creds, &settings);
+    client.setApiUrlOverride(server.baseUrl());
+    client.setEntitlementVerifier(verifier);
+    client.setClockForTest([now]() { return now; });
+    client.restoreOfflineSession();
+    ASSERT_TRUE(client.isSignedIn());
+    EXPECT_FALSE(client.hasActiveOnlineEntitlement());
+    EXPECT_TRUE(client.entitlementJwt().isEmpty());
+
+    client.setAutoRefreshEnabled(true);
+    client.checkEntitlementRefresh();
+    client.refreshAccountAndEntitlements();
+
+    QString tokErr;
+    client.withValidAccessToken([&](bool ok, const QString &, const QString &err) {
+        EXPECT_FALSE(ok);
+        tokErr = err;
+    });
+    EXPECT_EQ(tokErr, QStringLiteral("https_disabled"));
+
+    client.startDeviceSignIn();
+    EXPECT_EQ(client.lastErrorCode(), QStringLiteral("https_disabled"));
+    EXPECT_TRUE(client.isSignedIn()); // failed startDeviceSignIn must not drop offline session state
+
+    client.signOut();
+    for (int i = 0; i < 10; ++i)
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+
+    EXPECT_EQ(server.totalRequests(), 0);
+    EXPECT_FALSE(client.isSignedIn());
+    QString remRefresh;
+    EXPECT_TRUE(creds->readSecret(QLatin1String(ICloudCredentialStore::kRefreshTokenSlot), &remRefresh));
+    EXPECT_TRUE(remRefresh.isEmpty());
+    QString remEnt;
+    EXPECT_TRUE(creds->readSecret(QLatin1String(ICloudCredentialStore::kEntitlementJwtSlot), &remEnt));
+    EXPECT_TRUE(remEnt.isEmpty());
+
+    if (hadCfg)
+        qputenv("RAGOSHELL_CONFIG_DIR", prevCfg);
+    else
+        qunsetenv("RAGOSHELL_CONFIG_DIR");
+}
+
+TEST(CloudClientTest, EntitlementJwtDropsAtExpWithoutTimerAndSignOutResetsBackoff)
+{
+    EvpPkeyPtr es256Key = makeP256Key();
+    EntitlementVerifier verifier;
+    ASSERT_TRUE(verifier.addPublicKeySpkiDer(QStringLiteral("k1"), exportSpkiDer(es256Key.get())));
+
+    const qint64 issued = 1793707200LL;
+    qint64 now = issued + 4 * 24 * 3600;
+    const QString userId = QStringLiteral("550e8400-e29b-41d4-a716-446655440000");
+    const QString deviceId = QStringLiteral("7c9e6679-7425-40de-944b-e07fc1f90ae7");
+
+    int entitlementCalls = 0;
+    bool failEntitlements = true;
+    QString serverUrl;
+    FakeCloudServer server([&](const RecordedRequest &req) -> FakeHttpResponse {
+        if (req.path == QLatin1String("/v1/auth/refresh")) {
+            return {200, QJsonDocument(QJsonObject{
+                             {QStringLiteral("access_token"), QStringLiteral("Access_Reset")},
+                             {QStringLiteral("refresh_token"), QStringLiteral("Refresh_Reset")},
+                             {QStringLiteral("token_type"), QStringLiteral("Bearer")},
+                             {QStringLiteral("expires_in"), 900},
+                             {QStringLiteral("device_id"), deviceId},
+                         })
+                             .toJson(QJsonDocument::Compact)};
+        }
+        if (req.path == QLatin1String("/v1/me"))
+            return {200, QJsonDocument(QJsonObject{{QStringLiteral("id"), userId}}).toJson(QJsonDocument::Compact)};
+        if (req.path == QLatin1String("/v1/me/entitlements")) {
+            ++entitlementCalls;
+            if (failEntitlements)
+                return {500, R"({"error":{"code":"internal_error","message":"boom"}})"};
+            return {200, QJsonDocument(QJsonObject{
+                             {QStringLiteral("token"),
+                              signEntitlementJwt(es256Key.get(), QStringLiteral("k1"), serverUrl, userId, deviceId, now,
+                                                 QStringLiteral("free"))},
+                         })
+                             .toJson(QJsonDocument::Compact)};
+        }
+        return {200, "{}"};
+    });
+    serverUrl = server.baseUrl();
+
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE(tmpDir.isValid());
+    const QByteArray prevCfg = qgetenv("RAGOSHELL_CONFIG_DIR");
+    const bool hadCfg = qEnvironmentVariableIsSet("RAGOSHELL_CONFIG_DIR");
+    qputenv("RAGOSHELL_CONFIG_DIR", tmpDir.path().toUtf8());
+
+    SettingsManager settings;
+    settings.addCacheData(QStringLiteral("cloudSignedIn"), true);
+    settings.addCacheData(QStringLiteral("cloudDeviceId"), deviceId);
+    settings.addCacheData(QStringLiteral("cloudUserId"), userId);
+    auto creds = std::make_shared<InMemoryCloudCredentialStore>();
+    const QString initialJwt = signEntitlementJwt(es256Key.get(), QStringLiteral("k1"), serverUrl, userId, deviceId, issued);
+    creds->writeSecret(QLatin1String(ICloudCredentialStore::kRefreshTokenSlot), QStringLiteral("Refresh_1"));
+    creds->writeSecret(QLatin1String(ICloudCredentialStore::kEntitlementJwtSlot), initialJwt);
+
+    CloudClient client(creds, &settings);
+    client.setApiUrlOverride(serverUrl);
+    client.setEntitlementVerifier(verifier);
+    client.setClockForTest([&now]() { return now; });
+    client.restoreOfflineSession();
+    ASSERT_EQ(client.entitlementState(), EntitlementState::ValidOnline);
+    EXPECT_TRUE(client.hasActiveOnlineEntitlement());
+    EXPECT_FALSE(client.entitlementJwt().isEmpty());
+
+    // Advance clock past exp without running checkEntitlementRefresh(): JWT must stop being returned immediately.
+    now = issued + EntitlementVerifier::kOnlineValiditySec;
+    EXPECT_FALSE(client.hasActiveOnlineEntitlement());
+    EXPECT_TRUE(client.entitlementJwt().isEmpty());
+
+    // Trigger one failed auto-refresh so backoff becomes active, then sign out.
+    client.setAutoRefreshEnabled(true);
+    client.checkEntitlementRefresh();
+    ASSERT_TRUE(waitUntil([&]() { return entitlementCalls == 1 && !client.isBusy(); }));
+
+    client.signOut();
+    ASSERT_TRUE(waitUntil([&]() { return !client.isBusy(); }));
+
+    // Re-seed session at the exact same timestamp; signOut() must have cleared backoff so refresh fires immediately.
+    failEntitlements = false;
+    settings.addCacheData(QStringLiteral("cloudSignedIn"), true);
+    settings.addCacheData(QStringLiteral("cloudDeviceId"), deviceId);
+    settings.addCacheData(QStringLiteral("cloudUserId"), userId);
+    creds->writeSecret(QLatin1String(ICloudCredentialStore::kRefreshTokenSlot), QStringLiteral("Refresh_2"));
+    creds->writeSecret(QLatin1String(ICloudCredentialStore::kEntitlementJwtSlot),
+                       signEntitlementJwt(es256Key.get(), QStringLiteral("k1"), serverUrl, userId, deviceId, issued));
+    client.restoreOfflineSession();
+    client.checkEntitlementRefresh();
+    ASSERT_TRUE(waitUntil([&]() { return entitlementCalls == 2 && !client.isBusy(); }));
+    EXPECT_EQ(client.entitlementState(), EntitlementState::ValidOnline);
+
+    if (hadCfg)
+        qputenv("RAGOSHELL_CONFIG_DIR", prevCfg);
+    else
+        qunsetenv("RAGOSHELL_CONFIG_DIR");
+}

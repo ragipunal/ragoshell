@@ -101,11 +101,17 @@ namespace RagoShell
         // handler sees the "tooLarge" property.
         void limitResponse(QNetworkReply *reply, qint64 max)
         {
-            QObject::connect(reply, &QNetworkReply::downloadProgress, reply, [reply, max](qint64 received, qint64) {
-                if (received > max && !reply->property("tooLarge").toBool()) {
+            auto abortIfTooLarge = [reply, max](qint64 bytes) {
+                if (bytes > max && !reply->property("tooLarge").toBool()) {
                     reply->setProperty("tooLarge", true);
                     reply->abort();
                 }
+            };
+            QObject::connect(reply, &QNetworkReply::readyRead, reply, [reply, abortIfTooLarge]() {
+                abortIfTooLarge(reply->bytesAvailable());
+            });
+            QObject::connect(reply, &QNetworkReply::downloadProgress, reply, [abortIfTooLarge](qint64 received, qint64) {
+                abortIfTooLarge(received);
             });
         }
     }
@@ -603,7 +609,9 @@ namespace RagoShell
     {
         _error = error;
         _retryable = retryable;
-        LOG_MSG(QStringLiteral("AI assistant: %1").arg(AiQueryAssistant::redactSecrets(_error)), LogSeverity::Warning);
+        LOG_MSG(QStringLiteral("AI assistant: %1")
+                    .arg(AiQueryAssistant::redactSecrets(_error, savedOrEnvironmentKey(_activeProvider))),
+                LogSeverity::Warning);
         emit stateChanged();
     }
 
@@ -632,10 +640,13 @@ namespace RagoShell
             return;   // cancelled
         _reply = nullptr;
 
-        if (reply->property("tooLarge").toBool()) {
+        auto failTooLarge = [this]() {
             fail(tr("The server sent a response that is too large (over %1 MB).")
                      .arg(AiQueryAssistant::kMaxResponseBytes / (1024 * 1024)),
                  false);
+        };
+        if (reply->property("tooLarge").toBool()) {
+            failTooLarge();
             return;
         }
         const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
@@ -660,12 +671,18 @@ namespace RagoShell
             return;
         }
 
+        const QByteArray body = reply->readAll();
+        if (body.size() > AiQueryAssistant::kMaxResponseBytes) {
+            failTooLarge();
+            return;
+        }
+
         // A join may read only the collections that were described.
         QStringList known{_collection};
         for (const AiQueryAssistant::RelatedCollection &r : _context.related)
             known << r.name;
         const AiQueryAssistant::Suggestion s = AiQueryAssistant::parseResponse(
-            _activeProvider, status, reply->readAll(), _database, reply->rawHeader("retry-after"), known);
+            _activeProvider, status, body, _database, reply->rawHeader("retry-after"), known);
         if (s.ok) {
             _suggestion = s;
             _error.clear();
@@ -683,7 +700,8 @@ namespace RagoShell
             if (more) {
                 _notices << tr("%1: %2.").arg(_activeModel, AiQueryAssistant::failureSummary(s, until));
                 LOG_MSG(QStringLiteral("AI assistant: %1 failed (%2), trying the next model.")
-                            .arg(_activeModel, AiQueryAssistant::redactSecrets(s.error)), LogSeverity::Warning);
+                            .arg(_activeModel, AiQueryAssistant::redactSecrets(s.error, savedOrEnvironmentKey(_activeProvider))),
+                        LogSeverity::Warning);
                 send();
                 return;
             }
@@ -793,24 +811,34 @@ namespace RagoShell
         _reply = _network->get(request);
         deadline(_reply, kModelListTimeoutMs);
         limitResponse(_reply, AiQueryAssistant::kMaxModelListBytes);
-        connect(_reply, &QNetworkReply::finished, this, [this, reply = _reply, provider]() {
+        connect(_reply, &QNetworkReply::finished, this, [this, reply = _reply, provider, key]() {
             if (!reply)
                 return;
             reply->deleteLater();
             if (reply != _reply)
                 return;
             _reply = nullptr;
-            if (reply->property("tooLarge").toBool()) {
+            auto failTooLarge = [this, &key]() {
                 _error = tr("The model list is too large (over %1 MB).")
                              .arg(AiQueryAssistant::kMaxModelListBytes / (1024 * 1024));
-                LOG_MSG(QStringLiteral("AI assistant: connection test: %1").arg(AiQueryAssistant::redactSecrets(_error)), LogSeverity::Warning);
+                LOG_MSG(QStringLiteral("AI assistant: connection test: %1")
+                            .arg(AiQueryAssistant::redactSecrets(_error, key)),
+                        LogSeverity::Warning);
                 emit stateChanged();
+            };
+            if (reply->property("tooLarge").toBool()) {
+                failTooLarge();
                 return;
             }
             // A cut-off list reads as "not reachable in time", not as a bad list.
             const int status = timedOut(reply) ? 0 : reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+            const QByteArray body = status > 0 ? reply->readAll() : QByteArray();
+            if (body.size() > AiQueryAssistant::kMaxModelListBytes) {
+                failTooLarge();
+                return;
+            }
             const AiQueryAssistant::ConnectionCheck check =
-                AiQueryAssistant::checkConnection(provider, status, status > 0 ? reply->readAll() : QByteArray());
+                AiQueryAssistant::checkConnection(provider, status, body);
             using AiQueryAssistant::ConnectionStatus;
             switch (check.status) {
             case ConnectionStatus::Connected: {
@@ -864,7 +892,9 @@ namespace RagoShell
                 }
                 break;
             }
-            LOG_MSG(QStringLiteral("AI assistant: connection test: %1").arg(AiQueryAssistant::redactSecrets(_error)), LogSeverity::Warning);
+            LOG_MSG(QStringLiteral("AI assistant: connection test: %1")
+                        .arg(AiQueryAssistant::redactSecrets(_error, key)),
+                    LogSeverity::Warning);
             emit stateChanged();
         });
         emit stateChanged();

@@ -3,12 +3,15 @@
 #include <algorithm>
 
 #include <QDir>
+#include <QCryptographicHash>
 #include <QFile>
 #include <QFileInfo>
 #include <QVariantList>
 #include <QUuid>
 #include <QJsonArray>
 #include <QDirIterator>
+
+#include <openssl/crypto.h>
 
 #include <parser.h>
 #include <serializer.h>
@@ -22,6 +25,7 @@
 #include "ragoshell/core/utils/Logger.h"
 #include "ragoshell/core/utils/QtUtils.h"
 #include "ragoshell/core/utils/StdUtils.h"
+#include "ragoshell/utils/KeyStore.h"
 #include "ragoshell/utils/common.h"
 #include "ragoshell/utils/RagoCrypt.h"
 
@@ -48,6 +52,50 @@ namespace RagoShell
             const QString k = QString::fromLatin1(key);
             return provider == QLatin1String("anthropic") ? k : provider + k.left(1).toUpper() + k.mid(1);
         }
+
+        void cleanseQString(QString &secret)
+        {
+            if (secret.isEmpty())
+                return;
+            OPENSSL_cleanse(secret.data(), static_cast<std::size_t>(secret.size()) * sizeof(QChar));
+            secret.clear();
+        }
+
+        void cleanseStdString(std::string &secret)
+        {
+            if (secret.empty())
+                return;
+            OPENSSL_cleanse(secret.data(), secret.size());
+            secret.clear();
+        }
+
+        QString aiKeyAccount(const QString &provider)
+        {
+            const QString cleanProvider = provider.trimmed();
+            if (appDataDirOverridden()) {
+                const QByteArray dirBytes = QDir::cleanPath(appDataDir()).toUtf8();
+                const QByteArray digest = QCryptographicHash::hash(dirBytes, QCryptographicHash::Sha256).toHex().left(16);
+                return QStringLiteral("ai:%1/%2").arg(QString::fromLatin1(digest), cleanProvider);
+            }
+            return QStringLiteral("ai/%1").arg(cleanProvider);
+        }
+
+        void assignStoredAiKey(const QString &provider,
+                               const QString &value,
+                               QHash<QString, QString> &keys,
+                               QHash<QString, QString> &origins)
+        {
+            if (configurableBase(provider)) {
+                // "origin\nkey", stored together in KeyStore: moving baseUrl never reuses the key (docs: T1).
+                const qsizetype split = value.indexOf(QLatin1Char('\n'));
+                if (split > 0) {
+                    origins.insert(provider, value.left(split));
+                    keys.insert(provider, value.mid(split + 1));
+                }
+            } else if (!value.isEmpty()) {
+                keys.insert(provider, value);
+            }
+        }
     }
 
     std::vector<ConnectionSettings*>  SettingsManager::_connections;
@@ -64,7 +112,12 @@ namespace RagoShell
      * Creates SettingsManager for config file in default location
      * ~/.ragoshell/ragoshell.json
      */
-    SettingsManager::SettingsManager() :
+    SettingsManager::SettingsManager()
+        : SettingsManager(std::shared_ptr<KeyStore>(createPlatformKeyStore()))
+    {
+    }
+
+    SettingsManager::SettingsManager(std::shared_ptr<KeyStore> keyStore) :
         _version(SchemaVersion),
         _uuidEncoding(DefaultEncoding),
         _timeZone(Utc),
@@ -77,7 +130,8 @@ namespace RagoShell
         _textFontFamily(""),
         _textFontPointSize(-1),
         _mongoTimeoutSec(10),
-        _shellTimeoutSec(15)
+        _shellTimeoutSec(15),
+        _keyStore(std::move(keyStore))
     {
         if (!QDir().mkpath(configDirectory()))
             LOG_MSG("ERROR: Could not create settings path: " + configDirectory(), RagoShell::LogSeverity::Error);
@@ -96,8 +150,16 @@ namespace RagoShell
 
     SettingsManager::~SettingsManager()
     {
+        clearInMemoryAiKeys();
         std::for_each(_connections.begin(), _connections.end(), stdutils::default_delete<ConnectionSettings *>());
         _connections.clear();
+    }
+
+    void SettingsManager::clearInMemoryAiKeys()
+    {
+        for (auto it = _aiApiKeys.begin(); it != _aiApiKeys.end(); ++it)
+            cleanseQString(it.value());
+        _aiApiKeys.clear();
     }
 
     QString SettingsManager::schemaVersion()
@@ -147,18 +209,32 @@ namespace RagoShell
 
     void SettingsManager::setAiApiKey(const QString &provider, const QString &key)
     {
+        auto eraseExisting = [this, &provider]() {
+            auto it = _aiApiKeys.find(provider);
+            if (it != _aiApiKeys.end()) {
+                cleanseQString(it.value());
+                _aiApiKeys.erase(it);
+            }
+        };
         if (!AiQueryAssistant::usesApiKey(AiQueryAssistant::providerFromId(provider))) {
-            _aiApiKeys.remove(provider);   // Ollama: never stored
+            eraseExisting();   // Ollama: never stored
             _aiKeyOrigins.remove(provider);
             return;
         }
-        _aiApiKeys.insert(provider, key);
-        if (!configurableBase(provider))
-            return;
-        if (key.isEmpty())
+        eraseExisting();
+        if (key.isEmpty()) {
             _aiKeyOrigins.remove(provider);
-        else
-            _aiKeyOrigins.insert(provider, AiQueryAssistant::urlOrigin(_aiBaseUrls.value(provider)));
+            return;
+        }
+        if (configurableBase(provider)) {
+            const QString origin = AiQueryAssistant::urlOrigin(_aiBaseUrls.value(provider));
+            if (origin.isEmpty()) {
+                _aiKeyOrigins.remove(provider);
+                return;
+            }
+            _aiKeyOrigins.insert(provider, origin);
+        }
+        _aiApiKeys.insert(provider, key);
     }
 
     QString SettingsManager::aiBaseUrl(const QString &provider) const
@@ -188,7 +264,11 @@ namespace RagoShell
         const QString origin = AiQueryAssistant::urlOrigin(baseUrl);
         if (origin.isEmpty() || origin != _aiKeyOrigins.value(provider)) {
             // The key was given for another server: never send it here.
-            _aiApiKeys.remove(provider);
+            auto it = _aiApiKeys.find(provider);
+            if (it != _aiApiKeys.end()) {
+                cleanseQString(it.value());
+                _aiApiKeys.erase(it);
+            }
             _aiKeyOrigins.remove(provider);
         }
         // Listed by the previous server. Before the first save the list came
@@ -378,9 +458,24 @@ namespace RagoShell
         if (!ok)
             return false;
 
+        const QVariantMap originalMap = map;
         QString previousSchema;
         const bool schemaMigrated = migrateMapToCurrentSchema(map, &previousSchema);
+
+        loadFromMap(map);
+
+        const bool hadLegacyAiKeys = _legacyAiKeysInFile;
+        _legacyAiKeysInFile = false;
         if (schemaMigrated) {
+            const bool synced = hadLegacyAiKeys ? syncAiKeysToKeyStore() : true;
+            if (hadLegacyAiKeys && !synced) {
+                LOG_MSG(QStringLiteral("AI assistant: keeping %1 untouched until the OS credential "
+                                       "store is available to migrate existing API key(s).")
+                            .arg(configFilePath()),
+                        LogSeverity::Warning, false);
+                return true;
+            }
+
             QString safeTag = previousSchema.isEmpty()
                                   ? QStringLiteral("legacy")
                                   : previousSchema;
@@ -389,27 +484,54 @@ namespace RagoShell
             safeTag.replace(':', '_');
             const QString backupPath = configFilePath() + QStringLiteral(".bak-") + safeTag;
             QFile::remove(backupPath);
-            QFile::copy(configFilePath(), backupPath);
-        }
+            if (hadLegacyAiKeys) {
+                QVariantMap scrubbedBackup = originalMap;
+                QVariantMap backupAi = scrubbedBackup.value(QStringLiteral("aiAssistant")).toMap();
+                for (const QString &provider : AiProviders)
+                    backupAi.remove(aiSettingName(provider, "apiKeyEncrypted"));
+                scrubbedBackup.insert(QStringLiteral("aiAssistant"), backupAi);
+                QFile bak(backupPath);
+                if (bak.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+                    bak.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner);
+                    bool bakOk = false;
+                    QJson::Serializer s;
+                    s.setIndentMode(QJson::IndentFull);
+                    s.serialize(scrubbedBackup, &bak, &bakOk);
+                }
+            } else {
+                QFile::copy(configFilePath(), backupPath);
+                QFile::setPermissions(backupPath, QFileDevice::ReadOwner | QFileDevice::WriteOwner);
+            }
 
-        loadFromMap(map);
-
-        if (schemaMigrated) {
-            save();
+            if (!hadLegacyAiKeys)
+                syncAiKeysToKeyStore();
+            writeConfigMap();
             LOG_MSG(QString("Migrated user config schema from '%1' to '%2'")
                         .arg(previousSchema.isEmpty() ? QStringLiteral("unversioned") : previousSchema,
                              SchemaVersion),
                     RagoShell::LogSeverity::Info, false);
+            if (hadLegacyAiKeys)
+                LOG_MSG(QStringLiteral("AI assistant: migrated API key(s) out of %1.")
+                            .arg(configFilePath()),
+                        LogSeverity::Info, false);
+        } else if (hadLegacyAiKeys) {
+            if (syncAiKeysToKeyStore()) {
+                writeConfigMap();
+                LOG_MSG(QStringLiteral("AI assistant: migrated API key(s) out of %1.")
+                            .arg(configFilePath()),
+                        LogSeverity::Info, false);
+            } else {
+                LOG_MSG(QStringLiteral("AI assistant: keeping %1 untouched until the OS credential "
+                                       "store is available to migrate existing API key(s).")
+                            .arg(configFilePath()),
+                        LogSeverity::Warning, false);
+            }
         }
 
         return true;
     }
 
-    /**
-     * Saves all settings to config file.
-     * @return true if success, false otherwise
-     */
-    bool SettingsManager::save()
+    bool SettingsManager::writeConfigMap() const
     {
         QVariantMap const& map = convertToMap();
 
@@ -430,6 +552,60 @@ namespace RagoShell
             requestPersistSync();
 
         return ok;
+    }
+
+    bool SettingsManager::syncAiKeysToKeyStore() const
+    {
+        if (!_keyStore || !_keyStore->isAvailable()) {
+            if (!_aiApiKeys.isEmpty()) {
+                LOG_MSG(QStringLiteral("AI assistant: no OS credential store is available; API keys "
+                                       "are kept in memory for this session only."),
+                        LogSeverity::Warning, false);
+            }
+            return false;
+        }
+
+        bool allOk = true;
+        for (const QString &provider : AiProviders) {
+            if (!AiQueryAssistant::usesApiKey(AiQueryAssistant::providerFromId(provider)))
+                continue;
+            const QString key = _aiApiKeys.value(provider);
+            const QString origin = _aiKeyOrigins.value(provider);
+            const bool validEntry = !key.isEmpty()
+                                    && (!configurableBase(provider) || !origin.isEmpty());
+            if (!validEntry) {
+                QString err;
+                if (!_keyStore->remove(aiKeyAccount(provider), &err)) {
+                    allOk = false;
+                    LOG_MSG(QStringLiteral("AI assistant: could not remove %1 API key from %2 (%3).")
+                                .arg(provider, _keyStore->name(), err),
+                            LogSeverity::Warning, false);
+                }
+                continue;
+            }
+            QString payload = configurableBase(provider)
+                                  ? (origin + QLatin1Char('\n') + key)
+                                  : key;
+            QString err;
+            if (!_keyStore->write(aiKeyAccount(provider), payload, &err)) {
+                allOk = false;
+                LOG_MSG(QStringLiteral("AI assistant: could not store %1 API key in %2 (%3).")
+                            .arg(provider, _keyStore->name(), err),
+                        LogSeverity::Warning, false);
+            }
+            cleanseQString(payload);
+        }
+        return allOk;
+    }
+
+    /**
+     * Saves all settings to config file.
+     * @return true if success, false otherwise
+     */
+    bool SettingsManager::save()
+    {
+        syncAiKeysToKeyStore();
+        return writeConfigMap();
     }
 
     void SettingsManager::addCacheData(QString const& key, QVariant const& value)
@@ -579,8 +755,9 @@ namespace RagoShell
                         .arg(savedAiProvider.left(64)),
                     LogSeverity::Warning);
         _aiModels.clear();
-        _aiApiKeys.clear();
+        clearInMemoryAiKeys();
         _aiKeyOrigins.clear();
+        _legacyAiKeysInFile = false;
         _aiBaseUrls.clear();
         _aiTimeouts.clear();
         _aiAvailableModels.clear();
@@ -589,9 +766,7 @@ namespace RagoShell
             const QString model = ai.value(name("model")).toString();
             if (!model.isEmpty())
                 _aiModels.insert(provider, model);
-            const QString aiKey = ai.value(name("apiKeyEncrypted")).toString();
-            const QString plain = aiKey.isEmpty() ? QString()
-                                  : QtUtils::toQString(RagoCrypt::decrypt(QtUtils::toStdString(aiKey)));
+            const bool usesKey = AiQueryAssistant::usesApiKey(AiQueryAssistant::providerFromId(provider));
             if (configurableBase(provider)) {
                 // A hand-edited address is checked again before any request.
                 const QString base = ai.value(name("baseUrl")).toString();
@@ -600,15 +775,27 @@ namespace RagoShell
                 const QVariant timeout = ai.value(name("timeoutSec"));
                 if (timeout.isValid() && timeout.toInt() > 0)
                     _aiTimeouts.insert(provider, AiQueryAssistant::clampTimeoutSec(timeout.toInt()));
-                // "origin\nkey", encrypted together: editing the file cannot
-                // move the key to another server (docs: T1).
-                const qsizetype split = plain.indexOf(QLatin1Char('\n'));
-                if (split > 0 && AiQueryAssistant::usesApiKey(AiQueryAssistant::providerFromId(provider))) {
-                    _aiKeyOrigins.insert(provider, plain.left(split));
-                    _aiApiKeys.insert(provider, plain.mid(split + 1));
+            }
+            QString stored;
+            if (usesKey && _keyStore && _keyStore->isAvailable()) {
+                if (_keyStore->read(aiKeyAccount(provider), &stored, nullptr) != KeyStore::Result::Ok)
+                    cleanseQString(stored);
+            }
+            if (!stored.isEmpty()) {
+                assignStoredAiKey(provider, stored, _aiApiKeys, _aiKeyOrigins);
+                cleanseQString(stored);
+            }
+            const QString legacyEnc = ai.value(name("apiKeyEncrypted")).toString();
+            if (!legacyEnc.isEmpty()) {
+                _legacyAiKeysInFile = true;
+                if (usesKey && _aiApiKeys.value(provider).isEmpty()) {
+                    std::string dec = RagoCrypt::decrypt(QtUtils::toStdString(legacyEnc));
+                    QString plain = QtUtils::toQString(dec);
+                    cleanseStdString(dec);
+                    if (!plain.isEmpty())
+                        assignStoredAiKey(provider, plain, _aiApiKeys, _aiKeyOrigins);
+                    cleanseQString(plain);
                 }
-            } else if (!plain.isEmpty()) {
-                _aiApiKeys.insert(provider, plain);
             }
             const QStringList models = ai.value(name("availableModels")).toStringList();
             if (!models.isEmpty())
@@ -729,19 +916,13 @@ namespace RagoShell
         map.insert("textFontFamily", _textFontFamily);
         map.insert("textFontPointSize", _textFontPointSize);
 
-        // 11b. Save AI assistant settings (API key encrypted like connection secrets)
+        // 11b. Save AI assistant settings (API keys live in KeyStore, never ragoshell.json)
         QVariantMap ai;
         ai.insert("enabled", _aiAssistantEnabled);
         ai.insert("provider", _aiProvider);
         for (const QString &provider : AiProviders) {
             auto name = [&provider](const char *key) { return aiSettingName(provider, key); };
-            const QString aiKey = _aiApiKeys.value(provider);
-            const QString stored = configurableBase(provider) && !aiKey.isEmpty()
-                                       ? _aiKeyOrigins.value(provider) + QLatin1Char('\n') + aiKey
-                                       : aiKey;
             ai.insert(name("model"), _aiModels.value(provider));
-            ai.insert(name("apiKeyEncrypted"), aiKey.isEmpty() ? QString()
-                      : QtUtils::toQString(RagoCrypt::encrypt(QtUtils::toStdString(stored))));
             ai.insert(name("availableModels"), QVariant(_aiAvailableModels.value(provider)));
             if (configurableBase(provider)) {
                 ai.insert(name("baseUrl"), _aiBaseUrls.value(provider));

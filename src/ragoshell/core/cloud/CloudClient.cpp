@@ -254,6 +254,9 @@ void CloudClient::checkEntitlementRefresh()
         emit stateChanged();
     }
 
+    if (m_settings && m_settings->disableHttpsFeatures())
+        return;
+
     if (m_busy || m_refreshInFlight || m_meReply || m_entitlementsReply)
         return;
     if (m_autoRefreshNextAttemptAt > 0 && now < m_autoRefreshNextAttemptAt)
@@ -607,14 +610,23 @@ void CloudClient::verifyAndApplyCachedEntitlementOffline()
     m_claims = res.claims;
 }
 
+bool CloudClient::hasActiveOnlineEntitlement() const
+{
+    if (m_settings && m_settings->disableHttpsFeatures())
+        return false;
+    return m_entitlementState == EntitlementState::ValidOnline
+           && m_claims.expiresAt > 0
+           && nowUnixSec() < m_claims.expiresAt;
+}
+
 QString CloudClient::entitlementJwt() const
 {
     // Hosted gateway hello token (docs/HostedGateway.md §5): the cached
-    // entitlement+jwt, returned only while ValidOnline — the gateway denies
-    // grace/expired states at hello, so a token that can never succeed must
+    // entitlement+jwt, returned only while ValidOnline and unexpired — the
+    // gateway denies grace/expired states at hello, so a stale token must
     // never leave the KeyStore.
     if (!m_credentialStore || !m_credentialStore->isAvailable()
-        || m_entitlementState != EntitlementState::ValidOnline)
+        || !hasActiveOnlineEntitlement())
         return QString();
     QString jwt;
     if (!m_credentialStore->readSecret(
@@ -751,6 +763,15 @@ void CloudClient::clearPendingDeviceFlow(bool cleanseCode)
 
 void CloudClient::startDeviceSignIn(const QString &customDeviceName)
 {
+    if (m_settings && m_settings->disableHttpsFeatures())
+    {
+        m_lastErrorCode = QStringLiteral("https_disabled");
+        m_lastErrorMessage = QStringLiteral("HTTPS cloud features are disabled by settings.");
+        emit stateChanged();
+        emit signInFailed(m_lastErrorCode, m_lastErrorMessage);
+        return;
+    }
+
     clearPendingDeviceFlow(true);
     m_lastErrorCode.clear();
     m_lastErrorMessage.clear();
@@ -1088,6 +1109,12 @@ void CloudClient::withValidAccessToken(AccessTokenCallback callback)
     if (!callback)
         return;
 
+    if (m_settings && m_settings->disableHttpsFeatures())
+    {
+        callback(false, QString(), QStringLiteral("https_disabled"));
+        return;
+    }
+
     if (!m_metadata.signedIn || m_authState != CloudAuthState::SignedIn)
     {
         callback(false, QString(), QStringLiteral("not_signed_in"));
@@ -1276,6 +1303,8 @@ void CloudClient::handleSessionRevoked(const QString &reasonCode, const QString 
     m_entitlementState = EntitlementState::Invalid;
     m_claims = EntitlementClaims{};
     m_busy = false;
+    m_autoRefreshBackoffSec = 0;
+    m_autoRefreshNextAttemptAt = 0;
     m_lastErrorCode = reasonCode;
     m_lastErrorMessage = message;
 
@@ -1285,6 +1314,9 @@ void CloudClient::handleSessionRevoked(const QString &reasonCode, const QString 
 
 void CloudClient::refreshAccountAndEntitlements()
 {
+    if (m_settings && m_settings->disableHttpsFeatures())
+        return;
+
     if (!m_metadata.signedIn || m_authState != CloudAuthState::SignedIn)
         return;
 
@@ -1584,6 +1616,8 @@ void CloudClient::signOut()
     m_entitlementState = EntitlementState::Invalid;
     m_claims = EntitlementClaims{};
     m_busy = false;
+    m_autoRefreshBackoffSec = 0;
+    m_autoRefreshNextAttemptAt = 0;
     m_lastErrorCode.clear();
     m_lastErrorMessage.clear();
 
@@ -1591,7 +1625,9 @@ void CloudClient::signOut()
     emit signedOut();
 
     const QString apiBase = effectiveApiUrl();
-    if ((!refreshTok.trimmed().isEmpty() || !accessTok.trimmed().isEmpty()) && isAllowedApiBaseUrl(apiBase))
+    if ((!refreshTok.trimmed().isEmpty() || !accessTok.trimmed().isEmpty())
+        && isAllowedApiBaseUrl(apiBase)
+        && (!m_settings || !m_settings->disableHttpsFeatures()))
     {
         QNetworkRequest req = buildApiRequest(QStringLiteral("/v1/auth/logout"), true, kLogoutTimeoutMs);
         QByteArray payload("{}");

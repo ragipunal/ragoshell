@@ -27,10 +27,63 @@ namespace RagoShell
             static const QRegularExpression re(QStringLiteral("^[0-9a-f]{64}$"));
             return re.match(s).hasMatch();
         }
+
+        bool readBoundedRegularFile(const QString &path,
+                                    qint64 maxBytes,
+                                    const char *label,
+                                    QByteArray *out,
+                                    bool *missing,
+                                    QString *error)
+        {
+            out->clear();
+            if (missing)
+                *missing = false;
+            const QFileInfo info(path);
+            if (info.isSymLink() || info.isJunction()) {
+                if (error)
+                    *error = QStringLiteral("%1 file must not be a symlink").arg(QLatin1String(label));
+                return false;
+            }
+            if (!info.exists()) {
+                if (missing)
+                    *missing = true;
+                return true;
+            }
+            if (!info.isFile()) {
+                if (error)
+                    *error = QStringLiteral("%1 path is not a regular file").arg(QLatin1String(label));
+                return false;
+            }
+            QFile f(path);
+            if (!f.open(QIODevice::ReadOnly)) {
+                if (error)
+                    *error = QStringLiteral("cannot open %1 file: %2").arg(QLatin1String(label), f.errorString());
+                return false;
+            }
+            constexpr qint64 kChunkBytes = 64 * 1024;
+            while (out->size() <= maxBytes) {
+                const qint64 want = std::min(kChunkBytes, (maxBytes + 1) - out->size());
+                const QByteArray chunk = f.read(want);
+                if (f.error() != QFileDevice::NoError) {
+                    if (error)
+                        *error = QStringLiteral("cannot read %1 file: %2").arg(QLatin1String(label), f.errorString());
+                    return false;
+                }
+                if (chunk.isEmpty())
+                    break;
+                out->append(chunk);
+            }
+            if (out->size() > maxBytes) {
+                if (error)
+                    *error = QStringLiteral("%1 file is larger than %2 bytes").arg(QLatin1String(label)).arg(maxBytes);
+                return false;
+            }
+            return true;
+        }
     }
 
     BridgeQuota::BridgeQuota(const QString &filePath, qint64 monthlyLimit)
-        : _path(filePath), _limit(monthlyLimit > 0 ? monthlyLimit : 1)
+        : _path(filePath), _limit(std::clamp<qint64>(monthlyLimit, 1, kMaxSafeJsonBytes))
     {
     }
 
@@ -68,21 +121,14 @@ namespace RagoShell
         _bytes.clear();
         _month.clear();
         _dirty = false;
-        QFile f(_path);
-        if (!f.exists())
+        QByteArray raw;
+        bool missing = false;
+        if (!readBoundedRegularFile(_path, kMaxQuotaFileBytes, "quota", &raw, &missing, error))
+            return false;
+        if (missing)
             return true;
-        if (!f.open(QIODevice::ReadOnly)) {
-            if (error)
-                *error = QStringLiteral("cannot open quota file: %1").arg(f.errorString());
-            return false;
-        }
-        if (f.size() > kMaxQuotaFileBytes) {
-            if (error)
-                *error = QStringLiteral("quota file is larger than %1 bytes").arg(kMaxQuotaFileBytes);
-            return false;
-        }
         QJsonParseError perr{};
-        const QJsonDocument doc = QJsonDocument::fromJson(f.readAll(), &perr);
+        const QJsonDocument doc = QJsonDocument::fromJson(raw, &perr);
         if (perr.error != QJsonParseError::NoError || !doc.isObject()) {
             if (error)
                 *error = QStringLiteral("quota file is not a JSON object");
@@ -104,7 +150,7 @@ namespace RagoShell
         for (auto it = accounts.begin(); it != accounts.end(); ++it) {
             const double v = it.value().toDouble(-1);
             if (!isHex64(it.key()) || !it.value().isDouble() || v < 0
-                || v != std::floor(v) || v > double(std::numeric_limits<qint64>::max() / 2)) {
+                || v != std::floor(v) || v > double(kMaxSafeJsonBytes)) {
                 if (error)
                     *error = QStringLiteral("quota file has an invalid entry");
                 return false;
@@ -149,20 +195,35 @@ namespace RagoShell
         return true;
     }
 
-    bool BridgeQuota::consume(const QString &account, qint64 bytes, qint64 nowSec)
+    bool BridgeQuota::recordTransfer(const QString &account, qint64 bytes, qint64 nowSec, bool exhaustOnOver)
     {
         if (bytes < 0)
             return false;
         rollMonth(nowSec);
         const QString key = accountKey(account);
         const qint64 used = _bytes.value(key);
-        if (bytes > _limit - used)
+        if (bytes > _limit - used) {
+            if (exhaustOnOver && used < _limit) {
+                _bytes.insert(key, _limit);
+                _dirty = true;
+            }
             return false;
+        }
         if (bytes == 0)
             return true;
         _bytes.insert(key, used + bytes);
         _dirty = true;
         return true;
+    }
+
+    bool BridgeQuota::consume(const QString &account, qint64 bytes, qint64 nowSec)
+    {
+        return recordTransfer(account, bytes, nowSec, false);
+    }
+
+    bool BridgeQuota::consumeOrExhaust(const QString &account, qint64 bytes, qint64 nowSec)
+    {
+        return recordTransfer(account, bytes, nowSec, true);
     }
 
     bool BridgeQuota::exhausted(const QString &account, qint64 nowSec)
@@ -181,11 +242,12 @@ namespace RagoShell
         rollMonth(nowSec);
         Totals t;
         t.month = _month;
+        constexpr qint64 kMax = std::numeric_limits<qint64>::max();
         for (auto it = _bytes.cbegin(); it != _bytes.cend(); ++it) {
             if (it.value() <= 0)
                 continue;
             ++t.accounts;
-            t.bytes += it.value();
+            t.bytes = (it.value() > kMax - t.bytes) ? kMax : (t.bytes + it.value());
             if (it.value() >= _limit)
                 ++t.exhausted;
         }
@@ -266,8 +328,11 @@ namespace RagoShell
     {
         if (_path.isEmpty())
             return true;
-        const QFileInfo info(_path);
-        if (!info.exists()) {
+        QByteArray rawData;
+        bool missing = false;
+        if (!readBoundedRegularFile(_path, kMaxDenyFileBytes, "deny", &rawData, &missing, error))
+            return false;
+        if (missing) {
             if (!_loaded) {
                 _loaded = true; // never existed: nobody is listed
                 return true;
@@ -278,19 +343,11 @@ namespace RagoShell
                              .arg(_accounts.size());
             return false;
         }
-        QFile f(_path);
-        if (info.size() > kMaxDenyFileBytes || !f.open(QIODevice::ReadOnly)) {
-            if (error)
-                *error = info.size() > kMaxDenyFileBytes
-                    ? QStringLiteral("deny file is larger than %1 bytes").arg(kMaxDenyFileBytes)
-                    : QStringLiteral("cannot open deny file: %1").arg(f.errorString());
-            return false;
-        }
         static const QRegularExpression uuidRe(QStringLiteral(
             "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"));
         QSet<QString> accounts;
         int skipped = 0;
-        const QList<QByteArray> lines = f.readAll().split('\n');
+        const QList<QByteArray> lines = rawData.split('\n');
         for (const QByteArray &raw : lines) {
             QString line = QString::fromUtf8(raw);
             const int hash = line.indexOf(QLatin1Char('#'));

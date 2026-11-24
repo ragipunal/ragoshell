@@ -813,6 +813,46 @@ TEST_F(WebSocketGatewayTransportTest, hosted_discarded_large_reply_is_charged)
     EXPECT_GT(quota->used(kSub, now) - before, 64 + raw.frames.at(2).toUtf8().size());
 }
 
+TEST_F(WebSocketGatewayTransportTest, hosted_oversized_remaining_reply_exhausts_quota_immediately)
+{
+    ensureCoreApp();
+    auto quota = std::make_shared<BridgeQuota>(QString(), 2000);
+    auto key = genP256Key();
+    HostedTestAgent agent(key.get(), 1, [quota](HostedAuthConfig &c) { c.quota = quota; });
+    const qint64 now = QDateTime::currentSecsSinceEpoch();
+    const QString jwt = mintEntitlementJwt(key.get(), QStringLiteral("test-kid"),
+        true, now - 60, now + 3600, QStringLiteral("7c9e6679-7425-40de-944b-e07fc1f90ae7"));
+
+    RawClient raw(agent.url());
+    ASSERT_TRUE(raw.waitConnected());
+    ASSERT_TRUE(raw.handshake(jwt));
+    ASSERT_TRUE(raw.connectTransport());
+
+    const QString req = GatewayProtocol::encodeRequest(
+        3, QString::fromUtf8(GatewayProtocol::Op::ListDatabases), QJsonObject{});
+    const qint64 reqBytes = req.toUtf8().size();
+    const qint64 leaveBytes = reqBytes + 10; // enough for request, smaller than the reply frame
+    const qint64 usedNow = quota->used(kSub, now);
+    ASSERT_GT(2000 - usedNow, leaveBytes);
+    ASSERT_TRUE(quota->consume(kSub, 2000 - usedNow - leaveBytes, now));
+    ASSERT_FALSE(quota->exhausted(kSub, now));
+
+    raw.sock.sendTextMessage(req);
+    ASSERT_TRUE(raw.waitClosed());
+    ASSERT_GE(raw.frames.size(), 3);
+    EXPECT_TRUE(raw.frames.last().contains(QStringLiteral("monthly transfer limit reached")))
+        << raw.frames.last().toStdString();
+    EXPECT_EQ(quota->used(kSub, now), 2000);
+    EXPECT_TRUE(quota->exhausted(kSub, now));
+
+    // Reconnecting immediately must be refused at hello rather than running another operation.
+    RawClient again(agent.url());
+    ASSERT_TRUE(again.waitConnected());
+    EXPECT_FALSE(again.handshake(jwt));
+    ASSERT_GE(again.frames.size(), 1);
+    EXPECT_TRUE(again.frames.first().contains(QStringLiteral("monthly transfer limit reached")));
+}
+
 TEST_F(WebSocketGatewayTransportTest, hosted_deny_list_blocks_and_ends_sessions)
 {
     // §9.4: a switched-off account is refused at hello, and an open session

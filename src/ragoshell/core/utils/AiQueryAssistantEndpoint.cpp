@@ -29,10 +29,20 @@ namespace RagoShell::AiQueryAssistant
         {
             QHostAddress address;
             if (address.setAddress(host)) {
+                bool mapped = false;
+                const quint32 ipv4 = address.toIPv4Address(&mapped);
+                if (mapped)
+                    address = QHostAddress(ipv4);
                 // 100.64.0.0/10 (carrier-grade NAT) is shared with other
                 // customers of the provider: not "your" network.
-                if (address.isInSubnet(QHostAddress(QStringLiteral("100.64.0.0")), 10))
+                // Link-local (169.254.0.0/16, fe80::/10) and cloud IMDS ranges
+                // (169.254.169.254, fd00:ec2::/32) must never be reached over plain http.
+                if (address.isInSubnet(QHostAddress(QStringLiteral("100.64.0.0")), 10)
+                    || address.isInSubnet(QHostAddress(QStringLiteral("169.254.0.0")), 16)
+                    || address.isInSubnet(QHostAddress(QStringLiteral("fe80::")), 10)
+                    || address.isInSubnet(QHostAddress(QStringLiteral("fd00:ec2::")), 32)) {
                     return false;
+                }
                 return isLocalNetworkHost(host);
             }
             return host.endsWith(QLatin1String(".local"), Qt::CaseInsensitive) && isLocalNetworkHost(host);
@@ -187,13 +197,16 @@ namespace RagoShell::AiQueryAssistant
         return encoded.contains(QLatin1String("xn--")) ? encoded : u.host();
     }
 
-    QString redactSecrets(const QString &text)
+    QString redactSecrets(const QString &text, const QString &activeSecret)
     {
-        // Key-looking runs (sk-…, AIza…, Bearer …, any long token) never reach
-        // the log, even when a server echoes the key in an error.
+        // Key-looking runs (sk-…, AIza…, Bearer …, any long token) and the active
+        // secret never reach the log, even when a server echoes a short custom key.
+        QString out = text;
+        const QString needle = activeSecret.trimmed();
+        if (needle.size() >= 4)
+            out.replace(needle, QStringLiteral("[redacted]"));
         static const QRegularExpression keys(
             QStringLiteral("(Bearer\\s+\\S+|\\b(?:sk|pk|rk)[-_][-_A-Za-z0-9]{6,}|\\bAIza[-_A-Za-z0-9]{20,}|[A-Za-z0-9_\\-]{32,})"));
-        QString out = text;
         out.replace(keys, QStringLiteral("[redacted]"));
         return out;
     }

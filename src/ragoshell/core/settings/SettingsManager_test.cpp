@@ -1,10 +1,18 @@
 #include "gtest/gtest.h"
 
 #include "ragoshell/core/settings/SettingsManager.h"
+#include "ragoshell/core/utils/AiQueryAssistant.h"
+#include "ragoshell/utils/KeyStore.h"
 #include "ragoshell/utils/RagoCrypt.h"
 
+#include <QDir>
+#include <QFile>
+#include <QHash>
+#include <QTemporaryDir>
 #include <QVariantList>
 #include <QVariantMap>
+
+#include <memory>
 
 namespace
 {
@@ -12,6 +20,83 @@ namespace
     {
         return RagoShell::RagoCrypt::decrypt(map.value(key).toString().toStdString());
     }
+
+    class FakeAiKeyStore final : public RagoShell::KeyStore
+    {
+    public:
+        explicit FakeAiKeyStore(bool available = true) : _available(available) {}
+
+        QString name() const override { return QStringLiteral("FakeKeyStore"); }
+        bool isAvailable() override { return _available; }
+
+        Result read(const QString &account, QString *value, QString *) override
+        {
+            if (!_available)
+                return Result::Error;
+            auto it = _items.constFind(account);
+            if (it == _items.constEnd())
+                return Result::NotFound;
+            if (value)
+                *value = it.value();
+            return Result::Ok;
+        }
+
+        bool write(const QString &account, const QString &value, QString *error) override
+        {
+            if (!_available || _failWrites) {
+                if (error)
+                    *error = QStringLiteral("simulated write failure");
+                return false;
+            }
+            _items.insert(account, value);
+            return true;
+        }
+
+        bool remove(const QString &account, QString *error) override
+        {
+            if (!_available || _failRemoves) {
+                if (error)
+                    *error = QStringLiteral("simulated remove failure");
+                return false;
+            }
+            _items.remove(account);
+            return true;
+        }
+
+        void setAvailable(bool available) { _available = available; }
+        void setFailWrites(bool fail) { _failWrites = fail; }
+        void setFailRemoves(bool fail) { _failRemoves = fail; }
+        const QHash<QString, QString> &items() const { return _items; }
+
+    private:
+        bool _available;
+        bool _failWrites = false;
+        bool _failRemoves = false;
+        QHash<QString, QString> _items;
+    };
+
+    struct ScopedConfigDir
+    {
+        QTemporaryDir dir;
+        QByteArray prev;
+        bool hadPrev = false;
+
+        ScopedConfigDir()
+            : prev(qgetenv("RAGOSHELL_CONFIG_DIR")),
+              hadPrev(qEnvironmentVariableIsSet("RAGOSHELL_CONFIG_DIR"))
+        {
+            EXPECT_TRUE(dir.isValid());
+            qputenv("RAGOSHELL_CONFIG_DIR", dir.path().toUtf8());
+        }
+
+        ~ScopedConfigDir()
+        {
+            if (hadPrev)
+                qputenv("RAGOSHELL_CONFIG_DIR", prev);
+            else
+                qunsetenv("RAGOSHELL_CONFIG_DIR");
+        }
+    };
 }
 
 // The hosted "RagoShell AI" provider was removed (docs: BYOK only). A saved
@@ -67,7 +152,9 @@ TEST(SettingsManager_AiProviderMigration, SupportedOrDefaultProvider_IsLeftAlone
 // docs: T1. A key typed for one server is never sent to another one.
 TEST(SettingsManager_AiKeyOrigin, KeyFollowsTheOriginItWasSavedFor)
 {
-    RagoShell::SettingsManager s;
+    ScopedConfigDir cfg;
+    auto store = std::make_shared<FakeAiKeyStore>(true);
+    RagoShell::SettingsManager s(store);
     const QString p = QStringLiteral("openai_compat");
     s.setAiBaseUrl(p, QStringLiteral("https://api.openai.com/v1"));
     s.setAiApiKey(p, QStringLiteral("sk-openai"));
@@ -104,7 +191,9 @@ TEST(SettingsManager_AiKeyOrigin, KeyFollowsTheOriginItWasSavedFor)
 // docs: B7. Ollama keeps no key, starts at localhost and has its own time limit.
 TEST(SettingsManager_AiOllama, NoKeyDefaultAddressAndTimeLimit)
 {
-    RagoShell::SettingsManager s;
+    ScopedConfigDir cfg;
+    auto store = std::make_shared<FakeAiKeyStore>(true);
+    RagoShell::SettingsManager s(store);
     const QString o = QStringLiteral("ollama");
     EXPECT_EQ(s.aiBaseUrl(o), QStringLiteral("http://localhost:11434/v1"));
     EXPECT_TRUE(s.aiBaseUrl(QStringLiteral("openai_compat")).isEmpty());
@@ -229,4 +318,202 @@ TEST(SettingsManager_SchemaMigrationTests, LegacySchema_NormalizesModelEncryptsS
     EXPECT_FALSE(RagoShell::SettingsManager::migrateMapToCurrentSchema(config, &secondPrevious));
     EXPECT_EQ(RagoShell::SettingsManager::schemaVersion(), secondPrevious);
     EXPECT_EQ(afterFirstMigration, config);
+}
+
+TEST(SettingsManager_AiKeyStore, AiKeysStoredInKeyStoreNeverInJson)
+{
+    ScopedConfigDir cfg;
+    auto store = std::make_shared<FakeAiKeyStore>(true);
+    const QString cfgPath = cfg.dir.filePath(QStringLiteral("ragoshell.json"));
+
+    {
+        RagoShell::SettingsManager s(store);
+        s.setAiApiKey(QStringLiteral("anthropic"), QStringLiteral("sk-ant-secret"));
+        s.setAiApiKey(QStringLiteral("gemini"), QStringLiteral("AIza-secret-gem"));
+        s.setAiBaseUrl(QStringLiteral("openai_compat"), QStringLiteral("https://api.openai.com/v1"));
+        s.setAiApiKey(QStringLiteral("openai_compat"), QStringLiteral("sk-oai-secret"));
+        ASSERT_TRUE(s.save());
+    }
+
+    QFile f(cfgPath);
+    ASSERT_TRUE(f.open(QIODevice::ReadOnly));
+    const QByteArray jsonBytes = f.readAll();
+    f.close();
+    EXPECT_FALSE(jsonBytes.contains("apiKeyEncrypted"));
+    EXPECT_FALSE(jsonBytes.contains("ApiKeyEncrypted"));
+    EXPECT_FALSE(jsonBytes.contains("sk-ant-secret"));
+    EXPECT_FALSE(jsonBytes.contains("AIza-secret-gem"));
+    EXPECT_FALSE(jsonBytes.contains("sk-oai-secret"));
+    EXPECT_EQ(store->items().size(), 3);
+
+    RagoShell::SettingsManager reloaded(store);
+    EXPECT_EQ(reloaded.aiApiKey(QStringLiteral("anthropic")), QStringLiteral("sk-ant-secret"));
+    EXPECT_EQ(reloaded.aiApiKey(QStringLiteral("gemini")), QStringLiteral("AIza-secret-gem"));
+    EXPECT_EQ(reloaded.aiApiKey(QStringLiteral("openai_compat")), QStringLiteral("sk-oai-secret"));
+
+    // Changing origin forgets the key and removes its KeyStore slot on save().
+    reloaded.setAiBaseUrl(QStringLiteral("openai_compat"), QStringLiteral("https://evil.example/v1"));
+    EXPECT_TRUE(reloaded.aiApiKey(QStringLiteral("openai_compat")).isEmpty());
+    store->setFailRemoves(true);
+    ASSERT_TRUE(reloaded.save());
+    EXPECT_EQ(store->items().size(), 3); // failed remove leaves prior slot intact rather than ignoring error
+    store->setFailRemoves(false);
+    ASSERT_TRUE(reloaded.save());
+    EXPECT_EQ(store->items().size(), 2);
+
+    RagoShell::SettingsManager afterMove(store);
+    EXPECT_TRUE(afterMove.aiApiKey(QStringLiteral("openai_compat")).isEmpty());
+}
+
+TEST(SettingsManager_AiKeyStore, LegacyEncryptedAiKeysMigrateToKeyStoreAndScrubJson)
+{
+    ScopedConfigDir cfg;
+    RagoShell::RagoCrypt::initKey();
+    const QString cfgPath = cfg.dir.filePath(QStringLiteral("ragoshell.json"));
+
+    const QString encAnt = QString::fromStdString(RagoShell::RagoCrypt::encrypt("sk-ant-legacy"));
+    const QString encOai = QString::fromStdString(
+        RagoShell::RagoCrypt::encrypt("https://api.openai.com:443\nsk-oai-legacy"));
+    const QByteArray legacyJson = QStringLiteral(
+        "{\n"
+        "  \"version\": \"2.0\",\n"
+        "  \"aiAssistant\": {\n"
+        "    \"enabled\": true,\n"
+        "    \"provider\": \"openai_compat\",\n"
+        "    \"apiKeyEncrypted\": \"%1\",\n"
+        "    \"openai_compatBaseUrl\": \"https://api.openai.com/v1\",\n"
+        "    \"openai_compatApiKeyEncrypted\": \"%2\"\n"
+        "  }\n"
+        "}\n").arg(encAnt, encOai).toUtf8();
+    {
+        QFile f(cfgPath);
+        ASSERT_TRUE(f.open(QIODevice::WriteOnly | QIODevice::Truncate));
+        ASSERT_EQ(f.write(legacyJson), legacyJson.size());
+    }
+
+    auto store = std::make_shared<FakeAiKeyStore>(true);
+    RagoShell::SettingsManager migrated(store);
+    EXPECT_EQ(migrated.aiApiKey(QStringLiteral("anthropic")), QStringLiteral("sk-ant-legacy"));
+    EXPECT_EQ(migrated.aiApiKey(QStringLiteral("openai_compat")), QStringLiteral("sk-oai-legacy"));
+    EXPECT_EQ(store->items().size(), 2);
+
+    QFile scrubbed(cfgPath);
+    ASSERT_TRUE(scrubbed.open(QIODevice::ReadOnly));
+    const QByteArray updatedBytes = scrubbed.readAll();
+    scrubbed.close();
+    EXPECT_FALSE(updatedBytes.contains("apiKeyEncrypted"));
+    EXPECT_FALSE(updatedBytes.contains("ApiKeyEncrypted"));
+    EXPECT_FALSE(updatedBytes.contains("sk-ant-legacy"));
+    EXPECT_FALSE(updatedBytes.contains("sk-oai-legacy"));
+
+    RagoShell::SettingsManager nextStart(store);
+    EXPECT_EQ(nextStart.aiApiKey(QStringLiteral("anthropic")), QStringLiteral("sk-ant-legacy"));
+    EXPECT_EQ(nextStart.aiApiKey(QStringLiteral("openai_compat")), QStringLiteral("sk-oai-legacy"));
+}
+
+TEST(SettingsManager_AiKeyStore, UnavailableKeyStoreKeepsAiKeysInSessionMemoryOnly)
+{
+    ScopedConfigDir cfg;
+    const QString cfgPath = cfg.dir.filePath(QStringLiteral("ragoshell.json"));
+
+    {
+        RagoShell::SettingsManager s(nullptr);
+        s.setAiApiKey(QStringLiteral("anthropic"), QStringLiteral("sk-session-only"));
+        ASSERT_TRUE(s.save());
+        EXPECT_EQ(s.aiApiKey(QStringLiteral("anthropic")), QStringLiteral("sk-session-only"));
+    }
+
+    QFile f(cfgPath);
+    ASSERT_TRUE(f.open(QIODevice::ReadOnly));
+    const QByteArray jsonBytes = f.readAll();
+    f.close();
+    EXPECT_FALSE(jsonBytes.contains("apiKeyEncrypted"));
+    EXPECT_FALSE(jsonBytes.contains("sk-session-only"));
+
+    RagoShell::SettingsManager reloaded(nullptr);
+    EXPECT_TRUE(reloaded.aiApiKey(QStringLiteral("anthropic")).isEmpty());
+}
+
+TEST(SettingsManager_AiKeyStore, ScopedConfigDirIsolatesAiKeyStoreSlotsBetweenProfiles)
+{
+    auto sharedStore = std::make_shared<FakeAiKeyStore>(true);
+    {
+        ScopedConfigDir cfgA;
+        RagoShell::SettingsManager profileA(sharedStore);
+        profileA.setAiApiKey(QStringLiteral("anthropic"), QStringLiteral("sk-profile-a"));
+        ASSERT_TRUE(profileA.save());
+    }
+    {
+        ScopedConfigDir cfgB;
+        RagoShell::SettingsManager profileB(sharedStore);
+        EXPECT_TRUE(profileB.aiApiKey(QStringLiteral("anthropic")).isEmpty());
+        profileB.setAiApiKey(QStringLiteral("anthropic"), QStringLiteral("sk-profile-b"));
+        ASSERT_TRUE(profileB.save());
+        RagoShell::SettingsManager reloadB(sharedStore);
+        EXPECT_EQ(reloadB.aiApiKey(QStringLiteral("anthropic")), QStringLiteral("sk-profile-b"));
+    }
+    EXPECT_EQ(sharedStore->items().size(), 2);
+}
+
+TEST(SettingsManager_AiKeyStore, LegacyAiKeysPreservedWhenUnavailableOrWriteFailsAndScrubbedInSchemaBackup)
+{
+    ScopedConfigDir cfg;
+    RagoShell::RagoCrypt::initKey();
+    const QString cfgPath = cfg.dir.filePath(QStringLiteral("ragoshell.json"));
+    const QString bakPath = cfgPath + QStringLiteral(".bak-1.0");
+    const QString encAnt = QString::fromStdString(RagoShell::RagoCrypt::encrypt("sk-keep-me"));
+    const QByteArray legacyV1 = QStringLiteral(
+        "{\n"
+        "  \"version\": \"1.0\",\n"
+        "  \"aiAssistant\": {\n"
+        "    \"enabled\": true,\n"
+        "    \"provider\": \"anthropic\",\n"
+        "    \"apiKeyEncrypted\": \"%1\"\n"
+        "  }\n"
+        "}\n").arg(encAnt).toUtf8();
+    {
+        QFile f(cfgPath);
+        ASSERT_TRUE(f.open(QIODevice::WriteOnly | QIODevice::Truncate));
+        ASSERT_EQ(f.write(legacyV1), legacyV1.size());
+    }
+
+    // 1. KeyStore unavailable: legacy key stays usable in RAM and is NOT deleted from disk.
+    auto store = std::make_shared<FakeAiKeyStore>(false);
+    {
+        RagoShell::SettingsManager offline(store);
+        EXPECT_EQ(offline.aiApiKey(QStringLiteral("anthropic")), QStringLiteral("sk-keep-me"));
+    }
+    {
+        QFile f(cfgPath);
+        ASSERT_TRUE(f.open(QIODevice::ReadOnly));
+        EXPECT_TRUE(f.readAll().contains("apiKeyEncrypted"));
+    }
+
+    // 2. KeyStore available but write fails: legacy key is still preserved on disk.
+    store->setAvailable(true);
+    store->setFailWrites(true);
+    {
+        RagoShell::SettingsManager failing(store);
+        EXPECT_EQ(failing.aiApiKey(QStringLiteral("anthropic")), QStringLiteral("sk-keep-me"));
+    }
+    {
+        QFile f(cfgPath);
+        ASSERT_TRUE(f.open(QIODevice::ReadOnly));
+        EXPECT_TRUE(f.readAll().contains("apiKeyEncrypted"));
+    }
+
+    // 3. KeyStore succeeds: schema migration + key migration run and scrub both main config and .bak-1.0.
+    store->setFailWrites(false);
+    {
+        RagoShell::SettingsManager okMgr(store);
+        EXPECT_EQ(okMgr.aiApiKey(QStringLiteral("anthropic")), QStringLiteral("sk-keep-me"));
+        EXPECT_EQ(store->items().size(), 1);
+    }
+    for (const QString &p : {cfgPath, bakPath}) {
+        QFile checkFile(p);
+        ASSERT_TRUE(checkFile.open(QIODevice::ReadOnly)) << p.toStdString();
+        const QByteArray bytes = checkFile.readAll();
+        EXPECT_FALSE(bytes.contains("apiKeyEncrypted")) << p.toStdString();
+        EXPECT_FALSE(bytes.contains("sk-keep-me")) << p.toStdString();
+    }
 }

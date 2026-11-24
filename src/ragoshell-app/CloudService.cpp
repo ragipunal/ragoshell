@@ -55,7 +55,8 @@ namespace RagoShell
         if (!headlessRun) {
             _client->restoreOfflineSession();
             // Keeps the hosted gateway token fresh without the manual refresh (docs/HostedGateway.md §9.8).
-            _client->setAutoRefreshEnabled(true);
+            if (!_settings || !_settings->disableHttpsFeatures())
+                _client->setAutoRefreshEnabled(true);
         }
     }
 
@@ -213,10 +214,11 @@ namespace RagoShell
     {
         if (_debugMode == 2)
             return true;
-        // ValidOnline only — in grace the gateway would deny anyway, so the
-        // channel stays hidden (8.5 security review, finding 5).
+        // ValidOnline and unexpired only — in grace or past exp the gateway would
+        // deny anyway, so the channel stays hidden (8.5 security review, finding 5).
         return _client && _client->isSignedIn()
-            && _client->entitlementState() == EntitlementState::ValidOnline
+            && (!_settings || !_settings->disableHttpsFeatures())
+            && _client->hasActiveOnlineEntitlement()
             && _client->features().hostedBridge;
     }
 
@@ -331,10 +333,11 @@ namespace RagoShell
     QString CloudService::hostedTokenMissingMessage()
     {
         if (_client && _client->isSignedIn()
-            && _client->entitlementState() == EntitlementState::ValidOnline
+            && _client->hasActiveOnlineEntitlement()
             && !_client->features().hostedBridge)
             return tr("The cloud bridge is not enabled for this account.");
-        if (_client && _client->isSignedIn()) {
+        if (_client && _client->isSignedIn()
+            && (!_settings || !_settings->disableHttpsFeatures())) {
             if (!_client->isBusy()) // repeated clicks must not restart a refresh already running
                 _client->refreshAccountAndEntitlements();
             return tr("Your cloud access is being renewed. Try again in a few seconds.");

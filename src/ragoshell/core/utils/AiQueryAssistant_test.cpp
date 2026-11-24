@@ -999,6 +999,8 @@ TEST(AiQueryAssistantTest, log_redaction_and_lookalike_hosts)
     EXPECT_FALSE(redactSecrets("key AIzaSyD-0123456789abcdefghijk is invalid").contains("AIzaSy"));
     EXPECT_FALSE(redactSecrets("Authorization: Bearer abc.def").contains("abc.def"));
     EXPECT_FALSE(redactSecrets("token 0123456789abcdef0123456789abcdef!").contains("0123456789abcdef0123"));
+    EXPECT_EQ(redactSecrets("upstream rejected key my+short/key=99", "my+short/key=99"),
+              "upstream rejected key [redacted]");
     // Ordinary words and model names stay readable.
     EXPECT_EQ(redactSecrets("claude-sonnet-5-5 skipped: rate limit (HTTP 429), skeleton risk"),
               "claude-sonnet-5-5 skipped: rate limit (HTTP 429), skeleton risk");
@@ -1114,10 +1116,23 @@ TEST(AiQueryAssistantTest, local_addresses_and_scope)
     EXPECT_EQ(AiQueryAssistant::hostScope("https://gpu-box/v1"), HostScope::Internet);
     EXPECT_EQ(AiQueryAssistant::hostScope("https://api.openai.com/v1"), HostScope::Internet);
     EXPECT_EQ(AiQueryAssistant::hostScope("https://localhost.evil.example/v1"), HostScope::Internet);
-    // Carrier-grade NAT space is shared with other customers: not local,
-    // so no plain http there either.
+    // Carrier-grade NAT, link-local, and cloud IMDS ranges must never be reachable over plain http.
     EXPECT_EQ(AiQueryAssistant::hostScope("http://100.64.1.2:11434/v1"), HostScope::Internet);
     EXPECT_EQ(AiQueryAssistant::checkBaseUrl("http://100.100.5.5:11434/v1", false, true).error,
+              BaseUrlError::PlainHttpPublic);
+    EXPECT_EQ(AiQueryAssistant::hostScope("http://169.254.169.254/latest/meta-data"), HostScope::Internet);
+    EXPECT_EQ(AiQueryAssistant::checkBaseUrl("http://169.254.169.254/latest/meta-data", false, true).error,
+              BaseUrlError::PlainHttpPublic);
+    EXPECT_EQ(AiQueryAssistant::checkBaseUrl("http://169.254.10.1:11434/v1", false, true).error,
+              BaseUrlError::PlainHttpPublic);
+    EXPECT_EQ(AiQueryAssistant::hostScope("http://[fe80::1]:11434/v1"), HostScope::Internet);
+    EXPECT_EQ(AiQueryAssistant::checkBaseUrl("http://[fe80::1]:11434/v1", false, true).error,
+              BaseUrlError::PlainHttpPublic);
+    EXPECT_EQ(AiQueryAssistant::hostScope("http://[fd00:ec2::254]/v1"), HostScope::Internet);
+    EXPECT_EQ(AiQueryAssistant::checkBaseUrl("http://[fd00:ec2::254]/v1", false, true).error,
+              BaseUrlError::PlainHttpPublic);
+    EXPECT_EQ(AiQueryAssistant::hostScope("http://[::ffff:169.254.169.254]/v1"), HostScope::Internet);
+    EXPECT_EQ(AiQueryAssistant::checkBaseUrl("http://[::ffff:169.254.169.254]/v1", false, true).error,
               BaseUrlError::PlainHttpPublic);
     EXPECT_EQ(AiQueryAssistant::hostScope(""), HostScope::Internet);
 }

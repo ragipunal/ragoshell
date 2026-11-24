@@ -99,8 +99,8 @@ namespace RagoShell
         QString urlOrigin(const QString &url);
         /// Host shown as "data goes to <host>" (punycode for look-alike names).
         QString urlHost(const QString &url);
-        /// Text for the log with key-looking parts replaced by "[redacted]".
-        QString redactSecrets(const QString &text);
+        /// Text for the log with key-looking parts and any active key replaced by "[redacted]".
+        QString redactSecrets(const QString &text, const QString &activeSecret = {});
 
         /// Stable ids used in settings: "anthropic", "gemini", "openai_compat", "ollama".
         QStringList providerIds();

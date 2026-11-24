@@ -151,9 +151,10 @@ namespace RagoShell
         bool isOfflineGraceActive() const noexcept { return m_entitlementState == EntitlementState::ValidOfflineGrace; }
 
         /// The cached entitlement+jwt for the hosted web gateway hello
-        /// (docs/HostedGateway.md §5). Empty when signed out / unverified;
+        /// (docs/HostedGateway.md §5). Empty when signed out / unverified / expired;
         /// the gateway re-verifies it authoritatively anyway.
         QString entitlementJwt() const;
+        bool hasActiveOnlineEntitlement() const;
 
         QString lastErrorCode() const { return m_lastErrorCode; }
         QString lastErrorMessage() const { return m_lastErrorMessage; }

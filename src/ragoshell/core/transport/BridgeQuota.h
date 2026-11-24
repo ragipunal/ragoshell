@@ -36,10 +36,18 @@ namespace RagoShell
         /// returns false (and adds nothing) when it would cross it.
         bool consume(const QString &account, qint64 bytes, qint64 nowSec);
 
+        /// Adds `bytes` for `account` when within the limit; when it would
+        /// cross the limit, exhausts the remaining quota up to the limit and
+        /// returns false so subsequent handshakes fail closed immediately.
+        bool consumeOrExhaust(const QString &account, qint64 bytes, qint64 nowSec);
+
         /// True when the account has no transfer left this month.
         bool exhausted(const QString &account, qint64 nowSec);
 
         qint64 used(const QString &account, qint64 nowSec);
+
+        /// Exact IEEE-754 double integer ceiling used in persisted JSON.
+        static constexpr qint64 kMaxSafeJsonBytes = (1LL << 53) - 1;
 
         /// Aggregates for the status file (§9.7): all accounts together, no ids.
         struct Totals
@@ -65,6 +73,7 @@ namespace RagoShell
 
     private:
         void rollMonth(qint64 nowSec);
+        bool recordTransfer(const QString &account, qint64 bytes, qint64 nowSec, bool exhaustOnOver);
 
         QString _path;
         qint64 _limit;
