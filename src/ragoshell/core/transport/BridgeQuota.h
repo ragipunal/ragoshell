@@ -1,9 +1,12 @@
 #pragma once
 
+#include <QByteArray>
 #include <QDateTime>
 #include <QHash>
 #include <QSet>
 #include <QString>
+
+#include <array>
 
 namespace RagoShell
 {
@@ -37,6 +40,16 @@ namespace RagoShell
         bool exhausted(const QString &account, qint64 nowSec);
 
         qint64 used(const QString &account, qint64 nowSec);
+
+        /// Aggregates for the status file (§9.7): all accounts together, no ids.
+        struct Totals
+        {
+            QString month;
+            qint64 bytes = 0;
+            int accounts = 0;
+            int exhausted = 0;
+        };
+        Totals totals(qint64 nowSec);
         qint64 monthlyLimit() const { return _limit; }
         bool isDirty() const { return _dirty; }
         /// False after kMaxSaveFailures failed saves in a row: the counters
@@ -60,6 +73,40 @@ namespace RagoShell
         bool _dirty = false;
         int _saveFailures = 0;
     };
+
+    /// WebSocket connections refused at accept because every bridge slot was taken, per minute
+    /// over the last hour (§9.7; threat Q8 of §9.5).
+    class RefusalWindow
+    {
+    public:
+        void add(qint64 nowSec);
+        int lastHour(qint64 nowSec) const;
+
+    private:
+        std::array<qint64, 60> _minute{};
+        std::array<int, 60> _count{};
+    };
+
+    /// Aggregate, account-free status of the hosted bridge, written once a
+    /// minute for the host check (docs/HostedGateway.md §9.7).
+    struct BridgeStatus
+    {
+        qint64 writtenAt = 0;
+        QString month;
+        int sessions = 0;
+        int maxSessions = 0;
+        int fullRefusals1h = 0;
+        qint64 monthlyBytes = 0;
+        qint64 monthlyLimit = 0;
+        int accounts = 0;
+        int accountsExhausted = 0;
+        bool quotaHealthy = true;
+    };
+
+    /// "key=value" lines, integers only (the month as YYYY-MM).
+    QByteArray formatBridgeStatus(const BridgeStatus &status);
+    /// Writes the status atomically, mode 0644 (it holds no account data).
+    bool writeBridgeStatus(const QString &path, const BridgeStatus &status, QString *error);
 
     /// Accounts whose hosted bridge access the operator switched off
     /// (docs/HostedGateway.md §9.4): one account UUID per line, '#' starts a

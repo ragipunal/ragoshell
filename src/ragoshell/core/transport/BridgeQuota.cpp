@@ -9,6 +9,7 @@
 #include <QSaveFile>
 #include <QTimeZone>
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 
@@ -173,6 +174,92 @@ namespace RagoShell
     {
         rollMonth(nowSec);
         return _bytes.value(accountKey(account));
+    }
+
+    BridgeQuota::Totals BridgeQuota::totals(qint64 nowSec)
+    {
+        rollMonth(nowSec);
+        Totals t;
+        t.month = _month;
+        for (auto it = _bytes.cbegin(); it != _bytes.cend(); ++it) {
+            if (it.value() <= 0)
+                continue;
+            ++t.accounts;
+            t.bytes += it.value();
+            if (it.value() >= _limit)
+                ++t.exhausted;
+        }
+        return t;
+    }
+
+    void RefusalWindow::add(qint64 nowSec)
+    {
+        const qint64 minute = nowSec / 60;
+        const auto i = static_cast<size_t>(((minute % 60) + 60) % 60);
+        if (_minute[i] != minute) {
+            _minute[i] = minute;
+            _count[i] = 0;
+        }
+        if (_count[i] < std::numeric_limits<int>::max())
+            ++_count[i];
+    }
+
+    int RefusalWindow::lastHour(qint64 nowSec) const
+    {
+        const qint64 minute = nowSec / 60;
+        qint64 sum = 0;
+        for (size_t i = 0; i < _minute.size(); ++i) {
+            const qint64 age = minute - _minute[i];
+            if (_count[i] > 0 && age >= 0 && age < 60)
+                sum += _count[i];
+        }
+        return int(std::min<qint64>(sum, std::numeric_limits<int>::max()));
+    }
+
+    QByteArray formatBridgeStatus(const BridgeStatus &s)
+    {
+        static const QRegularExpression monthRe(QStringLiteral("^[0-9]{4}-[0-9]{2}$"));
+        QByteArray out;
+        const auto line = [&out](const char *key, qint64 value) {
+            out += key;
+            out += '=';
+            out += QByteArray::number(std::max<qint64>(value, 0));
+            out += '\n';
+        };
+        line("version", 1);
+        line("written_at", s.writtenAt);
+        out += "month=";
+        out += monthRe.match(s.month).hasMatch() ? s.month.toLatin1() : QByteArray("0000-00");
+        out += '\n';
+        line("sessions", s.sessions);
+        line("max_sessions", s.maxSessions);
+        line("full_refusals_1h", s.fullRefusals1h);
+        line("monthly_bytes", s.monthlyBytes);
+        line("monthly_limit", s.monthlyLimit);
+        line("accounts", s.accounts);
+        line("accounts_exhausted", s.accountsExhausted);
+        line("quota_healthy", s.quotaHealthy ? 1 : 0);
+        return out;
+    }
+
+    bool writeBridgeStatus(const QString &path, const BridgeStatus &status, QString *error)
+    {
+        QSaveFile f(path);
+        if (!f.open(QIODevice::WriteOnly)) {
+            if (error)
+                *error = QStringLiteral("cannot write status file: %1").arg(f.errorString());
+            return false;
+        }
+        // Aggregates only: readable by the host check running as another user.
+        f.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ReadGroup
+                         | QFileDevice::ReadOther);
+        f.write(formatBridgeStatus(status));
+        if (!f.commit()) {
+            if (error)
+                *error = QStringLiteral("cannot write status file: %1").arg(f.errorString());
+            return false;
+        }
+        return true;
     }
 
     bool AccountDenyList::reload(QString *error)

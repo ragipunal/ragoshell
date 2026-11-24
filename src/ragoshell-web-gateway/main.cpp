@@ -6,6 +6,7 @@
 // reverse proxy's job; SSRF egress filtering runs on every connect op.
 
 #include <QCoreApplication>
+#include <QDateTime>
 #include <QDebug>
 #include <QDir>
 #include <QFile>
@@ -214,6 +215,7 @@ int main(int argc, char *argv[])
     }
     const QString quotaFile = qEnvironmentVariable("RAGOSHELL_GW_QUOTA_FILE");
     const QString denyFile = qEnvironmentVariable("RAGOSHELL_GW_DENY_FILE");
+    const QString statusFile = qEnvironmentVariable("RAGOSHELL_GW_STATUS_FILE");
 
     if (port < 1 || port > 65535) {
         QTextStream(stderr) << "ragoshell-web-gateway: RAGOSHELL_GW_PORT must "
@@ -461,12 +463,14 @@ int main(int argc, char *argv[])
     // Host stays unchecked (requiredHost empty): a public gateway cannot
     // enumerate its own names and the threat model does not need it.
     int sessions = 0;
+    auto fullRefusals = std::make_shared<RagoShell::RefusalWindow>();
     QObject::connect(&http, &QAbstractHttpServer::newWebSocketConnection,
                      &app, [&] {
         auto socket = http.nextPendingWebSocketConnection();
         if (!socket)
             return;
         if (sessions >= maxSessions) {
+            fullRefusals->add(QDateTime::currentSecsSinceEpoch());
             socket->close(QWebSocketProtocol::CloseCodePolicyViolated,
                           QStringLiteral("too many sessions"));
             return;
@@ -483,6 +487,37 @@ int main(int argc, char *argv[])
                              session->deleteLater();
                          });
     });
+
+    // Aggregate status for the host check (docs/HostedGateway.md §9.7): once
+    // at start and every minute; no account data, so mode 0644.
+    if (!statusFile.isEmpty() && hosted.quota) {
+        auto quota = hosted.quota;
+        const auto writeStatus = [&sessions, fullRefusals, quota, statusFile, maxSessions] {
+            const qint64 now = QDateTime::currentSecsSinceEpoch();
+            const RagoShell::BridgeQuota::Totals t = quota->totals(now);
+            RagoShell::BridgeStatus st;
+            st.writtenAt = now;
+            st.month = t.month;
+            st.sessions = sessions;
+            st.maxSessions = int(maxSessions);
+            st.fullRefusals1h = fullRefusals->lastHour(now);
+            st.monthlyBytes = t.bytes;
+            st.monthlyLimit = quota->monthlyLimit();
+            st.accounts = t.accounts;
+            st.accountsExhausted = t.exhausted;
+            st.quotaHealthy = quota->healthy();
+            QString err;
+            if (!RagoShell::writeBridgeStatus(statusFile, st, &err))
+                qWarning() << "ragoshell-web-gateway:" << qPrintable(err);
+        };
+        writeStatus();
+        auto *statusTimer = new QTimer(&app);
+        QObject::connect(statusTimer, &QTimer::timeout, &app, writeStatus);
+        statusTimer->start(60 * 1000);
+    } else if (!statusFile.isEmpty()) {
+        QTextStream(stderr) << "ragoshell-web-gateway: WARNING — RAGOSHELL_GW_STATUS_FILE "
+                               "is used in hosted mode only; ignored\n";
+    }
 
     QTextStream(stdout) << "ragoshell-web-gateway: http+ws on " << bind << ":"
                         << port << " (ws path " << wsPath << ", web root "

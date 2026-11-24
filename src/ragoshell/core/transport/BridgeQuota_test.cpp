@@ -200,3 +200,73 @@ TEST(AccountDenyListTest, reads_uuids_and_reloads_on_change)
     EXPECT_TRUE(off.reload());
     EXPECT_FALSE(off.contains(kAccountA));
 }
+
+TEST(BridgeQuotaTest, totals_aggregate_the_current_month_without_ids)
+{
+    BridgeQuota q(QString(), 1000);
+    const qint64 now = utc(2026, 11, 24);
+    EXPECT_TRUE(q.consume(kAccountA, 1000, now));
+    EXPECT_TRUE(q.consume(kAccountB, 250, now));
+    BridgeQuota::Totals t = q.totals(now);
+    EXPECT_EQ(t.month, QStringLiteral("2026-11"));
+    EXPECT_EQ(t.bytes, 1250);
+    EXPECT_EQ(t.accounts, 2);
+    EXPECT_EQ(t.exhausted, 1);
+    t = q.totals(utc(2026, 12, 1));
+    EXPECT_EQ(t.month, QStringLiteral("2026-12"));
+    EXPECT_EQ(t.bytes, 0);
+    EXPECT_EQ(t.accounts, 0);
+}
+
+TEST(BridgeQuotaTest, refusal_window_counts_the_last_hour_only)
+{
+    RefusalWindow w;
+    const qint64 t0 = utc(2026, 11, 24, 10);
+    EXPECT_EQ(w.lastHour(t0), 0);
+    w.add(t0);
+    w.add(t0 + 5);
+    w.add(t0 + 30 * 60);
+    EXPECT_EQ(w.lastHour(t0 + 30 * 60), 3);
+    EXPECT_EQ(w.lastHour(t0 + 60 * 60), 1);      // the first minute has left the window
+    w.add(t0 + 60 * 60);                          // same bucket index as t0, a new minute
+    EXPECT_EQ(w.lastHour(t0 + 60 * 60), 2);
+    EXPECT_EQ(w.lastHour(t0 + 3 * 60 * 60), 0);
+}
+
+TEST(BridgeQuotaTest, status_file_is_aggregate_key_value_and_world_readable)
+{
+    BridgeStatus st;
+    st.writtenAt = 1795000000;
+    st.month = QStringLiteral("2026-11");
+    st.sessions = 3;
+    st.maxSessions = 8;
+    st.fullRefusals1h = 2;
+    st.monthlyBytes = 123456789;
+    st.monthlyLimit = 1000000000;
+    st.accounts = 4;
+    st.accountsExhausted = 1;
+    st.quotaHealthy = false;
+    const QByteArray text = formatBridgeStatus(st);
+    EXPECT_EQ(text, QByteArray("version=1\nwritten_at=1795000000\nmonth=2026-11\nsessions=3\nmax_sessions=8\n"
+                               "full_refusals_1h=2\nmonthly_bytes=123456789\nmonthly_limit=1000000000\n"
+                               "accounts=4\naccounts_exhausted=1\nquota_healthy=0\n"));
+    st.month = QStringLiteral("x\nevil=1");
+    st.sessions = -5;
+    const QByteArray sanitized = formatBridgeStatus(st);
+    EXPECT_TRUE(sanitized.contains("month=0000-00\n"));
+    EXPECT_TRUE(sanitized.contains("sessions=0\n"));
+    EXPECT_FALSE(sanitized.contains("evil"));
+
+    QTemporaryDir dir;
+    const QString path = dir.filePath(QStringLiteral("status"));
+    QString err;
+    ASSERT_TRUE(writeBridgeStatus(path, st, &err)) << err.toStdString();
+    QFile f(path);
+    ASSERT_TRUE(f.open(QIODevice::ReadOnly));
+    EXPECT_EQ(f.readAll(), sanitized);
+#ifndef Q_OS_WIN
+    EXPECT_TRUE(f.permissions().testFlag(QFileDevice::ReadOther));
+    EXPECT_FALSE(f.permissions().testFlag(QFileDevice::WriteOther));
+#endif
+    EXPECT_FALSE(writeBridgeStatus(dir.filePath(QStringLiteral("missing/dir/status")), st, &err));
+}

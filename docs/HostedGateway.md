@@ -267,3 +267,17 @@ empty the file. Lines that are not UUIDs are ignored with a warning. The runbook
   manual refresh in Preferences, so the bridge refuses a 7-day-old token
   until the user refreshes; and the client strings still say "Pro". Both
   belong to the client release before the bridge goes live.
+
+### 9.7 Status file for monitoring — 2026-11-24
+
+`RAGOSHELL_GW_STATUS_FILE` (optional, hosted mode only): once at start and
+every minute the bridge writes aggregate `key=value` lines, integers only,
+atomically (`QSaveFile`), mode 0644 — `version`, `written_at`, `month`,
+`sessions`, `max_sessions`, `full_refusals_1h` (connections refused because
+every slot was taken, in the last hour: the signal for threat Q8),
+`monthly_bytes` (all accounts), `monthly_limit`, `accounts`,
+`accounts_exhausted`, `quota_healthy`. No account id or hash, no target.
+A malformed month is written as `0000-00`, negative values as 0. The host
+check `scripts/resource-alert.sh` in `ragoshell-infra` reads it and mails
+the operator (thresholds and threats: that repository's
+`docs/monitoring.md`, "Free cloud tier alarms").
