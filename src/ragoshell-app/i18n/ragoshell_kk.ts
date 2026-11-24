@@ -677,6 +677,14 @@
         <translation>Бас тарту</translation>
     </message>
     <message>
+        <source>%1 Cloud</source>
+        <translation>%1 Cloud</translation>
+    </message>
+    <message>
+        <source>%1 Cloud — sign-in required</source>
+        <translation>%1 Cloud — кіру қажет</translation>
+    </message>
+    <message>
         <source>Default</source>
         <translation>Әдепкі</translation>
     </message>
@@ -713,20 +721,12 @@
         <translation>Демо (браузерде)</translation>
     </message>
     <message>
-        <source>RagoShell Cloud (Pro)</source>
-        <translation>RagoShell Cloud (Pro)</translation>
-    </message>
-    <message>
         <source>Local Agent (localhost)</source>
         <translation>Жергілікті агент (localhost)</translation>
     </message>
     <message>
         <source>Custom Gateway (ws://…)</source>
         <translation>Реттелетін шлюз (ws://…)</translation>
-    </message>
-    <message>
-        <source>RagoShell Cloud (Pro) — sign-in required</source>
-        <translation>RagoShell Cloud (Pro) — кіру қажет</translation>
     </message>
     <message>
         <source>AI tools cannot use a connection through an SSH tunnel.</source>
@@ -3830,7 +3830,7 @@
     <name>RagoShell::AiAssistant</name>
     <message>
         <source>Is Ollama running? Start the Ollama app, or run &quot;ollama serve&quot; in a terminal.</source>
-        <translation>Ollama іске қосулы ма? Ollama қолданбасын іске қосыңыз немесе терминалда "ollama serve" орындаңыз.</translation>
+        <translation>Ollama іске қосулы ма? Ollama қолданбасын іске қосыңыз немесе терминалда &quot;ollama serve&quot; орындаңыз.</translation>
     </message>
     <message>
         <source>In the browser the server must also allow this page (CORS): for Ollama set OLLAMA_ORIGINS to this page&apos;s address; in LM Studio turn on CORS in the server settings.</source>
@@ -3950,7 +3950,7 @@
     </message>
     <message>
         <source>Ollama is running, but no model is installed. Download one in a terminal with &quot;ollama pull &lt;model&gt;&quot;, then test again.</source>
-        <translation>Ollama іске қосулы, бірақ орнатылған модель жоқ. Терминалда "ollama pull &lt;model&gt;" арқылы модель жүктеп алыңыз, содан кейін қайта тексеріңіз.</translation>
+        <translation>Ollama іске қосулы, бірақ орнатылған модель жоқ. Терминалда &quot;ollama pull &lt;model&gt;&quot; арқылы модель жүктеп алыңыз, содан кейін қайта тексеріңіз.</translation>
     </message>
     <message>
         <source>The server is running but lists no models. Download or load a model on the server, then test again.</source>
@@ -4067,6 +4067,18 @@
         <translation>Бұлтты есептік жазба қызметіне қосылу мүмкін болмады.</translation>
     </message>
     <message>
+        <source>The cloud bridge is not enabled for this account.</source>
+        <translation>Бұл тіркелгі үшін бұлт көпірі қосылмаған.</translation>
+    </message>
+    <message>
+        <source>Your cloud access is being renewed. Try again in a few seconds.</source>
+        <translation>Бұлтқа қол жеткізуіңіз жаңартылуда. Бірнеше секундтан кейін қайталап көріңіз.</translation>
+    </message>
+    <message>
+        <source>Sign in to your cloud account to use the cloud gateway.</source>
+        <translation>Бұлт шлюзін пайдалану үшін бұлт тіркелгіңізге кіріңіз.</translation>
+    </message>
+    <message>
         <source>Off</source>
         <translation type="unfinished">Өшірулі</translation>
     </message>
@@ -4126,10 +4138,6 @@
     <message>
         <source>Connecting to %1...</source>
         <translation>%1 серверіне қосылуда...</translation>
-    </message>
-    <message>
-        <source>Sign in with a Pro plan to use the cloud gateway.</source>
-        <translation>Бұлтты шлюзді пайдалану үшін Pro тарифімен кіріңіз.</translation>
     </message>
     <message>
         <source>Disconnected</source>

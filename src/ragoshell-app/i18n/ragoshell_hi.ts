@@ -677,6 +677,14 @@
         <translation>रद्द करें</translation>
     </message>
     <message>
+        <source>%1 Cloud</source>
+        <translation>%1 Cloud</translation>
+    </message>
+    <message>
+        <source>%1 Cloud — sign-in required</source>
+        <translation>%1 Cloud — साइन इन आवश्यक</translation>
+    </message>
+    <message>
         <source>Default</source>
         <translation>डिफ़ॉल्ट</translation>
     </message>
@@ -713,20 +721,12 @@
         <translation>डेमो (ब्राउज़र में)</translation>
     </message>
     <message>
-        <source>RagoShell Cloud (Pro)</source>
-        <translation>RagoShell Cloud (Pro)</translation>
-    </message>
-    <message>
         <source>Local Agent (localhost)</source>
         <translation>लोकल एजेंट (localhost)</translation>
     </message>
     <message>
         <source>Custom Gateway (ws://…)</source>
         <translation>कस्टम गेटवे (ws://…)</translation>
-    </message>
-    <message>
-        <source>RagoShell Cloud (Pro) — sign-in required</source>
-        <translation>RagoShell Cloud (Pro) — साइन इन आवश्यक</translation>
     </message>
     <message>
         <source>AI tools cannot use a connection through an SSH tunnel.</source>
@@ -3831,7 +3831,7 @@
     <name>RagoShell::AiAssistant</name>
     <message>
         <source>Is Ollama running? Start the Ollama app, or run &quot;ollama serve&quot; in a terminal.</source>
-        <translation>क्या Ollama चल रहा है? Ollama ऐप शुरू करें, या टर्मिनल में "ollama serve" चलाएँ।</translation>
+        <translation>क्या Ollama चल रहा है? Ollama ऐप शुरू करें, या टर्मिनल में &quot;ollama serve&quot; चलाएँ।</translation>
     </message>
     <message>
         <source>In the browser the server must also allow this page (CORS): for Ollama set OLLAMA_ORIGINS to this page&apos;s address; in LM Studio turn on CORS in the server settings.</source>
@@ -3951,7 +3951,7 @@
     </message>
     <message>
         <source>Ollama is running, but no model is installed. Download one in a terminal with &quot;ollama pull &lt;model&gt;&quot;, then test again.</source>
-        <translation>Ollama चल रहा है, लेकिन कोई मॉडल इंस्टॉल नहीं है। टर्मिनल में "ollama pull &lt;model&gt;" से एक मॉडल डाउनलोड करें, फिर दोबारा जाँचें।</translation>
+        <translation>Ollama चल रहा है, लेकिन कोई मॉडल इंस्टॉल नहीं है। टर्मिनल में &quot;ollama pull &lt;model&gt;&quot; से एक मॉडल डाउनलोड करें, फिर दोबारा जाँचें।</translation>
     </message>
     <message>
         <source>The server is running but lists no models. Download or load a model on the server, then test again.</source>
@@ -4068,6 +4068,18 @@
         <translation>क्लाउड खाता सेवा तक पहुँचा नहीं जा सका।</translation>
     </message>
     <message>
+        <source>The cloud bridge is not enabled for this account.</source>
+        <translation>इस खाते के लिए क्लाउड ब्रिज सक्षम नहीं है।</translation>
+    </message>
+    <message>
+        <source>Your cloud access is being renewed. Try again in a few seconds.</source>
+        <translation>आपकी क्लाउड पहुँच नवीनीकृत की जा रही है। कुछ सेकंड बाद फिर से प्रयास करें।</translation>
+    </message>
+    <message>
+        <source>Sign in to your cloud account to use the cloud gateway.</source>
+        <translation>क्लाउड गेटवे का उपयोग करने के लिए अपने क्लाउड खाते में साइन इन करें।</translation>
+    </message>
+    <message>
         <source>Off</source>
         <translation type="unfinished">बंद</translation>
     </message>
@@ -4127,10 +4139,6 @@
     <message>
         <source>Connecting to %1...</source>
         <translation>%1 से कनेक्ट हो रहा है...</translation>
-    </message>
-    <message>
-        <source>Sign in with a Pro plan to use the cloud gateway.</source>
-        <translation>क्लाउड गेटवे का उपयोग करने के लिए Pro प्लान से साइन इन करें।</translation>
     </message>
     <message>
         <source>Disconnected</source>

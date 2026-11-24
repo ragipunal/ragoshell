@@ -109,7 +109,7 @@
     </message>
     <message>
         <source>The AI assistant is off or not set up for %1. When it is on, Generate sends your request and this collection&apos;s field names and types (no document values unless you allow them) to the selected provider&apos;s API (Anthropic Claude, Google Gemini, an OpenAI-compatible server or Ollama). Turn it on and set it up in Preferences.</source>
-        <translation>AI yordamchisi oʻchiq yoki %1 uchun sozlanmagan. Yoqilganda Yaratish soʻrovingizni va bu toʻplamning maydon nomlari va turlarini (ruxsat bermasangiz, hujjat qiymatlarisiz) tanlangan provayderning API'siga (Anthropic Claude, Google Gemini, OpenAI bilan mos server yoki Ollama) yuboradi. Uni Sozlamalarda yoqing va sozlang.</translation>
+        <translation>AI yordamchisi oʻchiq yoki %1 uchun sozlanmagan. Yoqilganda Yaratish soʻrovingizni va bu toʻplamning maydon nomlari va turlarini (ruxsat bermasangiz, hujjat qiymatlarisiz) tanlangan provayderning API&apos;siga (Anthropic Claude, Google Gemini, OpenAI bilan mos server yoki Ollama) yuboradi. Uni Sozlamalarda yoqing va sozlang.</translation>
     </message>
     <message>
         <source>Preferences…</source>
@@ -677,6 +677,14 @@
         <translation>Bekor qilish</translation>
     </message>
     <message>
+        <source>%1 Cloud</source>
+        <translation>%1 Cloud</translation>
+    </message>
+    <message>
+        <source>%1 Cloud — sign-in required</source>
+        <translation>%1 Cloud — tizimga kirish talab qilinadi</translation>
+    </message>
+    <message>
         <source>Default</source>
         <translation>Standart</translation>
     </message>
@@ -713,20 +721,12 @@
         <translation>Demo (brauzer ichida)</translation>
     </message>
     <message>
-        <source>RagoShell Cloud (Pro)</source>
-        <translation>RagoShell Cloud (Pro)</translation>
-    </message>
-    <message>
         <source>Local Agent (localhost)</source>
         <translation>Mahalliy agent (localhost)</translation>
     </message>
     <message>
         <source>Custom Gateway (ws://…)</source>
         <translation>Maxsus shlyuz (ws://…)</translation>
-    </message>
-    <message>
-        <source>RagoShell Cloud (Pro) — sign-in required</source>
-        <translation>RagoShell Cloud (Pro) — tizimga kirish talab qilinadi</translation>
     </message>
     <message>
         <source>AI tools cannot use a connection through an SSH tunnel.</source>
@@ -3831,11 +3831,11 @@
     <name>RagoShell::AiAssistant</name>
     <message>
         <source>Is Ollama running? Start the Ollama app, or run &quot;ollama serve&quot; in a terminal.</source>
-        <translation>Ollama ishlayaptimi? Ollama ilovasini ishga tushiring yoki terminalda "ollama serve" buyrugʻini bajaring.</translation>
+        <translation>Ollama ishlayaptimi? Ollama ilovasini ishga tushiring yoki terminalda &quot;ollama serve&quot; buyrugʻini bajaring.</translation>
     </message>
     <message>
         <source>In the browser the server must also allow this page (CORS): for Ollama set OLLAMA_ORIGINS to this page&apos;s address; in LM Studio turn on CORS in the server settings.</source>
-        <translation>Brauzerda server bu sahifaga ham ruxsat berishi kerak (CORS): Ollama uchun OLLAMA_ORIGINS qiymatini bu sahifa manziliga oʻrnating; LM Studio'da server sozlamalarida CORS'ni yoqing.</translation>
+        <translation>Brauzerda server bu sahifaga ham ruxsat berishi kerak (CORS): Ollama uchun OLLAMA_ORIGINS qiymatini bu sahifa manziliga oʻrnating; LM Studio&apos;da server sozlamalarida CORS&apos;ni yoqing.</translation>
     </message>
     <message>
         <source>Enter the server address.</source>
@@ -3951,7 +3951,7 @@
     </message>
     <message>
         <source>Ollama is running, but no model is installed. Download one in a terminal with &quot;ollama pull &lt;model&gt;&quot;, then test again.</source>
-        <translation>Ollama ishlayapti, lekin oʻrnatilgan model yoʻq. Terminalda "ollama pull &lt;model&gt;" bilan model yuklab oling, soʻng qayta sinab koʻring.</translation>
+        <translation>Ollama ishlayapti, lekin oʻrnatilgan model yoʻq. Terminalda &quot;ollama pull &lt;model&gt;&quot; bilan model yuklab oling, soʻng qayta sinab koʻring.</translation>
     </message>
     <message>
         <source>The server is running but lists no models. Download or load a model on the server, then test again.</source>
@@ -4068,6 +4068,18 @@
         <translation>Bulut hisob xizmatiga ulanib boʻlmadi.</translation>
     </message>
     <message>
+        <source>The cloud bridge is not enabled for this account.</source>
+        <translation>Bu hisob uchun bulut ko‘prigi yoqilmagan.</translation>
+    </message>
+    <message>
+        <source>Your cloud access is being renewed. Try again in a few seconds.</source>
+        <translation>Bulutga kirish huquqingiz yangilanmoqda. Bir necha soniyadan keyin qayta urinib ko‘ring.</translation>
+    </message>
+    <message>
+        <source>Sign in to your cloud account to use the cloud gateway.</source>
+        <translation>Bulut shlyuzidan foydalanish uchun bulut hisobingizga kiring.</translation>
+    </message>
+    <message>
         <source>Off</source>
         <translation type="unfinished">Oʻchiq</translation>
     </message>
@@ -4127,10 +4139,6 @@
     <message>
         <source>Connecting to %1...</source>
         <translation>%1 ga ulanilmoqda...</translation>
-    </message>
-    <message>
-        <source>Sign in with a Pro plan to use the cloud gateway.</source>
-        <translation>Bulut shlyuzidan foydalanish uchun Pro tarifi bilan tizimga kiring.</translation>
     </message>
     <message>
         <source>Disconnected</source>

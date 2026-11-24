@@ -120,6 +120,9 @@ namespace RagoShell
         Q_INVOKABLE bool openManageAccountPortal();
         Q_INVOKABLE void updateDeviceName(const QString &name);
         Q_INVOKABLE void refreshStatus();
+        /// Message for a hosted-channel connect without a usable token: signed in -> starts a refresh and says
+        /// so; signed out -> asks to sign in (docs/HostedGateway.md §9.8).
+        QString hostedTokenMissingMessage();
         Q_INVOKABLE void signOut();
 
         bool syncActive() const;

@@ -678,6 +678,14 @@
         <translation>Отмена</translation>
     </message>
     <message>
+        <source>%1 Cloud</source>
+        <translation>%1 Cloud</translation>
+    </message>
+    <message>
+        <source>%1 Cloud — sign-in required</source>
+        <translation>%1 Cloud — требуется вход</translation>
+    </message>
+    <message>
         <source>Default</source>
         <translation>По умолчанию</translation>
     </message>
@@ -714,20 +722,12 @@
         <translation>Демо (в браузере)</translation>
     </message>
     <message>
-        <source>RagoShell Cloud (Pro)</source>
-        <translation>RagoShell Cloud (Pro)</translation>
-    </message>
-    <message>
         <source>Local Agent (localhost)</source>
         <translation>Локальный агент (localhost)</translation>
     </message>
     <message>
         <source>Custom Gateway (ws://…)</source>
         <translation>Свой шлюз (ws://…)</translation>
-    </message>
-    <message>
-        <source>RagoShell Cloud (Pro) — sign-in required</source>
-        <translation>RagoShell Cloud (Pro) — требуется вход</translation>
     </message>
     <message>
         <source>AI tools cannot use a connection through an SSH tunnel.</source>
@@ -4075,6 +4075,18 @@
         <translation>Не удалось связаться со службой облачного аккаунта.</translation>
     </message>
     <message>
+        <source>The cloud bridge is not enabled for this account.</source>
+        <translation>Облачный мост не включён для этой учётной записи.</translation>
+    </message>
+    <message>
+        <source>Your cloud access is being renewed. Try again in a few seconds.</source>
+        <translation>Доступ к облаку обновляется. Повторите попытку через несколько секунд.</translation>
+    </message>
+    <message>
+        <source>Sign in to your cloud account to use the cloud gateway.</source>
+        <translation>Войдите в облачную учётную запись, чтобы использовать облачный шлюз.</translation>
+    </message>
+    <message>
         <source>Off</source>
         <translation type="unfinished">Выключено</translation>
     </message>
@@ -4135,10 +4147,6 @@
     <message>
         <source>Connecting to %1...</source>
         <translation>Подключение к %1...</translation>
-    </message>
-    <message>
-        <source>Sign in with a Pro plan to use the cloud gateway.</source>
-        <translation>Войдите с тарифом Pro, чтобы использовать облачный шлюз.</translation>
     </message>
     <message>
         <source>Disconnected</source>

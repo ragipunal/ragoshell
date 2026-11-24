@@ -109,7 +109,7 @@
     </message>
     <message>
         <source>The AI assistant is off or not set up for %1. When it is on, Generate sends your request and this collection&apos;s field names and types (no document values unless you allow them) to the selected provider&apos;s API (Anthropic Claude, Google Gemini, an OpenAI-compatible server or Ollama). Turn it on and set it up in Preferences.</source>
-        <translation>AI asistanı kapalı ya da %1 için ayarlanmamış. Açıkken Oluştur, isteğinizi ve bu koleksiyonun alan adlarını ve türlerini (izin vermedikçe belge değerleri olmadan) seçilen sağlayıcının API'sine (Anthropic Claude, Google Gemini, OpenAI uyumlu bir sunucu ya da Ollama) gönderir. Tercihler'de açıp ayarlayın.</translation>
+        <translation>AI asistanı kapalı ya da %1 için ayarlanmamış. Açıkken Oluştur, isteğinizi ve bu koleksiyonun alan adlarını ve türlerini (izin vermedikçe belge değerleri olmadan) seçilen sağlayıcının API&apos;sine (Anthropic Claude, Google Gemini, OpenAI uyumlu bir sunucu ya da Ollama) gönderir. Tercihler&apos;de açıp ayarlayın.</translation>
     </message>
     <message>
         <source>Preferences…</source>
@@ -676,6 +676,14 @@
         <translation>İptal</translation>
     </message>
     <message>
+        <source>%1 Cloud</source>
+        <translation>%1 Cloud</translation>
+    </message>
+    <message>
+        <source>%1 Cloud — sign-in required</source>
+        <translation>%1 Cloud — oturum açmak gerekir</translation>
+    </message>
+    <message>
         <source>Default</source>
         <translation>Varsayılan</translation>
     </message>
@@ -712,20 +720,12 @@
         <translation>Demo (tarayıcı içinde)</translation>
     </message>
     <message>
-        <source>RagoShell Cloud (Pro)</source>
-        <translation>RagoShell Cloud (Pro)</translation>
-    </message>
-    <message>
         <source>Local Agent (localhost)</source>
         <translation>Yerel Aracı (localhost)</translation>
     </message>
     <message>
         <source>Custom Gateway (ws://…)</source>
         <translation>Özel Ağ Geçidi (ws://…)</translation>
-    </message>
-    <message>
-        <source>RagoShell Cloud (Pro) — sign-in required</source>
-        <translation>RagoShell Cloud (Pro) — oturum açmak gerekir</translation>
     </message>
     <message>
         <source>AI tools cannot use a connection through an SSH tunnel.</source>
@@ -3825,11 +3825,11 @@
     <name>RagoShell::AiAssistant</name>
     <message>
         <source>Is Ollama running? Start the Ollama app, or run &quot;ollama serve&quot; in a terminal.</source>
-        <translation>Ollama çalışıyor mu? Ollama uygulamasını başlatın ya da bir terminalde "ollama serve" çalıştırın.</translation>
+        <translation>Ollama çalışıyor mu? Ollama uygulamasını başlatın ya da bir terminalde &quot;ollama serve&quot; çalıştırın.</translation>
     </message>
     <message>
         <source>In the browser the server must also allow this page (CORS): for Ollama set OLLAMA_ORIGINS to this page&apos;s address; in LM Studio turn on CORS in the server settings.</source>
-        <translation>Tarayıcıda sunucunun bu sayfaya da izin vermesi gerekir (CORS): Ollama için OLLAMA_ORIGINS değerini bu sayfanın adresine ayarlayın; LM Studio'da sunucu ayarlarından CORS'u açın.</translation>
+        <translation>Tarayıcıda sunucunun bu sayfaya da izin vermesi gerekir (CORS): Ollama için OLLAMA_ORIGINS değerini bu sayfanın adresine ayarlayın; LM Studio&apos;da sunucu ayarlarından CORS&apos;u açın.</translation>
     </message>
     <message>
         <source>Enter the server address.</source>
@@ -3877,7 +3877,7 @@
     </message>
     <message>
         <source>Turn on the AI assistant and set up %1 in Preferences.</source>
-        <translation>Tercihler'de AI asistanını açın ve %1 ayarlarını yapın.</translation>
+        <translation>Tercihler&apos;de AI asistanını açın ve %1 ayarlarını yapın.</translation>
     </message>
     <message>
         <source>%1 skipped: %2.</source>
@@ -3898,7 +3898,7 @@
     <message>
         <source>No answer within %1 seconds. A local model can be slow, especially while it loads; you can raise the time limit in Preferences.</source>
         <extracomment>%1 = seconds. Local models can take long, especially while loading.</extracomment>
-        <translation>%1 saniye içinde yanıt gelmedi. Yerel bir model, özellikle yüklenirken, yavaş olabilir; süre sınırını Tercihler'de artırabilirsiniz.</translation>
+        <translation>%1 saniye içinde yanıt gelmedi. Yerel bir model, özellikle yüklenirken, yavaş olabilir; süre sınırını Tercihler&apos;de artırabilirsiniz.</translation>
     </message>
     <message>
         <source>The request timed out.</source>
@@ -3944,7 +3944,7 @@
     </message>
     <message>
         <source>Ollama is running, but no model is installed. Download one in a terminal with &quot;ollama pull &lt;model&gt;&quot;, then test again.</source>
-        <translation>Ollama çalışıyor ama kurulu model yok. Bir terminalde "ollama pull &lt;model&gt;" ile bir model indirin, sonra yeniden test edin.</translation>
+        <translation>Ollama çalışıyor ama kurulu model yok. Bir terminalde &quot;ollama pull &lt;model&gt;&quot; ile bir model indirin, sonra yeniden test edin.</translation>
     </message>
     <message>
         <source>The server is running but lists no models. Download or load a model on the server, then test again.</source>
@@ -4061,6 +4061,18 @@
         <translation>Bulut hesap hizmetine ulaşılamadı.</translation>
     </message>
     <message>
+        <source>The cloud bridge is not enabled for this account.</source>
+        <translation>Bu hesap için bulut köprüsü açık değil.</translation>
+    </message>
+    <message>
+        <source>Your cloud access is being renewed. Try again in a few seconds.</source>
+        <translation>Bulut erişiminiz yenileniyor. Birkaç saniye sonra yeniden deneyin.</translation>
+    </message>
+    <message>
+        <source>Sign in to your cloud account to use the cloud gateway.</source>
+        <translation>Bulut ağ geçidini kullanmak için bulut hesabınızla oturum açın.</translation>
+    </message>
+    <message>
         <source>Off</source>
         <translation>Kapalı</translation>
     </message>
@@ -4119,10 +4131,6 @@
     <message>
         <source>Connecting to %1...</source>
         <translation>%1 sunucusuna bağlanılıyor...</translation>
-    </message>
-    <message>
-        <source>Sign in with a Pro plan to use the cloud gateway.</source>
-        <translation>Bulut ağ geçidini kullanmak için Pro planıyla oturum açın.</translation>
     </message>
     <message>
         <source>Disconnected</source>

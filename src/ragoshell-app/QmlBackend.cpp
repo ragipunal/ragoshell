@@ -320,11 +320,10 @@ namespace RagoShell
                 // token is the cached entitlement+jwt — injected only into
                 // this in-memory clone, never written to settings.
                 if (clone->transportKind() == "hosted") {
-                    const QString jwt =
-                        QmlSingletonInstance<CloudService>::get()->entitlementJwt();
+                    CloudService *cloud = QmlSingletonInstance<CloudService>::get();
+                    const QString jwt = cloud->entitlementJwt();
                     if (jwt.isEmpty()) {
-                        emit self->connectionError(
-                            uuid, tr("Sign in with a Pro plan to use the cloud gateway."));
+                        emit self->connectionError(uuid, cloud->hostedTokenMissingMessage());
                         return;
                     }
                     clone->setTransportToken(jwt.toStdString());

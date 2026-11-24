@@ -677,6 +677,14 @@
         <translation>Cancelar</translation>
     </message>
     <message>
+        <source>%1 Cloud</source>
+        <translation>%1 Cloud</translation>
+    </message>
+    <message>
+        <source>%1 Cloud — sign-in required</source>
+        <translation>%1 Cloud — requer login</translation>
+    </message>
+    <message>
         <source>Default</source>
         <translation>Padrão</translation>
     </message>
@@ -713,20 +721,12 @@
         <translation>Demo (no navegador)</translation>
     </message>
     <message>
-        <source>RagoShell Cloud (Pro)</source>
-        <translation>RagoShell Cloud (Pro)</translation>
-    </message>
-    <message>
         <source>Local Agent (localhost)</source>
         <translation>Agente local (localhost)</translation>
     </message>
     <message>
         <source>Custom Gateway (ws://…)</source>
         <translation>Gateway personalizado (ws://…)</translation>
-    </message>
-    <message>
-        <source>RagoShell Cloud (Pro) — sign-in required</source>
-        <translation>RagoShell Cloud (Pro) — requer login</translation>
     </message>
     <message>
         <source>AI tools cannot use a connection through an SSH tunnel.</source>
@@ -3831,7 +3831,7 @@
     <name>RagoShell::AiAssistant</name>
     <message>
         <source>Is Ollama running? Start the Ollama app, or run &quot;ollama serve&quot; in a terminal.</source>
-        <translation>O Ollama está em execução? Inicie o aplicativo Ollama ou execute "ollama serve" em um terminal.</translation>
+        <translation>O Ollama está em execução? Inicie o aplicativo Ollama ou execute &quot;ollama serve&quot; em um terminal.</translation>
     </message>
     <message>
         <source>In the browser the server must also allow this page (CORS): for Ollama set OLLAMA_ORIGINS to this page&apos;s address; in LM Studio turn on CORS in the server settings.</source>
@@ -3951,7 +3951,7 @@
     </message>
     <message>
         <source>Ollama is running, but no model is installed. Download one in a terminal with &quot;ollama pull &lt;model&gt;&quot;, then test again.</source>
-        <translation>O Ollama está em execução, mas nenhum modelo está instalado. Baixe um em um terminal com "ollama pull &lt;model&gt;" e teste novamente.</translation>
+        <translation>O Ollama está em execução, mas nenhum modelo está instalado. Baixe um em um terminal com &quot;ollama pull &lt;model&gt;&quot; e teste novamente.</translation>
     </message>
     <message>
         <source>The server is running but lists no models. Download or load a model on the server, then test again.</source>
@@ -4068,6 +4068,18 @@
         <translation>Não foi possível conectar ao serviço de conta na nuvem.</translation>
     </message>
     <message>
+        <source>The cloud bridge is not enabled for this account.</source>
+        <translation>A ponte na nuvem não está ativada para esta conta.</translation>
+    </message>
+    <message>
+        <source>Your cloud access is being renewed. Try again in a few seconds.</source>
+        <translation>Seu acesso à nuvem está sendo renovado. Tente novamente em alguns segundos.</translation>
+    </message>
+    <message>
+        <source>Sign in to your cloud account to use the cloud gateway.</source>
+        <translation>Entre na sua conta na nuvem para usar o gateway na nuvem.</translation>
+    </message>
+    <message>
         <source>Off</source>
         <translation type="unfinished">Desativado</translation>
     </message>
@@ -4127,10 +4139,6 @@
     <message>
         <source>Connecting to %1...</source>
         <translation>Conectando a %1...</translation>
-    </message>
-    <message>
-        <source>Sign in with a Pro plan to use the cloud gateway.</source>
-        <translation>Entre com um plano Pro para usar o gateway na nuvem.</translation>
     </message>
     <message>
         <source>Disconnected</source>

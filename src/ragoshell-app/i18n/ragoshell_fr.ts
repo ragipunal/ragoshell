@@ -677,6 +677,14 @@
         <translation>Annuler</translation>
     </message>
     <message>
+        <source>%1 Cloud</source>
+        <translation>%1 Cloud</translation>
+    </message>
+    <message>
+        <source>%1 Cloud — sign-in required</source>
+        <translation>%1 Cloud — connexion requise</translation>
+    </message>
+    <message>
         <source>Default</source>
         <translation>Par défaut</translation>
     </message>
@@ -713,20 +721,12 @@
         <translation>Démo (dans le navigateur)</translation>
     </message>
     <message>
-        <source>RagoShell Cloud (Pro)</source>
-        <translation>RagoShell Cloud (Pro)</translation>
-    </message>
-    <message>
         <source>Local Agent (localhost)</source>
         <translation>Agent local (localhost)</translation>
     </message>
     <message>
         <source>Custom Gateway (ws://…)</source>
         <translation>Passerelle personnalisée (ws://…)</translation>
-    </message>
-    <message>
-        <source>RagoShell Cloud (Pro) — sign-in required</source>
-        <translation>RagoShell Cloud (Pro) — connexion requise</translation>
     </message>
     <message>
         <source>AI tools cannot use a connection through an SSH tunnel.</source>
@@ -4068,6 +4068,18 @@
         <translation>Impossible de joindre le service de compte cloud.</translation>
     </message>
     <message>
+        <source>The cloud bridge is not enabled for this account.</source>
+        <translation>Le pont cloud n’est pas activé pour ce compte.</translation>
+    </message>
+    <message>
+        <source>Your cloud access is being renewed. Try again in a few seconds.</source>
+        <translation>Votre accès au cloud est en cours de renouvellement. Réessayez dans quelques secondes.</translation>
+    </message>
+    <message>
+        <source>Sign in to your cloud account to use the cloud gateway.</source>
+        <translation>Connectez-vous à votre compte cloud pour utiliser la passerelle cloud.</translation>
+    </message>
+    <message>
         <source>Off</source>
         <translation type="unfinished">Désactivé</translation>
     </message>
@@ -4127,10 +4139,6 @@
     <message>
         <source>Connecting to %1...</source>
         <translation>Connexion à %1...</translation>
-    </message>
-    <message>
-        <source>Sign in with a Pro plan to use the cloud gateway.</source>
-        <translation>Connectez-vous avec un forfait Pro pour utiliser la passerelle cloud.</translation>
     </message>
     <message>
         <source>Disconnected</source>

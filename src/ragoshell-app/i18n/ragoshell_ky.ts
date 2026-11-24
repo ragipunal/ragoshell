@@ -109,7 +109,7 @@
     </message>
     <message>
         <source>The AI assistant is off or not set up for %1. When it is on, Generate sends your request and this collection&apos;s field names and types (no document values unless you allow them) to the selected provider&apos;s API (Anthropic Claude, Google Gemini, an OpenAI-compatible server or Ollama). Turn it on and set it up in Preferences.</source>
-        <translation>ЖИ жардамчысы өчүк же %1 үчүн жөндөлгөн эмес. Күйүк болгондо Түзүү сурооңузду жана бул жыйнактын талаа аттарын жана түрлөрүн (уруксат бербесеңиз, документ маанилерисиз) тандалган провайдердин API'сине (Anthropic Claude, Google Gemini, OpenAI менен шайкеш сервер же Ollama) жөнөтөт. Аны Жөндөөлөрдөн күйгүзүп, жөндөңүз.</translation>
+        <translation>ЖИ жардамчысы өчүк же %1 үчүн жөндөлгөн эмес. Күйүк болгондо Түзүү сурооңузду жана бул жыйнактын талаа аттарын жана түрлөрүн (уруксат бербесеңиз, документ маанилерисиз) тандалган провайдердин API&apos;сине (Anthropic Claude, Google Gemini, OpenAI менен шайкеш сервер же Ollama) жөнөтөт. Аны Жөндөөлөрдөн күйгүзүп, жөндөңүз.</translation>
     </message>
     <message>
         <source>Preferences…</source>
@@ -677,6 +677,14 @@
         <translation>Жокко чыгаруу</translation>
     </message>
     <message>
+        <source>%1 Cloud</source>
+        <translation>%1 Cloud</translation>
+    </message>
+    <message>
+        <source>%1 Cloud — sign-in required</source>
+        <translation>%1 Cloud — кирүү талап кылынат</translation>
+    </message>
+    <message>
         <source>Default</source>
         <translation>Демейки</translation>
     </message>
@@ -713,20 +721,12 @@
         <translation>Демо (браузерде)</translation>
     </message>
     <message>
-        <source>RagoShell Cloud (Pro)</source>
-        <translation>RagoShell Cloud (Pro)</translation>
-    </message>
-    <message>
         <source>Local Agent (localhost)</source>
         <translation>Жергиликтүү агент (localhost)</translation>
     </message>
     <message>
         <source>Custom Gateway (ws://…)</source>
         <translation>Ыңгайлаштырылган шлюз (ws://…)</translation>
-    </message>
-    <message>
-        <source>RagoShell Cloud (Pro) — sign-in required</source>
-        <translation>RagoShell Cloud (Pro) — кирүү талап кылынат</translation>
     </message>
     <message>
         <source>AI tools cannot use a connection through an SSH tunnel.</source>
@@ -3831,11 +3831,11 @@
     <name>RagoShell::AiAssistant</name>
     <message>
         <source>Is Ollama running? Start the Ollama app, or run &quot;ollama serve&quot; in a terminal.</source>
-        <translation>Ollama иштеп жатабы? Ollama колдонмосун иштетиңиз же терминалда "ollama serve" аткарыңыз.</translation>
+        <translation>Ollama иштеп жатабы? Ollama колдонмосун иштетиңиз же терминалда &quot;ollama serve&quot; аткарыңыз.</translation>
     </message>
     <message>
         <source>In the browser the server must also allow this page (CORS): for Ollama set OLLAMA_ORIGINS to this page&apos;s address; in LM Studio turn on CORS in the server settings.</source>
-        <translation>Браузерде сервер бул баракка да уруксат бериши керек (CORS): Ollama үчүн OLLAMA_ORIGINS маанисин бул барактын дарегине коюңуз; LM Studio'до сервер жөндөөлөрүнөн CORS'ту күйгүзүңүз.</translation>
+        <translation>Браузерде сервер бул баракка да уруксат бериши керек (CORS): Ollama үчүн OLLAMA_ORIGINS маанисин бул барактын дарегине коюңуз; LM Studio&apos;до сервер жөндөөлөрүнөн CORS&apos;ту күйгүзүңүз.</translation>
     </message>
     <message>
         <source>Enter the server address.</source>
@@ -3951,7 +3951,7 @@
     </message>
     <message>
         <source>Ollama is running, but no model is installed. Download one in a terminal with &quot;ollama pull &lt;model&gt;&quot;, then test again.</source>
-        <translation>Ollama иштеп жатат, бирок орнотулган модель жок. Терминалда "ollama pull &lt;model&gt;" менен модель жүктөп алыңыз, андан кийин кайра текшериңиз.</translation>
+        <translation>Ollama иштеп жатат, бирок орнотулган модель жок. Терминалда &quot;ollama pull &lt;model&gt;&quot; менен модель жүктөп алыңыз, андан кийин кайра текшериңиз.</translation>
     </message>
     <message>
         <source>The server is running but lists no models. Download or load a model on the server, then test again.</source>
@@ -4068,6 +4068,18 @@
         <translation>Булут аккаунт кызматына туташуу мүмкүн болбоду.</translation>
     </message>
     <message>
+        <source>The cloud bridge is not enabled for this account.</source>
+        <translation>Бул каттоо эсеби үчүн булут көпүрөсү күйгүзүлгөн эмес.</translation>
+    </message>
+    <message>
+        <source>Your cloud access is being renewed. Try again in a few seconds.</source>
+        <translation>Булутка кирүү укугуңуз жаңыртылууда. Бир нече секунддан кийин кайра аракет кылыңыз.</translation>
+    </message>
+    <message>
+        <source>Sign in to your cloud account to use the cloud gateway.</source>
+        <translation>Булут шлюзун колдонуу үчүн булут каттоо эсебиңизге кириңиз.</translation>
+    </message>
+    <message>
         <source>Off</source>
         <translation type="unfinished">Өчүк</translation>
     </message>
@@ -4127,10 +4139,6 @@
     <message>
         <source>Connecting to %1...</source>
         <translation>%1 менен туташууда...</translation>
-    </message>
-    <message>
-        <source>Sign in with a Pro plan to use the cloud gateway.</source>
-        <translation>Булут шлюзун колдонуу үчүн Pro тарифи менен кириңиз.</translation>
     </message>
     <message>
         <source>Disconnected</source>

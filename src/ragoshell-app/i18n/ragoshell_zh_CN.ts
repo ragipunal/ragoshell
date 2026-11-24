@@ -676,6 +676,14 @@
         <translation>取消</translation>
     </message>
     <message>
+        <source>%1 Cloud</source>
+        <translation>%1 Cloud</translation>
+    </message>
+    <message>
+        <source>%1 Cloud — sign-in required</source>
+        <translation>%1 Cloud — 需要登录</translation>
+    </message>
+    <message>
         <source>Default</source>
         <translation>默认</translation>
     </message>
@@ -712,20 +720,12 @@
         <translation>演示（浏览器内）</translation>
     </message>
     <message>
-        <source>RagoShell Cloud (Pro)</source>
-        <translation>RagoShell Cloud（Pro）</translation>
-    </message>
-    <message>
         <source>Local Agent (localhost)</source>
         <translation>本地代理（localhost）</translation>
     </message>
     <message>
         <source>Custom Gateway (ws://…)</source>
         <translation>自定义网关（ws://…）</translation>
-    </message>
-    <message>
-        <source>RagoShell Cloud (Pro) — sign-in required</source>
-        <translation>RagoShell Cloud（Pro）— 需要登录</translation>
     </message>
     <message>
         <source>AI tools cannot use a connection through an SSH tunnel.</source>
@@ -3825,7 +3825,7 @@
     <name>RagoShell::AiAssistant</name>
     <message>
         <source>Is Ollama running? Start the Ollama app, or run &quot;ollama serve&quot; in a terminal.</source>
-        <translation>Ollama 是否正在运行？请启动 Ollama 应用，或在终端中运行 "ollama serve"。</translation>
+        <translation>Ollama 是否正在运行？请启动 Ollama 应用，或在终端中运行 &quot;ollama serve&quot;。</translation>
     </message>
     <message>
         <source>In the browser the server must also allow this page (CORS): for Ollama set OLLAMA_ORIGINS to this page&apos;s address; in LM Studio turn on CORS in the server settings.</source>
@@ -3944,7 +3944,7 @@
     </message>
     <message>
         <source>Ollama is running, but no model is installed. Download one in a terminal with &quot;ollama pull &lt;model&gt;&quot;, then test again.</source>
-        <translation>Ollama 正在运行，但未安装任何模型。请在终端中用 "ollama pull &lt;model&gt;" 下载一个模型，然后重新测试。</translation>
+        <translation>Ollama 正在运行，但未安装任何模型。请在终端中用 &quot;ollama pull &lt;model&gt;&quot; 下载一个模型，然后重新测试。</translation>
     </message>
     <message>
         <source>The server is running but lists no models. Download or load a model on the server, then test again.</source>
@@ -4061,6 +4061,18 @@
         <translation>无法连接到云账户服务。</translation>
     </message>
     <message>
+        <source>The cloud bridge is not enabled for this account.</source>
+        <translation>此账户未启用云桥接。</translation>
+    </message>
+    <message>
+        <source>Your cloud access is being renewed. Try again in a few seconds.</source>
+        <translation>正在续期你的云访问权限。请几秒后重试。</translation>
+    </message>
+    <message>
+        <source>Sign in to your cloud account to use the cloud gateway.</source>
+        <translation>请登录你的云账户以使用云网关。</translation>
+    </message>
+    <message>
         <source>Off</source>
         <translation type="unfinished">关闭</translation>
     </message>
@@ -4119,10 +4131,6 @@
     <message>
         <source>Connecting to %1...</source>
         <translation>正在连接到 %1...</translation>
-    </message>
-    <message>
-        <source>Sign in with a Pro plan to use the cloud gateway.</source>
-        <translation>请使用 Pro 套餐登录以使用云网关。</translation>
     </message>
     <message>
         <source>Disconnected</source>

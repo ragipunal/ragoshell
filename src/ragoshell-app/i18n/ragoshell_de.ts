@@ -677,6 +677,14 @@
         <translation>Abbrechen</translation>
     </message>
     <message>
+        <source>%1 Cloud</source>
+        <translation>%1 Cloud</translation>
+    </message>
+    <message>
+        <source>%1 Cloud — sign-in required</source>
+        <translation>%1 Cloud — Anmeldung erforderlich</translation>
+    </message>
+    <message>
         <source>Default</source>
         <translation>Standard</translation>
     </message>
@@ -713,20 +721,12 @@
         <translation>Demo (im Browser)</translation>
     </message>
     <message>
-        <source>RagoShell Cloud (Pro)</source>
-        <translation>RagoShell Cloud (Pro)</translation>
-    </message>
-    <message>
         <source>Local Agent (localhost)</source>
         <translation>Lokaler Agent (localhost)</translation>
     </message>
     <message>
         <source>Custom Gateway (ws://…)</source>
         <translation>Eigenes Gateway (ws://…)</translation>
-    </message>
-    <message>
-        <source>RagoShell Cloud (Pro) — sign-in required</source>
-        <translation>RagoShell Cloud (Pro) — Anmeldung erforderlich</translation>
     </message>
     <message>
         <source>AI tools cannot use a connection through an SSH tunnel.</source>
@@ -4068,6 +4068,18 @@
         <translation>Der Cloud-Kontodienst konnte nicht erreicht werden.</translation>
     </message>
     <message>
+        <source>The cloud bridge is not enabled for this account.</source>
+        <translation>Die Cloud-Brücke ist für dieses Konto nicht aktiviert.</translation>
+    </message>
+    <message>
+        <source>Your cloud access is being renewed. Try again in a few seconds.</source>
+        <translation>Ihr Cloud-Zugang wird erneuert. Versuchen Sie es in einigen Sekunden erneut.</translation>
+    </message>
+    <message>
+        <source>Sign in to your cloud account to use the cloud gateway.</source>
+        <translation>Melden Sie sich bei Ihrem Cloud-Konto an, um das Cloud-Gateway zu nutzen.</translation>
+    </message>
+    <message>
         <source>Off</source>
         <translation type="unfinished">Aus</translation>
     </message>
@@ -4127,10 +4139,6 @@
     <message>
         <source>Connecting to %1...</source>
         <translation>Verbindung zu %1 wird hergestellt...</translation>
-    </message>
-    <message>
-        <source>Sign in with a Pro plan to use the cloud gateway.</source>
-        <translation>Melden Sie sich mit einem Pro-Tarif an, um das Cloud-Gateway zu nutzen.</translation>
     </message>
     <message>
         <source>Disconnected</source>

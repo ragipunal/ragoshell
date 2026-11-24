@@ -215,13 +215,68 @@ CloudClient::CloudClient(std::shared_ptr<ICloudCredentialStore> credentialStore,
     m_countdownTimer.setInterval(1000);
     connect(&m_countdownTimer, &QTimer::timeout, this, &CloudClient::updateCountdownTick);
 
+    m_autoRefreshTimer.setInterval(kAutoRefreshCheckMs);
+    connect(&m_autoRefreshTimer, &QTimer::timeout, this, &CloudClient::checkEntitlementRefresh);
+    // A fresh token from any path (sign-in, manual or automatic refresh) clears the failure backoff.
+    connect(this, &CloudClient::entitlementsUpdated, this, [this]() {
+        m_autoRefreshBackoffSec = 0;
+        m_autoRefreshNextAttemptAt = 0;
+    });
+
     reloadVerifierFromConfig();
+}
+
+void CloudClient::setAutoRefreshEnabled(bool enabled)
+{
+    if (m_autoRefreshEnabled == enabled)
+        return;
+    m_autoRefreshEnabled = enabled;
+    if (!enabled)
+    {
+        m_autoRefreshTimer.stop();
+        return;
+    }
+    m_autoRefreshTimer.start();
+    QTimer::singleShot(kAutoRefreshFirstCheckMs, this, &CloudClient::checkEntitlementRefresh);
+}
+
+void CloudClient::checkEntitlementRefresh()
+{
+    if (!m_autoRefreshEnabled || !m_metadata.signedIn || m_authState != CloudAuthState::SignedIn)
+        return;
+    const qint64 now = nowUnixSec();
+
+    // A token verified as ValidOnline stays so in memory until re-verified: once its exp has passed it must
+    // not be offered to the hosted gateway any more (the gateway would close the session at once).
+    if (m_entitlementState == EntitlementState::ValidOnline && m_claims.expiresAt > 0 && now >= m_claims.expiresAt)
+    {
+        verifyAndApplyCachedEntitlementOffline();
+        emit stateChanged();
+    }
+
+    if (m_busy || m_refreshInFlight || m_meReply || m_entitlementsReply)
+        return;
+    if (m_autoRefreshNextAttemptAt > 0 && now < m_autoRefreshNextAttemptAt)
+        return;
+
+    const bool usable = m_entitlementState == EntitlementState::ValidOnline
+                        && m_claims.issuedAt > 0 && m_claims.expiresAt > m_claims.issuedAt;
+    if (usable && now < m_claims.issuedAt + (m_claims.expiresAt - m_claims.issuedAt) / 2)
+        return;
+
+    // Until entitlementsUpdated resets it, the next attempt waits 5 min, then 10, 20, 40, 60 (cap).
+    m_autoRefreshBackoffSec = m_autoRefreshBackoffSec <= 0
+                                  ? kAutoRefreshMinBackoffSec
+                                  : std::min(m_autoRefreshBackoffSec * 2, kAutoRefreshMaxBackoffSec);
+    m_autoRefreshNextAttemptAt = now + m_autoRefreshBackoffSec;
+    refreshAccountAndEntitlements();
 }
 
 CloudClient::~CloudClient()
 {
     m_pollTimer.stop();
     m_countdownTimer.stop();
+    m_autoRefreshTimer.stop();
     cleanseString(&m_accessToken);
     cleanseString(&m_volatileRefreshToken);
     cleanseString(&m_deviceCode);

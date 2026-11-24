@@ -500,10 +500,10 @@ namespace RagoShell
         // Hosted channel (docs/HostedGateway.md §5): same JWT injection as
         // connectToServer — without it the probe's hello is always denied.
         if (conn->transportKind() == "hosted") {
-            const QString jwt =
-                QmlSingletonInstance<CloudService>::get()->entitlementJwt();
+            CloudService *cloud = QmlSingletonInstance<CloudService>::get();
+            const QString jwt = cloud->entitlementJwt();
             if (jwt.isEmpty()) {
-                emit testResult(false, tr("Sign in with a Pro plan to use the cloud gateway."));
+                emit testResult(false, cloud->hostedTokenMissingMessage());
                 return;
             }
             conn->setTransportToken(jwt.toStdString());

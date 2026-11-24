@@ -52,8 +52,11 @@ namespace RagoShell
 
         connect(_client, &CloudClient::stateChanged, this, &CloudService::stateChanged);
 
-        if (!headlessRun)
+        if (!headlessRun) {
             _client->restoreOfflineSession();
+            // Keeps the hosted gateway token fresh without the manual refresh (docs/HostedGateway.md §9.8).
+            _client->setAutoRefreshEnabled(true);
+        }
     }
 
     bool CloudService::signedIn() const
@@ -359,6 +362,20 @@ namespace RagoShell
     {
         if (_client)
             _client->setDeviceName(name);
+    }
+
+    QString CloudService::hostedTokenMissingMessage()
+    {
+        if (_client && _client->isSignedIn()
+            && _client->entitlementState() == EntitlementState::ValidOnline
+            && !_client->features().hostedBridge)
+            return tr("The cloud bridge is not enabled for this account.");
+        if (_client && _client->isSignedIn()) {
+            if (!_client->isBusy()) // repeated clicks must not restart a refresh already running
+                _client->refreshAccountAndEntitlements();
+            return tr("Your cloud access is being renewed. Try again in a few seconds.");
+        }
+        return tr("Sign in to your cloud account to use the cloud gateway.");
     }
 
     void CloudService::refreshStatus()

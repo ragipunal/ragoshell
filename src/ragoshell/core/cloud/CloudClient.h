@@ -176,6 +176,18 @@ namespace RagoShell
         void refreshAccountAndEntitlements();
         void signOut();
 
+        /// Automatic entitlement refresh (docs/HostedGateway.md §9.8): off by default, the app turns it on.
+        /// A check every kAutoRefreshCheckMs (and one kAutoRefreshFirstCheckMs after enabling) re-verifies a
+        /// cached token whose exp has passed and refreshes once the token is past half of its lifetime.
+        void setAutoRefreshEnabled(bool enabled);
+        bool autoRefreshEnabled() const noexcept { return m_autoRefreshEnabled; }
+        /// One check now (the timer calls it; tests call it directly).
+        void checkEntitlementRefresh();
+        static constexpr int kAutoRefreshCheckMs = 15 * 60 * 1000;
+        static constexpr int kAutoRefreshFirstCheckMs = 10 * 1000;
+        static constexpr qint64 kAutoRefreshMinBackoffSec = 5 * 60;
+        static constexpr qint64 kAutoRefreshMaxBackoffSec = 60 * 60;
+
         /// Single-flight access token provider for authenticated API calls (Sync, Hosted AI, Portal).
         void withValidAccessToken(AccessTokenCallback callback);
 
@@ -279,6 +291,12 @@ namespace RagoShell
         // Verified entitlement claims
         EntitlementState m_entitlementState = EntitlementState::Invalid;
         EntitlementClaims m_claims;
+
+        // Automatic entitlement refresh (§9.8)
+        bool m_autoRefreshEnabled = false;
+        QTimer m_autoRefreshTimer;
+        qint64 m_autoRefreshNextAttemptAt = 0;
+        qint64 m_autoRefreshBackoffSec = 0;
 
         QString m_lastErrorCode;
         QString m_lastErrorMessage;

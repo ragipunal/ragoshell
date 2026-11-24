@@ -676,6 +676,14 @@
         <translation>キャンセル</translation>
     </message>
     <message>
+        <source>%1 Cloud</source>
+        <translation>%1 Cloud</translation>
+    </message>
+    <message>
+        <source>%1 Cloud — sign-in required</source>
+        <translation>%1 Cloud — サインインが必要</translation>
+    </message>
+    <message>
         <source>Default</source>
         <translation>デフォルト</translation>
     </message>
@@ -712,20 +720,12 @@
         <translation>デモ (ブラウザー内)</translation>
     </message>
     <message>
-        <source>RagoShell Cloud (Pro)</source>
-        <translation>RagoShell Cloud (Pro)</translation>
-    </message>
-    <message>
         <source>Local Agent (localhost)</source>
         <translation>ローカルエージェント (localhost)</translation>
     </message>
     <message>
         <source>Custom Gateway (ws://…)</source>
         <translation>カスタムゲートウェイ (ws://…)</translation>
-    </message>
-    <message>
-        <source>RagoShell Cloud (Pro) — sign-in required</source>
-        <translation>RagoShell Cloud (Pro) — サインインが必要</translation>
     </message>
     <message>
         <source>AI tools cannot use a connection through an SSH tunnel.</source>
@@ -3825,7 +3825,7 @@
     <name>RagoShell::AiAssistant</name>
     <message>
         <source>Is Ollama running? Start the Ollama app, or run &quot;ollama serve&quot; in a terminal.</source>
-        <translation>Ollama は起動していますか？Ollama アプリを起動するか、ターミナルで "ollama serve" を実行してください。</translation>
+        <translation>Ollama は起動していますか？Ollama アプリを起動するか、ターミナルで &quot;ollama serve&quot; を実行してください。</translation>
     </message>
     <message>
         <source>In the browser the server must also allow this page (CORS): for Ollama set OLLAMA_ORIGINS to this page&apos;s address; in LM Studio turn on CORS in the server settings.</source>
@@ -3944,7 +3944,7 @@
     </message>
     <message>
         <source>Ollama is running, but no model is installed. Download one in a terminal with &quot;ollama pull &lt;model&gt;&quot;, then test again.</source>
-        <translation>Ollama は起動していますが、モデルがインストールされていません。ターミナルで "ollama pull &lt;model&gt;" を実行してモデルをダウンロードし、もう一度テストしてください。</translation>
+        <translation>Ollama は起動していますが、モデルがインストールされていません。ターミナルで &quot;ollama pull &lt;model&gt;&quot; を実行してモデルをダウンロードし、もう一度テストしてください。</translation>
     </message>
     <message>
         <source>The server is running but lists no models. Download or load a model on the server, then test again.</source>
@@ -4061,6 +4061,18 @@
         <translation>クラウドアカウントサービスに接続できませんでした。</translation>
     </message>
     <message>
+        <source>The cloud bridge is not enabled for this account.</source>
+        <translation>このアカウントではクラウドブリッジが有効になっていません。</translation>
+    </message>
+    <message>
+        <source>Your cloud access is being renewed. Try again in a few seconds.</source>
+        <translation>クラウドへのアクセスを更新しています。数秒後にもう一度お試しください。</translation>
+    </message>
+    <message>
+        <source>Sign in to your cloud account to use the cloud gateway.</source>
+        <translation>クラウドゲートウェイを使うには、クラウドアカウントにサインインしてください。</translation>
+    </message>
+    <message>
         <source>Off</source>
         <translation type="unfinished">オフ</translation>
     </message>
@@ -4119,10 +4131,6 @@
     <message>
         <source>Connecting to %1...</source>
         <translation>%1 に接続しています...</translation>
-    </message>
-    <message>
-        <source>Sign in with a Pro plan to use the cloud gateway.</source>
-        <translation>クラウドゲートウェイを使うには Pro プランでサインインしてください。</translation>
     </message>
     <message>
         <source>Disconnected</source>

@@ -39,7 +39,7 @@ same embedded ring the desktop client verifies with — `fromEmbeddedDefaults`).
 | `CloudClient::entitlementJwt()` | `core/cloud` | exposes the cached token from the KeyStore slot (in-memory read; nothing new persisted) |
 | `QmlBackend::connectToServer` | app | `transportKind=="hosted"` → injects `transportToken=entitlementJwt()` into the *in-memory clone* — never written to settings |
 | `MongoWorker` factory | `core/mongodb` | `hosted` → `WebSocketGatewayTransport` at `wss://app.<domain>/ws` (`BrandInfo::portalUrl` host) — cleartext-ws rule already exempts `wss://` |
-| ConnectionDialog | QML | "RagoShell Cloud (Pro)" channel + TLS-target hint, visible only when `CloudService.hostedBridgeEnabled` |
+| ConnectionDialog | QML | "RagoShell Cloud" channel + TLS-target hint, visible only when `CloudService.hostedBridgeEnabled` |
 | Infra | `ragoshell-infra` | `web-gateway` compose service + nginx `/ws` location — High-tier per infra rules, deployment `(insan)` |
 
 ## 3. Env (hosted additions to §WebGateway)
@@ -281,3 +281,34 @@ A malformed month is written as `0000-00`, negative values as 0. The host
 check `scripts/resource-alert.sh` in `ragoshell-infra` reads it and mails
 the operator (thresholds and threats: that repository's
 `docs/monitoring.md`, "Free cloud tier alarms").
+
+### 9.8 Client: automatic entitlement refresh — 2026-11-24 (plan before code)
+
+Until now the app fetched a new entitlement token only at sign-in or on the
+manual refresh in Preferences, and it never re-checked the expiry of the
+cached token while running, so a 7-day-old token went into the hello and the
+bridge closed the session with "entitlement expired".
+
+- `CloudClient` gets an opt-in auto-refresh (the app enables it; tests and
+  headless runs do not). A 15-minute check timer (wall clock, so it also
+  catches up after sleep) and one check 10 s after start:
+  1. a cached token that was `ValidOnline` but whose `exp` has passed is
+     verified again, so `entitlementJwt()` stops returning it (the state
+     becomes offline grace or expired);
+  2. when the token is past half of its lifetime (`iat + (exp − iat) / 2`,
+     3.5 days today), or not usable at all, it calls the existing
+     `refreshAccountAndEntitlements()` (single-flight access token refresh,
+     `/v1/me`, `/v1/entitlements`).
+- Failures back off: 5 minutes, doubling up to 1 hour; a successful
+  `entitlementsUpdated` resets it. Nothing runs while signed out ("never
+  phones home when unsigned-in" stays true) or while a request is in flight.
+- A revoked device (refresh `401 invalid_grant`) is signed out in the
+  background, exactly as a manual refresh does today.
+- Connecting through the hosted channel without a usable token: signed in →
+  start a refresh and say "Your cloud access is being renewed…"; signed out
+  → "Sign in to your cloud account…". The "Pro" wording leaves the channel
+  label and both messages (the cloud services are free, 2026-11-23).
+
+Threats: no new data leaves the device (same three requests as the manual
+refresh); a broken server cannot cause a request storm (backoff, at most one
+attempt per check, single-flight); a stale token is no longer offered.

@@ -681,6 +681,14 @@
         <translation>إلغاء</translation>
     </message>
     <message>
+        <source>%1 Cloud</source>
+        <translation>%1 Cloud</translation>
+    </message>
+    <message>
+        <source>%1 Cloud — sign-in required</source>
+        <translation>%1 Cloud — يلزم تسجيل الدخول</translation>
+    </message>
+    <message>
         <source>Default</source>
         <translation>افتراضي</translation>
     </message>
@@ -717,20 +725,12 @@
         <translation>عرض توضيحي (داخل المتصفح)</translation>
     </message>
     <message>
-        <source>RagoShell Cloud (Pro)</source>
-        <translation>RagoShell Cloud (Pro)</translation>
-    </message>
-    <message>
         <source>Local Agent (localhost)</source>
         <translation>وكيل محلي (localhost)</translation>
     </message>
     <message>
         <source>Custom Gateway (ws://…)</source>
         <translation>بوابة مخصصة (ws://…)</translation>
-    </message>
-    <message>
-        <source>RagoShell Cloud (Pro) — sign-in required</source>
-        <translation>RagoShell Cloud (Pro) — يلزم تسجيل الدخول</translation>
     </message>
     <message>
         <source>AI tools cannot use a connection through an SSH tunnel.</source>
@@ -3855,7 +3855,7 @@
     <name>RagoShell::AiAssistant</name>
     <message>
         <source>Is Ollama running? Start the Ollama app, or run &quot;ollama serve&quot; in a terminal.</source>
-        <translation>هل Ollama قيد التشغيل؟ شغّل تطبيق Ollama أو نفّذ "ollama serve" في الطرفية.</translation>
+        <translation>هل Ollama قيد التشغيل؟ شغّل تطبيق Ollama أو نفّذ &quot;ollama serve&quot; في الطرفية.</translation>
     </message>
     <message>
         <source>In the browser the server must also allow this page (CORS): for Ollama set OLLAMA_ORIGINS to this page&apos;s address; in LM Studio turn on CORS in the server settings.</source>
@@ -3979,7 +3979,7 @@
     </message>
     <message>
         <source>Ollama is running, but no model is installed. Download one in a terminal with &quot;ollama pull &lt;model&gt;&quot;, then test again.</source>
-        <translation>Ollama قيد التشغيل، لكن لا يوجد نموذج مثبّت. نزّل نموذجًا في الطرفية باستخدام "ollama pull &lt;model&gt;" ثم اختبر مجددًا.</translation>
+        <translation>Ollama قيد التشغيل، لكن لا يوجد نموذج مثبّت. نزّل نموذجًا في الطرفية باستخدام &quot;ollama pull &lt;model&gt;&quot; ثم اختبر مجددًا.</translation>
     </message>
     <message>
         <source>The server is running but lists no models. Download or load a model on the server, then test again.</source>
@@ -4096,6 +4096,18 @@
         <translation>تعذّر الوصول إلى خدمة الحساب السحابي.</translation>
     </message>
     <message>
+        <source>The cloud bridge is not enabled for this account.</source>
+        <translation>الجسر السحابي غير مفعّل لهذا الحساب.</translation>
+    </message>
+    <message>
+        <source>Your cloud access is being renewed. Try again in a few seconds.</source>
+        <translation>يجري تجديد وصولك إلى السحابة. أعد المحاولة بعد بضع ثوانٍ.</translation>
+    </message>
+    <message>
+        <source>Sign in to your cloud account to use the cloud gateway.</source>
+        <translation>سجّل الدخول إلى حسابك السحابي لاستخدام البوابة السحابية.</translation>
+    </message>
+    <message>
         <source>Off</source>
         <translation type="unfinished">متوقف</translation>
     </message>
@@ -4159,10 +4171,6 @@
     <message>
         <source>Connecting to %1...</source>
         <translation>جارٍ الاتصال بـ %1...</translation>
-    </message>
-    <message>
-        <source>Sign in with a Pro plan to use the cloud gateway.</source>
-        <translation>سجّل الدخول بخطة Pro لاستخدام البوابة السحابية.</translation>
     </message>
     <message>
         <source>Disconnected</source>

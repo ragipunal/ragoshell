@@ -798,3 +798,143 @@ TEST(CloudClientTest, SessionOnlyRamModeWhenKeyStoreUnavailableNeverPersistsGhos
     else
         qunsetenv("RAGOSHELL_CONFIG_DIR");
 }
+
+// docs/HostedGateway.md §9.8: the app refreshes the entitlement once it is past half of its lifetime, stops
+// offering a token whose exp has passed, backs off after failures, and does nothing while off or signed out.
+TEST(CloudClientTest, AutoRefreshRenewsPastHalfLifeDropsExpiredTokenAndBacksOff)
+{
+    EvpPkeyPtr es256Key = makeP256Key();
+    EntitlementVerifier verifier;
+    ASSERT_TRUE(verifier.addPublicKeySpkiDer(QStringLiteral("k1"), exportSpkiDer(es256Key.get())));
+
+    const qint64 issued = 1793707200LL;
+    qint64 now = issued + 3600;
+    const QString userId = QStringLiteral("550e8400-e29b-41d4-a716-446655440000");
+    const QString deviceId = QStringLiteral("7c9e6679-7425-40de-944b-e07fc1f90ae7");
+
+    int entitlementRequests = 0;
+    bool failEntitlements = false;
+    QString serverUrl;
+    FakeCloudServer server([&](const RecordedRequest &req) -> FakeHttpResponse {
+        if (req.path == QLatin1String("/v1/auth/refresh"))
+        {
+            const QJsonObject tok{
+                {QStringLiteral("access_token"), QStringLiteral("Access_Auto")},
+                {QStringLiteral("refresh_token"), QStringLiteral("Refresh_Auto")},
+                {QStringLiteral("token_type"), QStringLiteral("Bearer")},
+                {QStringLiteral("expires_in"), 900},
+                {QStringLiteral("device_id"), deviceId},
+            };
+            return {200, QJsonDocument(tok).toJson(QJsonDocument::Compact)};
+        }
+        if (req.path == QLatin1String("/v1/me"))
+            return {200, QJsonDocument(QJsonObject{{QStringLiteral("id"), userId}}).toJson(QJsonDocument::Compact)};
+        if (req.path == QLatin1String("/v1/me/entitlements"))
+        {
+            ++entitlementRequests;
+            if (failEntitlements)
+                return {500, R"({"error":{"code":"internal_error","message":"boom"}})"};
+            const QJsonObject ent{
+                {QStringLiteral("token"),
+                 signEntitlementJwt(es256Key.get(), QStringLiteral("k1"), serverUrl, userId, deviceId, now,
+                                    QStringLiteral("free"))},
+                {QStringLiteral("kid"), QStringLiteral("k1")},
+                {QStringLiteral("plan"), QStringLiteral("free")},
+                {QStringLiteral("status"), QStringLiteral("active")},
+            };
+            return {200, QJsonDocument(ent).toJson(QJsonDocument::Compact)};
+        }
+        return {404, "{}"};
+    });
+    serverUrl = server.baseUrl();
+
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE(tmpDir.isValid());
+    const QByteArray prevCfg = qgetenv("RAGOSHELL_CONFIG_DIR");
+    const bool hadCfg = qEnvironmentVariableIsSet("RAGOSHELL_CONFIG_DIR");
+    qputenv("RAGOSHELL_CONFIG_DIR", tmpDir.path().toUtf8());
+
+    SettingsManager settings;
+    settings.addCacheData(QStringLiteral("cloudSignedIn"), true);
+    settings.addCacheData(QStringLiteral("cloudDeviceId"), deviceId);
+    settings.addCacheData(QStringLiteral("cloudUserId"), userId);
+    auto creds = std::make_shared<InMemoryCloudCredentialStore>();
+    creds->writeSecret(QLatin1String(ICloudCredentialStore::kRefreshTokenSlot), QStringLiteral("Refresh_Initial"));
+    creds->writeSecret(QLatin1String(ICloudCredentialStore::kEntitlementJwtSlot),
+                       signEntitlementJwt(es256Key.get(), QStringLiteral("k1"), serverUrl, userId, deviceId, issued));
+
+    CloudClient client(creds, &settings);
+    client.setApiUrlOverride(serverUrl);
+    client.setEntitlementVerifier(verifier);
+    client.setClockForTest([&now]() { return now; });
+    client.restoreOfflineSession();
+    ASSERT_TRUE(client.isSignedIn());
+    ASSERT_EQ(client.entitlementState(), EntitlementState::ValidOnline);
+    int updates = 0;
+    QObject::connect(&client, &CloudClient::entitlementsUpdated, &client, [&]() { ++updates; });
+    const auto settle = [&]() { waitUntil([&]() { return !client.isBusy(); }, 3000); };
+
+    // Off by default: nothing happens even past half-life.
+    now = issued + 4 * 24 * 3600;
+    client.checkEntitlementRefresh();
+    settle();
+    EXPECT_EQ(entitlementRequests, 0);
+
+    // On, before half-life: no request.
+    client.setAutoRefreshEnabled(true);
+    now = issued + 3 * 24 * 3600;
+    client.checkEntitlementRefresh();
+    settle();
+    EXPECT_EQ(entitlementRequests, 0);
+
+    // Past half-life: one refresh, a new token issued now, the backoff is cleared.
+    now = issued + 4 * 24 * 3600;
+    client.checkEntitlementRefresh();
+    ASSERT_TRUE(waitUntil([&]() { return updates == 1; }));
+    EXPECT_EQ(entitlementRequests, 1);
+    EXPECT_EQ(client.entitlementState(), EntitlementState::ValidOnline);
+    const qint64 renewedAt = now;
+    client.checkEntitlementRefresh();
+    settle();
+    EXPECT_EQ(entitlementRequests, 1); // the new token is young
+
+    // The server fails; time passes beyond exp while the app keeps running: the expired token is no longer
+    // offered, and attempts back off (5 min, then 10 min).
+    failEntitlements = true;
+    now = renewedAt + EntitlementVerifier::kOnlineValiditySec + 60;
+    client.checkEntitlementRefresh();
+    EXPECT_NE(client.entitlementState(), EntitlementState::ValidOnline);
+    EXPECT_TRUE(client.entitlementJwt().isEmpty());
+    ASSERT_TRUE(waitUntil([&]() { return entitlementRequests == 2; }));
+    settle();
+    client.checkEntitlementRefresh();
+    settle();
+    EXPECT_EQ(entitlementRequests, 2); // inside the 5-minute backoff
+    now += CloudClient::kAutoRefreshMinBackoffSec;
+    client.checkEntitlementRefresh();
+    ASSERT_TRUE(waitUntil([&]() { return entitlementRequests == 3; }));
+    settle();
+    now += CloudClient::kAutoRefreshMinBackoffSec; // 5 min later: the backoff is now 10 min
+    client.checkEntitlementRefresh();
+    settle();
+    EXPECT_EQ(entitlementRequests, 3);
+    now += CloudClient::kAutoRefreshMinBackoffSec;
+    failEntitlements = false;
+    client.checkEntitlementRefresh();
+    ASSERT_TRUE(waitUntil([&]() { return updates == 2; }));
+    EXPECT_EQ(entitlementRequests, 4);
+    EXPECT_EQ(client.entitlementState(), EntitlementState::ValidOnline);
+    EXPECT_FALSE(client.entitlementJwt().isEmpty());
+
+    // Signed out: no request at all.
+    client.signOut();
+    now += 30LL * 24 * 3600;
+    client.checkEntitlementRefresh();
+    settle();
+    EXPECT_EQ(entitlementRequests, 4);
+
+    if (hadCfg)
+        qputenv("RAGOSHELL_CONFIG_DIR", prevCfg);
+    else
+        qunsetenv("RAGOSHELL_CONFIG_DIR");
+}
