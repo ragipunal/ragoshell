@@ -6,6 +6,7 @@
 // reverse proxy's job; SSRF egress filtering runs on every connect op.
 
 #include <QCoreApplication>
+#include <QDebug>
 #include <QDir>
 #include <QFile>
 #include <QHttpHeaders>
@@ -15,9 +16,11 @@
 #include <QMimeDatabase>
 #include <QTcpServer>
 #include <QTextStream>
+#include <QTimer>
 #include <QUrl>
 
 #include "ragoshell/core/cloud/EntitlementToken.h"
+#include "ragoshell/core/transport/BridgeQuota.h"
 #include "ragoshell/core/transport/DeviceSessionLedger.h"
 #include "ragoshell/core/transport/EgressPolicy.h"
 #include "ragoshell/core/transport/GatewayProtocol.h"
@@ -27,8 +30,16 @@
 
 #include <mongocxx/instance.hpp>
 
+#include <csignal>
+
 namespace
 {
+    // SIGTERM/SIGINT (docker stop) only set this flag — the handler must stay
+    // async-signal-safe; a timer on the event loop sees it and quits cleanly
+    // so the quota file gets its final write (docs/HostedGateway.md §9.3).
+    volatile std::sig_atomic_t g_stopRequested = 0;
+    extern "C" void requestStop(int) { g_stopRequested = 1; }
+
     QString envOr(const char *name, const QString &fallback)
     {
         const QString v = qEnvironmentVariable(name);
@@ -40,6 +51,24 @@ namespace
         bool ok = false;
         const int v = qEnvironmentVariable(name).toInt(&ok);
         return ok ? v : fallback;
+    }
+
+    // Strict variant for the free tier limits: an unset variable gives the
+    // default, a set one that does not parse stops the start (review L8 —
+    // "1GB" must not quietly become the default).
+    bool envLimit(const char *name, qint64 fallback, qint64 *out)
+    {
+        const QString raw = qEnvironmentVariable(name).trimmed();
+        if (raw.isEmpty()) {
+            *out = fallback;
+            return true;
+        }
+        bool ok = false;
+        *out = raw.toLongLong(&ok);
+        if (!ok)
+            QTextStream(stderr) << "ragoshell-web-gateway: " << name
+                                << " must be a whole number, got '" << raw << "'\n";
+        return ok;
     }
 
     QHttpHeaders securityHeaders()
@@ -171,7 +200,20 @@ int main(int argc, char *argv[])
         hostedMode
             ? qEnvironmentVariable("RAGOSHELL_GW_REQUIRE_TLS") != QLatin1String("0")
             : qEnvironmentVariable("RAGOSHELL_GW_REQUIRE_TLS") == QLatin1String("1");
-    const int maxPerDevice = qMax(1, envInt("RAGOSHELL_GW_MAX_PER_DEVICE", 2));
+    // Free tier limits (docs/HostedGateway.md §9), hosted mode only.
+    qint64 maxSessions = 0, maxPerAccount = 0, sessionMaxSec = 0, idleSec = 0, monthlyBytes = 0;
+    if (!envLimit("RAGOSHELL_GW_MAX_SESSIONS", RagoShell::GatewayProtocol::kMaxSessions, &maxSessions)
+        || !envLimit("RAGOSHELL_GW_MAX_PER_ACCOUNT", 1, &maxPerAccount)
+        || !envLimit("RAGOSHELL_GW_SESSION_MAX_SEC", 2 * 3600, &sessionMaxSec)
+        || !envLimit("RAGOSHELL_GW_IDLE_SEC", 15 * 60, &idleSec)
+        || !envLimit("RAGOSHELL_GW_MONTHLY_BYTES", 1000000000LL, &monthlyBytes))
+        return 2;
+    if (maxSessions < 1 || maxSessions > 10000) {
+        QTextStream(stderr) << "ragoshell-web-gateway: RAGOSHELL_GW_MAX_SESSIONS must be 1-10000\n";
+        return 2;
+    }
+    const QString quotaFile = qEnvironmentVariable("RAGOSHELL_GW_QUOTA_FILE");
+    const QString denyFile = qEnvironmentVariable("RAGOSHELL_GW_DENY_FILE");
 
     if (port < 1 || port > 65535) {
         QTextStream(stderr) << "ragoshell-web-gateway: RAGOSHELL_GW_PORT must "
@@ -188,6 +230,40 @@ int main(int argc, char *argv[])
         QTextStream(stderr) << "ragoshell-web-gateway: RAGOSHELL_GW_TOKEN "
                                "must be >= 32 characters\n";
         return 2;
+    }
+    if (hostedMode) {
+        // Out-of-range limits stop the start instead of silently becoming
+        // "unlimited" or "always refused".
+        if (maxPerAccount < 1 || maxPerAccount > maxSessions) {
+            QTextStream(stderr) << "ragoshell-web-gateway: RAGOSHELL_GW_MAX_PER_ACCOUNT "
+                                   "must be 1 up to RAGOSHELL_GW_MAX_SESSIONS\n";
+            return 2;
+        }
+        if (sessionMaxSec < 60 || sessionMaxSec > 24 * 3600) {
+            QTextStream(stderr) << "ragoshell-web-gateway: RAGOSHELL_GW_SESSION_MAX_SEC "
+                                   "must be 60-86400\n";
+            return 2;
+        }
+        if (idleSec < 30 || idleSec > sessionMaxSec) {
+            QTextStream(stderr) << "ragoshell-web-gateway: RAGOSHELL_GW_IDLE_SEC must be "
+                                   "30 up to RAGOSHELL_GW_SESSION_MAX_SEC\n";
+            return 2;
+        }
+        if (monthlyBytes < 1) {
+            QTextStream(stderr) << "ragoshell-web-gateway: RAGOSHELL_GW_MONTHLY_BYTES "
+                                   "must be a positive byte count\n";
+            return 2;
+        }
+        if (quotaFile.isEmpty()) {
+            QTextStream(stderr) << "ragoshell-web-gateway: hosted mode needs "
+                                   "RAGOSHELL_GW_QUOTA_FILE (monthly transfer counters "
+                                   "must survive a restart)\n";
+            return 2;
+        }
+        if (!qEnvironmentVariable("RAGOSHELL_GW_MAX_PER_DEVICE").isEmpty())
+            QTextStream(stderr) << "ragoshell-web-gateway: WARNING — "
+                                   "RAGOSHELL_GW_MAX_PER_DEVICE is ignored; sessions are "
+                                   "capped per account (RAGOSHELL_GW_MAX_PER_ACCOUNT)\n";
     }
     if (openMode)
         QTextStream(stderr) << "ragoshell-web-gateway: WARNING — "
@@ -276,7 +352,58 @@ int main(int argc, char *argv[])
         hosted.verifier = verifier;
         hosted.options = verifyOpts;
         hosted.ledger =
-            std::make_shared<RagoShell::DeviceSessionLedger>(maxPerDevice);
+            std::make_shared<RagoShell::DeviceSessionLedger>(int(maxPerAccount));
+        hosted.maxSessionMs = int(sessionMaxSec * 1000);
+        hosted.idleMs = int(idleSec * 1000);
+
+        // Monthly transfer counters: an existing file that cannot be read
+        // stops the start — serving with empty counters would hand every
+        // account a fresh quota (fail closed, §9.3).
+        auto quota = std::make_shared<RagoShell::BridgeQuota>(quotaFile, monthlyBytes);
+        QString qerr;
+        if (!quota->load(&qerr)) {
+            QTextStream(stderr) << "ragoshell-web-gateway: " << qerr << " ("
+                                << quotaFile << "); inspect or remove it\n";
+            return 2;
+        }
+        hosted.quota = quota;
+
+        auto deny = std::make_shared<RagoShell::AccountDenyList>(denyFile);
+        QString derr;
+        if (!deny->reload(&derr))
+            QTextStream(stderr) << "ragoshell-web-gateway: WARNING — " << derr << "\n";
+        hosted.deny = deny;
+
+        // Once a minute: persist changed counters, pick up deny list edits.
+        auto *maintenance = new QTimer(&app);
+        QObject::connect(maintenance, &QTimer::timeout, &app, [quota, deny] {
+            QString err;
+            if (quota->isDirty() && !quota->save(&err))
+                qWarning() << "ragoshell-web-gateway:" << qPrintable(err);
+            err.clear();
+            if (!deny->reload(&err))
+                qWarning() << "ragoshell-web-gateway:" << qPrintable(err);
+        });
+        maintenance->start(60 * 1000);
+        QObject::connect(&app, &QCoreApplication::aboutToQuit, &app, [quota] {
+            QString err;
+            if (quota->isDirty() && !quota->save(&err))
+                qWarning() << "ragoshell-web-gateway:" << qPrintable(err);
+        });
+        std::signal(SIGTERM, requestStop);
+        std::signal(SIGINT, requestStop);
+        auto *stopPoll = new QTimer(&app);
+        QObject::connect(stopPoll, &QTimer::timeout, &app, [] {
+            if (g_stopRequested)
+                QCoreApplication::quit();
+        });
+        stopPoll->start(250);
+
+        QTextStream(stdout) << "ragoshell-web-gateway: free tier limits: "
+                            << maxSessions << " sessions in total, " << maxPerAccount << " session(s) per account, "
+                            << sessionMaxSec << " s per session, " << idleSec
+                            << " s idle, " << monthlyBytes << " bytes per month; deny list "
+                            << (deny->enabled() ? "on" : "off") << "\n";
     }
 
     QHttpServer http;
@@ -339,7 +466,7 @@ int main(int argc, char *argv[])
         auto socket = http.nextPendingWebSocketConnection();
         if (!socket)
             return;
-        if (sessions >= RagoShell::GatewayProtocol::kMaxSessions) {
+        if (sessions >= maxSessions) {
             socket->close(QWebSocketProtocol::CloseCodePolicyViolated,
                           QStringLiteral("too many sessions"));
             return;

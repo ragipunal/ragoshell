@@ -157,3 +157,113 @@ default cap; a third server connection gets `unauthorized` until a slot
 frees (corrected by the 8.6 review — shell/monitor tabs currently do NOT
 open a WebSocket because secondary workers bypass `IMongoTransport`;
 they are refused client-side until a transport-routed shell ships).
+
+## 9. Free tier quotas — 2026-11-24 (plan before code)
+
+The cloud services are free (decision 2026-11-23), so the hosted bridge is
+open to every verified account and limits are the only brake on cost and
+abuse. Approved values: **1** concurrent session per account, **2 h** per
+session, **15 min** idle, **1 GB** per account per calendar month (UTC, both
+directions). The gateway verifies tokens offline and has no database, so the
+counters live in the gateway process plus one local file (single instance;
+a second instance needs the API-side counter instead, see 9.6).
+
+### 9.1 Session limits
+
+| Limit | Env (default) | Behaviour |
+|---|---|---|
+| Sessions in total | `RAGOSHELL_GW_MAX_SESSIONS` (8, `kMaxSessions`) | size it for the server; see Q8 |
+| Sessions per account | `RAGOSHELL_GW_MAX_PER_ACCOUNT` (1) | ledger key is the token's `sub` (canonical UUID, verified), no longer `did`; a second hello for the same account gets `session limit reached: one cloud bridge session per account` |
+| Session length | `RAGOSHELL_GW_SESSION_MAX_SEC` (7200) | the lease timer fires at the earlier of the JWT `exp` and hello + 2 h; closes `session time limit reached`; frames after it are refused. The 2 h limit runs on the monotonic clock, so a wall-clock step cannot lengthen it |
+| Idle | `RAGOSHELL_GW_IDLE_SEC` (900) | hosted mode only; token mode keeps `GatewayProtocol::kIdleTimeoutMs` |
+
+`RAGOSHELL_GW_MAX_PER_DEVICE` is dropped: one session per account already
+caps every device. A deployment that still sets it gets a startup warning.
+Every limit variable that is set but is not a whole number, or is out of
+range, stops the start (a typo like `1GB` must not fall back silently).
+
+### 9.2 Monthly transfer
+
+- Counted: the UTF-8 size of every WebSocket text frame after a successful
+  hello, in both directions (requests in, replies out). The hello exchange,
+  the close-reason frame and WebSocket pings are not counted (small,
+  bounded). A reply the gateway fetched but replaced with the short
+  "result too large" error still counts with its size, so oversized queries
+  cannot pull unlimited data from MongoDB for the price of an error frame;
+  apart from that, gateway↔MongoDB traffic tracks the frames closely.
+- Limit: `RAGOSHELL_GW_MONTHLY_BYTES` (1 000 000 000). Checked at hello (an
+  account at the limit is refused with `monthly transfer limit reached`),
+  on every incoming frame, and before every outgoing frame: a reply that
+  would cross the limit is not sent; the session closes with the same
+  reason. The limit is never exceeded by more than one incoming frame
+  (bounded by `kMaxFrameBytes`).
+- Reset: the counters belong to a month key (`YYYY-MM`, UTC); the first use
+  in a later month drops every account's counter. A clock that steps back
+  into an earlier month changes nothing (counting continues in the current
+  month), so a clock glitch cannot hand out fresh quotas.
+
+### 9.3 Counter file
+
+- `RAGOSHELL_GW_QUOTA_FILE` is **required** in hosted mode; without it the
+  gateway refuses to start (a restart must not reset everyone's quota).
+- Format: `{"version":1,"month":"2026-11","accounts":{"<sha256(sub) hex>":bytes}}`.
+  Account ids are stored hashed; the file holds no token, IP or target.
+- Written atomically (`QSaveFile`: temp file + rename, owner-only
+  permissions) at most once a minute while counters changed, when a session
+  ends, and at shutdown (SIGTERM/SIGINT only set a flag; the event loop quits
+  and saves). A crash loses at most a minute of counting (accepted: bounded
+  under-count).
+- Startup: a missing file starts empty; a file that exists but cannot be
+  read or parsed stops the start (fail closed; the operator inspects or
+  deletes it). A failed write is logged and retried; open sessions continue,
+  but after 3 failed writes in a row new sessions are refused (`cloud bridge
+  is temporarily unavailable`) until a write succeeds — otherwise a restart
+  would silently reset the month.
+- The hash is unsalted SHA-256: whoever already knows an account id can
+  confirm from the file that it used the bridge. Accepted while the file
+  stays in the gateway's private volume; an HMAC with a gateway secret is
+  the upgrade if the file ever leaves it.
+- Size: one entry per account that used the bridge this month; the file is
+  rewritten whole, so it stays small (about 80 bytes per account).
+
+### 9.4 Account deny list (revocation)
+
+A token stays valid until `exp` (7 days) and the gateway cannot ask the API,
+so switching the bridge off for an account (`{"hosted_bridge":false}` on its
+`free` row) used to reach the gateway only when the token expired (F1
+review). New: `RAGOSHELL_GW_DENY_FILE` (optional) names a text file with one
+account UUID per line (`#` comments allowed). The gateway re-reads the whole
+file once a minute (at most 4 MiB). A listed account is refused at hello,
+and its open session closes on its first frame after the reload, so within
+about a minute of activity (an idle one closes within 15 minutes anyway).
+Once a list has loaded, a file that becomes unreadable or disappears (a
+lost mount) keeps the previous list and logs a warning; to clear the list,
+empty the file. Lines that are not UUIDs are ignored with a warning. The runbook step joins the bridge deployment
+(infra), together with the free-row switch.
+
+### 9.5 Threats
+
+| # | Threat | Mitigation |
+|---|---|---|
+| Q1 | One account opens many sessions to multiply bandwidth | ledger keyed by `sub`, 1 per account; global `kMaxSessions` unchanged |
+| Q2 | Long-lived tunnel kept open with keep-alive frames | 2 h hard lease regardless of activity; 15 min idle |
+| Q3 | Bulk transfer through the bridge | 1 GB per month per account, checked before each reply |
+| Q4 | Restart or crash resets quotas | counter file required, atomic writes, corrupt file fails the start |
+| Q5 | Counter file leaks who uses the bridge | hashed account ids, byte counts only; file lives in the gateway's private volume |
+| Q6 | Disabled account keeps using a valid token | deny list file, checked at hello and on every frame |
+| Q7 | Many accounts (sign-up abuse) multiply the quota | out of scope here: Turnstile, sign-up rate limits and the registration switch (F2) |
+| Q8 | A handful of free accounts hold every global slot with a ping every few minutes, reconnecting after each 2 h lease | **accepted residual**: `RAGOSHELL_GW_MAX_SESSIONS` sized for the server, per-IP limits at nginx (deployment), slot-usage alarm (F7), registration switch; a per-IP cap or a cooldown after a timed-out session are the next steps if it happens |
+| Q9 | Oversized queries pull data from MongoDB that the client never receives | discarded replies are charged with their size (9.2) |
+| Q10 | Clock steps lengthen leases or reset quotas | monotonic session deadline; month counters only move forward |
+
+### 9.6 Out of scope
+
+- Deployment: the `web-gateway` compose service and the nginx `/ws`
+  location do not exist in `ragoshell-infra` yet; the quota file and deny
+  file need a writable private volume there (`read_only` root stays).
+- Several gateway instances: move the monthly counter to the API (an
+  internal endpoint), keep the per-instance session ledger.
+- The client fetches a new entitlement token only at sign-in or on the
+  manual refresh in Preferences, so the bridge refuses a 7-day-old token
+  until the user refreshes; and the client strings still say "Pro". Both
+  belong to the client release before the bridge goes live.

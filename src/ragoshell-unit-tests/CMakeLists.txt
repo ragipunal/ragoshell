@@ -23,6 +23,7 @@ set(SOURCES_TEST
     ${RAGO_SRC_DIR}/core/cloud/SyncEngine_test.cpp
     ${RAGO_SRC_DIR}/core/transport/InMemoryDemoTransport_test.cpp
     ${RAGO_SRC_DIR}/core/transport/NativeMongoTransport_test.cpp
+    ${RAGO_SRC_DIR}/core/transport/BridgeQuota_test.cpp
     ${RAGO_SRC_DIR}/core/transport/EgressPolicy_test.cpp
     ${RAGO_SRC_DIR}/core/transport/WebSocketGatewayTransport_test.cpp
     ${RAGO_SRC_DIR}/core/mongodb/MongoClientTransport_test.cpp

@@ -80,6 +80,8 @@ set(CORE_SOURCES
     core/engine/ShellHost.cpp
     core/events/MongoEvents.cpp
     core/domain/MongoDocument.cpp
+    core/transport/BridgeQuota.cpp
+    core/transport/BridgeQuota.h
     core/transport/DeviceSessionLedger.h
     core/transport/IMongoTransport.h
     core/transport/InMemoryDemoTransport.cpp

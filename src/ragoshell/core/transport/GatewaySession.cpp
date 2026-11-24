@@ -6,6 +6,7 @@
 #include <QWebSocket>
 
 #include "ragoshell/core/cloud/EntitlementToken.h"
+#include "ragoshell/core/transport/BridgeQuota.h"
 #include "ragoshell/core/transport/DeviceSessionLedger.h"
 #include "ragoshell/core/transport/EgressPolicy.h"
 #include "ragoshell/core/transport/GatewayProtocol.h"
@@ -20,6 +21,31 @@
 
 namespace RagoShell
 {
+    namespace
+    {
+        // Client-facing close reasons of the free tier limits (§9).
+        const QString kTransferLimit = QStringLiteral("monthly transfer limit reached");
+        const QString kSessionLimit =
+            QStringLiteral("session limit reached: one cloud bridge session per account");
+        const QString kSessionTime = QStringLiteral("session time limit reached");
+        const QString kAccountDisabled =
+            QStringLiteral("cloud bridge is disabled for this account");
+        const QString kUnavailable =
+            QStringLiteral("cloud bridge is temporarily unavailable; try again later");
+
+        // UTF-8 length without encoding a copy: surrogate pairs are 2 UTF-16
+        // units → 4 bytes, so 2 per unit.
+        qint64 utf8Length(const QString &s)
+        {
+            qint64 n = 0;
+            for (const QChar ch : s) {
+                const ushort u = ch.unicode();
+                n += u < 0x80 ? 1 : u < 0x800 ? 2 : ch.isSurrogate() ? 2 : 3;
+            }
+            return n;
+        }
+    }
+
     GatewaySession::GatewaySession(QWebSocket *socket,
                                    const QStringList &allowedOrigins,
                                    const QString &requiredHost,
@@ -37,6 +63,8 @@ namespace RagoShell
           _idleMs(GatewayProtocol::kIdleTimeoutMs)
     {
         _socket->setParent(this);
+        if (_hosted.idleMs > 0)
+            _idleMs = _hosted.idleMs;
 
         // Enforce the frame cap while Qt reads, not after: Qt's default is
         // ~2 GiB per message, and the size check in onTextMessage only runs
@@ -64,8 +92,12 @@ namespace RagoShell
         // disconnected() so finished() frees the slot (review R7).
         connect(_socket, &QWebSocket::aboutToClose, this, &GatewaySession::armAbort);
         _expiry.setSingleShot(true);
-        connect(&_expiry, &QTimer::timeout,
-                this, [this] { failAndClose(QStringLiteral("entitlement expired")); });
+        // A coarse timer may fire up to 5% early (6 minutes of a 2 h lease).
+        _expiry.setTimerType(Qt::PreciseTimer);
+        connect(&_expiry, &QTimer::timeout, this, [this] {
+            if (!leaseEnded()) // fired early (timer coarseness): re-check later
+                _expiry.start(1000);
+        });
 
         QTimer::singleShot(GatewayProtocol::kHelloTimeoutMs, _socket, [this] {
             if (!_authed)
@@ -151,11 +183,53 @@ namespace RagoShell
         });
     }
 
+    bool GatewaySession::sendFrame(const QString &frame)
+    {
+        if (_authed && _hosted.quota
+            && !_hosted.quota->consume(_account, utf8Length(frame),
+                                       QDateTime::currentSecsSinceEpoch())) {
+            failAndClose(kTransferLimit);
+            return false;
+        }
+        _socket->sendTextMessage(frame);
+        return true;
+    }
+
+    bool GatewaySession::leaseEnded()
+    {
+        if (!_authed)
+            return false;
+        if (_expiresAt > 0 && QDateTime::currentSecsSinceEpoch() >= _expiresAt) {
+            failAndClose(QStringLiteral("entitlement expired"));
+            return true;
+        }
+        if (_sessionDeadline.hasExpired()) {
+            failAndClose(kSessionTime);
+            return true;
+        }
+        return false;
+    }
+
+    bool GatewaySession::chargeDiscarded(qint64 bytes)
+    {
+        if (!_authed || !_hosted.quota)
+            return true;
+        const qint64 now = QDateTime::currentSecsSinceEpoch();
+        if (_hosted.quota->consume(_account, bytes, now))
+            return true;
+        // Use up what is left, then stop: the next hello is refused anyway.
+        _hosted.quota->consume(_account,
+                               _hosted.quota->monthlyLimit() - _hosted.quota->used(_account, now),
+                               now);
+        failAndClose(kTransferLimit);
+        return false;
+    }
+
     void GatewaySession::sendResult(quint32 id, bool ok, const QString &ejson,
                                     const QString &error)
     {
         if (!ok) {
-            _socket->sendTextMessage(GatewayProtocol::encodeError(id, error));
+            sendFrame(GatewayProtocol::encodeError(id, error));
             return;
         }
         const QString tooLarge =
@@ -163,26 +237,22 @@ namespace RagoShell
                            "narrow the query or add a limit.").arg(_maxResponseBytes);
         // Every UTF-16 unit is at least one UTF-8 byte, so an oversize EJSON
         // string is refused before it is parsed into the envelope.
+        // A discarded reply still counts with its size (UTF-16 units, a
+        // lower bound of its UTF-8 bytes) — otherwise oversized queries would
+        // pull unlimited data from MongoDB for the price of an error frame.
         if (ejson.size() > _maxResponseBytes) {
-            _socket->sendTextMessage(GatewayProtocol::encodeError(id, tooLarge));
+            if (chargeDiscarded(ejson.size()))
+                sendFrame(GatewayProtocol::encodeError(id, tooLarge));
             return;
         }
         const QString frame = GatewayProtocol::encodeOk(id, ejson);
-        qint64 utf8Bytes = frame.size();
-        if (utf8Bytes * 3 > _maxResponseBytes) {
-            // Exact UTF-8 length only near the cap (surrogate pairs: 2 units
-            // → 4 bytes, so 2 per unit).
-            utf8Bytes = 0;
-            for (const QChar ch : frame) {
-                const ushort u = ch.unicode();
-                utf8Bytes += u < 0x80 ? 1 : u < 0x800 ? 2 : ch.isSurrogate() ? 2 : 3;
-            }
-        }
-        if (utf8Bytes > _maxResponseBytes) {
-            _socket->sendTextMessage(GatewayProtocol::encodeError(id, tooLarge));
+        const qint64 frameBytes = utf8Length(frame);
+        if (frameBytes > _maxResponseBytes) {
+            if (chargeDiscarded(frameBytes))
+                sendFrame(GatewayProtocol::encodeError(id, tooLarge));
             return;
         }
-        _socket->sendTextMessage(frame);
+        sendFrame(frame);
     }
 
     void GatewaySession::onTextMessage(const QString &frame)
@@ -200,17 +270,29 @@ namespace RagoShell
             QTimer::singleShot(0, _socket, &QWebSocket::abort);
             return;
         }
-        // Hosted: the entitlement ends at exp — refuse further work even if
-        // the expiry timer has not fired yet (review R8).
-        if (_authed && _expiresAt > 0
-            && QDateTime::currentSecsSinceEpoch() >= _expiresAt) {
-            failAndClose(QStringLiteral("entitlement expired"));
+        // Hosted: the lease ends at exp or at the session time limit —
+        // refuse further work even if the timer has not fired yet (review R8).
+        if (leaseEnded())
             return;
-        }
         _idle.start(_idleMs); // any frame renews the idle lease
-        if (frame.toUtf8().size() > GatewayProtocol::kMaxFrameBytes) {
+        const qint64 frameBytes = utf8Length(frame);
+        if (frameBytes > GatewayProtocol::kMaxFrameBytes) {
             failAndClose(QStringLiteral("frame too large"));
             return;
+        }
+        if (_authed && _hosted.verifier) {
+            // Free tier (§9.2/§9.4): a switched-off account stops at its
+            // next frame; every request counts against the monthly quota.
+            if (_hosted.deny && _hosted.deny->contains(_account)) {
+                failAndClose(kAccountDisabled);
+                return;
+            }
+            if (_hosted.quota
+                && !_hosted.quota->consume(_account, frameBytes,
+                                           QDateTime::currentSecsSinceEpoch())) {
+                failAndClose(kTransferLimit);
+                return;
+            }
         }
 
         quint32 id = 0;
@@ -237,26 +319,51 @@ namespace RagoShell
                     opts = *_hosted.options;
                 const EntitlementVerifyResult res = _hosted.verifier->verify(
                     token, QDateTime::currentSecsSinceEpoch(), opts);
-                QString key;
+                // The account (sub, a verified canonical UUID) is the key of
+                // every free tier limit (§9): one session per account, not
+                // per device, so extra devices cannot multiply the quota.
+                QString account;
                 if (res.state == EntitlementState::ValidOnline
                     && res.claims.features.hostedBridge
                     && (res.claims.status == EntitlementStatus::Active
                         || res.claims.status == EntitlementStatus::Trialing))
-                    key = !res.claims.deviceId.isEmpty()
-                        ? res.claims.deviceId : res.claims.subject;
-                if (key.isEmpty()
-                    || (_hosted.ledger && !_hosted.ledger->tryAcquire(key))) {
+                    account = res.claims.subject;
+                if (account.isEmpty()) {
                     failAndClose(QStringLiteral("unauthorized"));
                     return;
                 }
-                _authKey = key;
+                const qint64 nowSec = QDateTime::currentSecsSinceEpoch();
+                if (_hosted.deny && _hosted.deny->contains(account)) {
+                    failAndClose(kAccountDisabled);
+                    return;
+                }
+                if (_hosted.quota && !_hosted.quota->healthy()) {
+                    // The counter file keeps failing to save: a restart would
+                    // lose this month's counts, so no new sessions (§9.3).
+                    failAndClose(kUnavailable);
+                    return;
+                }
+                if (_hosted.quota && _hosted.quota->exhausted(account, nowSec)) {
+                    failAndClose(kTransferLimit);
+                    return;
+                }
+                if (_hosted.ledger && !_hosted.ledger->tryAcquire(account)) {
+                    failAndClose(kSessionLimit);
+                    return;
+                }
+                _authKey = account;
+                _account = account;
                 // The entitlement is a lease, not a login: the session ends
-                // at exp even while frames keep it from going idle
-                // (2026-11-04 review R8). exp - now is at most the 7-day
-                // token lifetime plus skew, well inside int milliseconds.
+                // at exp, or at the session time limit, even while frames
+                // keep it from going idle (2026-11-04 review R8, §9.1).
+                // exp - now is at most the 7-day token lifetime plus skew,
+                // well inside int milliseconds.
                 _expiresAt = res.claims.expiresAt;
-                const qint64 leftMs =
-                    (_expiresAt - QDateTime::currentSecsSinceEpoch()) * 1000;
+                qint64 leftMs = (_expiresAt - nowSec) * 1000;
+                if (_hosted.maxSessionMs > 0) {
+                    _sessionDeadline = QDeadlineTimer(_hosted.maxSessionMs, Qt::PreciseTimer);
+                    leftMs = qMin(leftMs, qint64(_hosted.maxSessionMs));
+                }
                 _expiry.start(static_cast<int>(
                     qBound(qint64(0), leftMs,
                            qint64(std::numeric_limits<int>::max()))));
@@ -296,7 +403,7 @@ namespace RagoShell
                     // private-namespace enumeration oracle otherwise.
                     qWarning() << "ragoshell-gateway: egress denied:"
                                << qPrintable(reason);
-                    _socket->sendTextMessage(GatewayProtocol::encodeError(
+                    sendFrame(GatewayProtocol::encodeError(
                         id, clientReason.isEmpty() ? QStringLiteral("Egress denied.")
                                                    : clientReason));
                     return;
@@ -311,8 +418,7 @@ namespace RagoShell
             if (!_transport && _factory)
                 _transport = _factory();
             if (!_transport) {
-                _socket->sendTextMessage(
-                    GatewayProtocol::encodeError(id, QStringLiteral("no transport")));
+                sendFrame(GatewayProtocol::encodeError(id, QStringLiteral("no transport")));
                 return;
             }
             const IMongoTransport::Result r = _transport->connect(settings);
@@ -321,8 +427,7 @@ namespace RagoShell
         }
 
         if (!_transport) {
-            _socket->sendTextMessage(
-                GatewayProtocol::encodeError(id, QStringLiteral("not connected")));
+            sendFrame(GatewayProtocol::encodeError(id, QStringLiteral("not connected")));
             return;
         }
 
@@ -352,8 +457,7 @@ namespace RagoShell
         }
 
         if (!have)
-            _socket->sendTextMessage(
-                GatewayProtocol::encodeError(id, QStringLiteral("unknown op")));
+            sendFrame(GatewayProtocol::encodeError(id, QStringLiteral("unknown op")));
         else
             sendResult(id, r.ok, r.ejson, r.error);
     }
@@ -363,6 +467,13 @@ namespace RagoShell
         if (!_authKey.isEmpty() && _hosted.ledger) {
             _hosted.ledger->release(_authKey);
             _authKey.clear();
+        }
+        // Persist this session's transfer now rather than at the next
+        // periodic flush (§9.3); a failed write is retried by the flush.
+        if (_hosted.quota && _hosted.quota->isDirty()) {
+            QString err;
+            if (!_hosted.quota->save(&err))
+                qWarning() << "ragoshell-gateway:" << qPrintable(err);
         }
         if (_transport)
             _transport->disconnect();

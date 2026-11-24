@@ -17,6 +17,7 @@
 #include <utility>
 
 #include "ragoshell/core/cloud/EntitlementToken.h"
+#include "ragoshell/core/transport/BridgeQuota.h"
 #include "ragoshell/core/transport/DeviceSessionLedger.h"
 #include "ragoshell/core/transport/EgressPolicy.h"
 #include "ragoshell/core/transport/GatewayProtocol.h"
@@ -214,8 +215,9 @@ namespace
     class HostedTestAgent : public QObject
     {
     public:
-        explicit HostedTestAgent(EVP_PKEY *pubKey, int maxPerDevice = 2)
-            : _ledger(std::make_shared<DeviceSessionLedger>(maxPerDevice)),
+        explicit HostedTestAgent(EVP_PKEY *pubKey, int maxPerAccount = 1,
+                                 const std::function<void(HostedAuthConfig &)> &configure = {})
+            : _ledger(std::make_shared<DeviceSessionLedger>(maxPerAccount)),
               verifier(std::make_shared<EntitlementVerifier>()),
               _server(QStringLiteral("hosted-agent"), QWebSocketServer::NonSecureMode)
         {
@@ -227,6 +229,8 @@ namespace
             _hosted.verifier = verifier;
             _hosted.options = opts;
             _hosted.ledger = _ledger;
+            if (configure)
+                configure(_hosted);
             _allowed = {QStringLiteral("https://ragoshell.com.tr")};
             if (!_server.listen(QHostAddress::LocalHost, 0))
                 qFatal("hosted agent could not bind loopback");
@@ -238,6 +242,8 @@ namespace
                                      _requiredHost, QString(),
                                      [] { return std::make_unique<InMemoryDemoTransport>(); },
                                      nullptr, nullptr, QString(), &_hosted);
+                                 if (maxResponseBytes > 0)
+                                     s->setMaxResponseBytes(maxResponseBytes);
                                  QObject::connect(s, &GatewaySession::finished,
                                                   this, [s] { s->deleteLater(); });
                              });
@@ -248,6 +254,7 @@ namespace
         }
         std::shared_ptr<DeviceSessionLedger> _ledger;
         std::shared_ptr<EntitlementVerifier> verifier;
+        qint64 maxResponseBytes = 0; // >0: per-session response cap (test hook)
 
     private:
         QWebSocketServer _server;
@@ -657,31 +664,193 @@ TEST_F(WebSocketGatewayTransportTest, hosted_expired_and_wrong_typ_denied)
         QStringLiteral("active"), QStringLiteral("at+jwt"))));
 }
 
-TEST_F(WebSocketGatewayTransportTest, hosted_per_device_cap_enforced)
+// Free tier (docs/HostedGateway.md §9): sessions, lease, transfer, deny list.
+namespace
 {
+    const QString kSub = QStringLiteral("550e8400-e29b-41d4-a716-446655440000");
+}
+
+TEST_F(WebSocketGatewayTransportTest, hosted_one_session_per_account)
+{
+    // §9.1: the ledger key is the account (sub), not the device — a second
+    // device of the same account cannot open a parallel session.
     ensureCoreApp();
     auto key = genP256Key();
-    HostedTestAgent agent(key.get(), /*maxPerDevice=*/2);
+    HostedTestAgent agent(key.get());
     const qint64 now = QDateTime::currentSecsSinceEpoch();
-    const QString did = QStringLiteral("7c9e6679-7425-40de-944b-e07fc1f90ae7");
-    const QString jwt = mintEntitlementJwt(key.get(), QStringLiteral("test-kid"),
-        true, now - 60, now + 3600, did);
+    const QString laptop = mintEntitlementJwt(key.get(), QStringLiteral("test-kid"),
+        true, now - 60, now + 3600, QStringLiteral("7c9e6679-7425-40de-944b-e07fc1f90ae7"));
+    const QString phone = mintEntitlementJwt(key.get(), QStringLiteral("test-kid"),
+        true, now - 60, now + 3600, QStringLiteral("16fd2706-8baf-433b-82eb-8c7fada847da"));
 
-    RawClient a(agent.url()), b(agent.url()), c(agent.url());
-    ASSERT_TRUE(a.waitConnected() && b.waitConnected() && c.waitConnected());
-    EXPECT_TRUE(a.handshake(jwt));
-    EXPECT_TRUE(b.handshake(jwt));
-    EXPECT_FALSE(c.handshake(jwt)); // third concurrent session same did → denied
-    EXPECT_EQ(agent._ledger->count(did), 2);
+    RawClient a(agent.url()), b(agent.url());
+    ASSERT_TRUE(a.waitConnected() && b.waitConnected());
+    EXPECT_TRUE(a.handshake(laptop));
+    EXPECT_FALSE(b.handshake(phone));
+    ASSERT_GE(b.frames.size(), 1);
+    EXPECT_TRUE(b.frames.first().contains(QStringLiteral("one cloud bridge session per account")))
+        << b.frames.first().toStdString();
+    EXPECT_EQ(agent._ledger->count(kSub), 1);
 
-    // Slot frees on disconnect — a fourth session succeeds after one closes.
+    // The slot frees on disconnect.
     a.sock.close();
-    ASSERT_TRUE(waitUntil([&agent, &did] {
-        return agent._ledger->count(did) == 1;
-    }));
-    RawClient d(agent.url());
-    ASSERT_TRUE(d.waitConnected());
-    EXPECT_TRUE(d.handshake(jwt));
+    ASSERT_TRUE(waitUntil([&agent] { return agent._ledger->count(kSub) == 0; }));
+    RawClient c(agent.url());
+    ASSERT_TRUE(c.waitConnected());
+    EXPECT_TRUE(c.handshake(phone));
+}
+
+TEST_F(WebSocketGatewayTransportTest, hosted_session_time_limit_closes_an_active_session)
+{
+    // §9.1: the lease ends at hello + maxSessionMs even while frames keep
+    // the session from going idle, long before the JWT's exp.
+    ensureCoreApp();
+    auto key = genP256Key();
+    HostedTestAgent agent(key.get(), 1, [](HostedAuthConfig &c) { c.maxSessionMs = 1500; });
+    RawClient raw(agent.url());
+    ASSERT_TRUE(raw.waitConnected());
+    const qint64 now = QDateTime::currentSecsSinceEpoch();
+    ASSERT_TRUE(raw.handshake(mintEntitlementJwt(key.get(), QStringLiteral("test-kid"),
+        true, now - 60, now + 3600, QStringLiteral("7c9e6679-7425-40de-944b-e07fc1f90ae7"))));
+    ASSERT_TRUE(raw.connectTransport());
+
+    QElapsedTimer t;
+    t.start();
+    quint32 id = 10;
+    while (raw.sock.state() == QAbstractSocket::ConnectedState && t.elapsed() < 8000) {
+        raw.sock.sendTextMessage(GatewayProtocol::encodeRequest(
+            id++, QString::fromUtf8(GatewayProtocol::Op::Ping), QJsonObject{}));
+        waitUntil([] { return false; }, 200);
+    }
+    EXPECT_EQ(raw.sock.state(), QAbstractSocket::UnconnectedState);
+    EXPECT_GE(t.elapsed(), 1000);
+    ASSERT_FALSE(raw.frames.isEmpty());
+    bool sawReason = false;
+    for (const QString &f : raw.frames)
+        sawReason = sawReason || f.contains(QStringLiteral("session time limit reached"));
+    EXPECT_TRUE(sawReason) << raw.frames.last().toStdString();
+    EXPECT_TRUE(waitUntil([&agent] { return agent._ledger->count(kSub) == 0; }));
+}
+
+TEST_F(WebSocketGatewayTransportTest, hosted_monthly_transfer_limit)
+{
+    // §9.2: frames after hello count in both directions; the session closes
+    // once a frame would cross the limit, and the next hello is refused.
+    ensureCoreApp();
+    QTemporaryDir dir;
+    ASSERT_TRUE(dir.isValid());
+    const QString path = dir.filePath(QStringLiteral("quota.json"));
+    auto quota = std::make_shared<BridgeQuota>(path, 600);
+    QString err;
+    ASSERT_TRUE(quota->load(&err));
+    auto key = genP256Key();
+    HostedTestAgent agent(key.get(), 1, [quota](HostedAuthConfig &c) { c.quota = quota; });
+    const qint64 now = QDateTime::currentSecsSinceEpoch();
+    const QString jwt = mintEntitlementJwt(key.get(), QStringLiteral("test-kid"),
+        true, now - 60, now + 3600, QStringLiteral("7c9e6679-7425-40de-944b-e07fc1f90ae7"));
+
+    RawClient raw(agent.url());
+    ASSERT_TRUE(raw.waitConnected());
+    ASSERT_TRUE(raw.handshake(jwt));
+    EXPECT_EQ(quota->used(kSub, now), 0); // hello is not counted
+    ASSERT_TRUE(raw.connectTransport());
+    const qint64 afterConnect = quota->used(kSub, now);
+    EXPECT_GT(afterConnect, raw.frames.at(1).toUtf8().size()); // request + reply
+
+    quint32 id = 10;
+    for (int i = 0; i < 50 && raw.sock.state() == QAbstractSocket::ConnectedState; ++i) {
+        const int before = raw.frames.size();
+        raw.sock.sendTextMessage(GatewayProtocol::encodeRequest(
+            id++, QString::fromUtf8(GatewayProtocol::Op::Ping), QJsonObject{}));
+        waitUntil([&raw, before] {
+            return raw.frames.size() > before
+                   || raw.sock.state() != QAbstractSocket::ConnectedState;
+        }, 2000);
+    }
+    ASSERT_TRUE(raw.waitClosed());
+    EXPECT_TRUE(raw.frames.last().contains(QStringLiteral("monthly transfer limit reached")))
+        << raw.frames.last().toStdString();
+    EXPECT_LE(quota->used(kSub, now), 600);
+
+    // Persisted when the session ended (§9.3).
+    ASSERT_TRUE(waitUntil([&agent] { return agent._ledger->count(kSub) == 0; }));
+    EXPECT_FALSE(quota->isDirty());
+    BridgeQuota reloaded(path, 600);
+    ASSERT_TRUE(reloaded.load(&err)) << err.toStdString();
+    EXPECT_EQ(reloaded.used(kSub, now), quota->used(kSub, now));
+
+    // An account with no transfer left is refused at hello (unless the
+    // last frames left a few bytes, the next session ends at its first reply).
+    ASSERT_TRUE(quota->consume(kSub, 600 - quota->used(kSub, now), now));
+    RawClient again(agent.url());
+    ASSERT_TRUE(again.waitConnected());
+    EXPECT_FALSE(again.handshake(jwt));
+    ASSERT_GE(again.frames.size(), 1);
+    EXPECT_TRUE(again.frames.first().contains(QStringLiteral("monthly transfer limit reached")));
+}
+
+TEST_F(WebSocketGatewayTransportTest, hosted_discarded_large_reply_is_charged)
+{
+    // Review M1: a reply over the response cap is replaced by a short error
+    // frame, but its size still counts against the monthly quota.
+    ensureCoreApp();
+    auto quota = std::make_shared<BridgeQuota>(QString(), 1000000);
+    auto key = genP256Key();
+    HostedTestAgent agent(key.get(), 1, [quota](HostedAuthConfig &c) { c.quota = quota; });
+    agent.maxResponseBytes = 64;
+    const qint64 now = QDateTime::currentSecsSinceEpoch();
+    RawClient raw(agent.url());
+    ASSERT_TRUE(raw.waitConnected());
+    ASSERT_TRUE(raw.handshake(mintEntitlementJwt(key.get(), QStringLiteral("test-kid"),
+        true, now - 60, now + 3600, QStringLiteral("7c9e6679-7425-40de-944b-e07fc1f90ae7"))));
+    ASSERT_TRUE(raw.connectTransport());
+    const qint64 before = quota->used(kSub, now);
+    raw.sock.sendTextMessage(GatewayProtocol::encodeRequest(
+        3, QString::fromUtf8(GatewayProtocol::Op::ListDatabases), QJsonObject{}));
+    ASSERT_TRUE(raw.waitFrames(3));
+    EXPECT_TRUE(raw.frames.at(2).contains(QStringLiteral("too large"))) << raw.frames.at(2).toStdString();
+    // Request + the discarded reply (> 64 bytes) + the error frame.
+    EXPECT_GT(quota->used(kSub, now) - before, 64 + raw.frames.at(2).toUtf8().size());
+}
+
+TEST_F(WebSocketGatewayTransportTest, hosted_deny_list_blocks_and_ends_sessions)
+{
+    // §9.4: a switched-off account is refused at hello, and an open session
+    // closes on its next frame once the list is reloaded.
+    ensureCoreApp();
+    QTemporaryDir dir;
+    ASSERT_TRUE(dir.isValid());
+    const QString path = dir.filePath(QStringLiteral("deny.txt"));
+    auto deny = std::make_shared<AccountDenyList>(path);
+    ASSERT_TRUE(deny->reload());
+    auto key = genP256Key();
+    HostedTestAgent agent(key.get(), 1, [deny](HostedAuthConfig &c) { c.deny = deny; });
+    const qint64 now = QDateTime::currentSecsSinceEpoch();
+    const QString jwt = mintEntitlementJwt(key.get(), QStringLiteral("test-kid"),
+        true, now - 60, now + 3600, QStringLiteral("7c9e6679-7425-40de-944b-e07fc1f90ae7"));
+
+    RawClient live(agent.url());
+    ASSERT_TRUE(live.waitConnected());
+    ASSERT_TRUE(live.handshake(jwt));
+    ASSERT_TRUE(live.connectTransport());
+
+    {
+        QFile f(path);
+        ASSERT_TRUE(f.open(QIODevice::WriteOnly));
+        f.write(kSub.toLatin1() + "\n");
+    }
+    ASSERT_TRUE(deny->reload());
+    live.sock.sendTextMessage(GatewayProtocol::encodeRequest(
+        3, QString::fromUtf8(GatewayProtocol::Op::Ping), QJsonObject{}));
+    ASSERT_TRUE(live.waitClosed());
+    EXPECT_TRUE(live.frames.last().contains(QStringLiteral("disabled for this account")))
+        << live.frames.last().toStdString();
+
+    ASSERT_TRUE(waitUntil([&agent] { return agent._ledger->count(kSub) == 0; }));
+    RawClient next(agent.url());
+    ASSERT_TRUE(next.waitConnected());
+    EXPECT_FALSE(next.handshake(jwt));
+    EXPECT_TRUE(next.frames.first().contains(QStringLiteral("disabled for this account")));
 }
 
 // --- 2026-11-04 review (docs/BridgeSecurityReview.md §6) -----------------
@@ -767,9 +936,7 @@ TEST_F(WebSocketGatewayTransportTest, hosted_session_closes_at_jwt_exp)
     ASSERT_GE(raw.frames.size(), 2);
     EXPECT_TRUE(raw.frames.last().contains(QStringLiteral("entitlement expired")))
         << raw.frames.last().toStdString();
-    EXPECT_TRUE(waitUntil([&agent] {
-        return agent._ledger->count(QStringLiteral("7c9e6679-7425-40de-944b-e07fc1f90ae7")) == 0;
-    }));
+    EXPECT_TRUE(waitUntil([&agent] { return agent._ledger->count(kSub) == 0; }));
 }
 
 namespace

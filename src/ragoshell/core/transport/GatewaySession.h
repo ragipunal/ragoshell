@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QDeadlineTimer>
 #include <QObject>
 #include <QString>
 #include <QStringList>
@@ -12,6 +13,8 @@ class QWebSocket;
 
 namespace RagoShell
 {
+    class AccountDenyList;
+    class BridgeQuota;
     class DeviceSessionLedger;
     class EgressPolicy;
     class EntitlementVerifier;
@@ -21,8 +24,9 @@ namespace RagoShell
     /// Optional hosted-mode authentication for GatewaySession
     /// (docs/HostedGateway.md §2): when set, the hello `token` is verified
     /// as an ES256 entitlement+jwt instead of the pairing token —
-    /// signature + typ/iss/aud + exp + hosted_bridge + plan status, then a
-    /// per-device slot from the ledger.
+    /// signature + typ/iss/aud + exp + hosted_bridge + plan status, then the
+    /// free tier limits (§9): deny list, monthly transfer, one ledger slot per
+    /// account (`sub`).
     ///
     /// verifier/ledger are shared_ptrs: sessions copy this config, and the
     /// pointers must stay valid through session destruction even if the
@@ -31,7 +35,11 @@ namespace RagoShell
     {
         std::shared_ptr<const EntitlementVerifier> verifier; // required in hosted mode
         std::shared_ptr<const EntitlementVerifyOptions> options;
-        std::shared_ptr<DeviceSessionLedger> ledger;         // per-did cap, optional
+        std::shared_ptr<DeviceSessionLedger> ledger;         // per-account (sub) cap, optional
+        std::shared_ptr<BridgeQuota> quota;                  // monthly transfer, optional
+        std::shared_ptr<AccountDenyList> deny;               // switched-off accounts, optional
+        int maxSessionMs = 0; // > 0: hard session lease from hello (§9.1)
+        int idleMs = 0;       // > 0: replaces kIdleTimeoutMs in hosted mode
     };
 
     /// Server-side handler for one agent WebSocket (docs/LocalAgent.md §2).
@@ -93,6 +101,17 @@ namespace RagoShell
         /// Sends the reply for `id`; a result over the response cap becomes
         /// an error frame instead (review R7).
         void sendResult(quint32 id, bool ok, const QString &ejson, const QString &error);
+        /// Sends a frame; after hello it is counted against the monthly
+        /// transfer quota first. A frame that would cross the quota is not
+        /// sent and the session closes (§9.2). Returns false in that case.
+        bool sendFrame(const QString &frame);
+        /// Charges a reply the gateway fetched but discards as too large
+        /// (§9.2): the MongoDB traffic was spent even though the client only
+        /// sees a short error. Closes the session when the quota runs out.
+        bool chargeDiscarded(qint64 bytes);
+        /// Closes the session when the hosted lease (JWT exp or the 2 h
+        /// session limit) has passed. Returns true when it closed.
+        bool leaseEnded();
         static bool tokenEquals(const QString &a, const QString &b);
 
         QWebSocket *_socket;
@@ -101,11 +120,15 @@ namespace RagoShell
         const EgressPolicy *_egress;
         QString _originOverride;
         HostedAuthConfig _hosted;
-        QString _authKey; // device/sub key acquired in the ledger (hosted mode)
+        QString _authKey; // account (sub) key acquired in the ledger (hosted mode)
+        QString _account; // hosted: verified account id (sub), for quota and deny list
         std::unique_ptr<IMongoTransport> _transport;
         QTimer _idle;
-        QTimer _expiry;       // hosted: closes the session at the JWT's exp
+        QTimer _expiry;       // hosted: closes the session at its lease end
         qint64 _expiresAt = 0; // hosted: JWT exp (unix s), 0 = no expiry
+        // hosted: hello + maxSessionMs on the monotonic clock (a wall-clock
+        // step must not lengthen the lease); Forever = no session limit.
+        QDeadlineTimer _sessionDeadline{QDeadlineTimer::Forever};
         qint64 _maxResponseBytes;
         int _idleMs;
         bool _authed = false;
