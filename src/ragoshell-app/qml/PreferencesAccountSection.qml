@@ -48,12 +48,6 @@ ColumnLayout {
 
         RagoBadge {
             visible: CloudService.signedIn
-            text: CloudService.planLabel
-            badgeColor: CloudService.planId === "free" ? Theme.disabledTextColor : Theme.accentColor
-        }
-
-        RagoBadge {
-            visible: CloudService.signedIn
             text: CloudService.statusLabel
             badgeColor: CloudService.statusId === "past_due" || CloudService.statusId === "canceled"
                         ? Theme.warningColor

@@ -19,13 +19,6 @@ namespace RagoShell
         Invalid
     };
 
-    enum class EntitlementPlan
-    {
-        Free,
-        Pro,
-        Team
-    };
-
     enum class EntitlementStatus
     {
         None,
@@ -62,7 +55,6 @@ namespace RagoShell
         qint64 notBefore = 0;
         qint64 expiresAt = 0;
         qint64 offlineGraceUntil = 0;
-        EntitlementPlan plan = EntitlementPlan::Free;
         EntitlementStatus status = EntitlementStatus::None;
         EntitlementFeatures features;
         EntitlementQuotas quotas;

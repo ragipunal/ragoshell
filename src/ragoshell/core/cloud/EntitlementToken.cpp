@@ -781,14 +781,20 @@ namespace RagoShell
             return failInvalid(QStringLiteral("invalid_claims"));
 
         const bool hasDidField = payloadObj.contains(QLatin1String("did"));
-        const int expectedTopKeys = hasDidField ? 13 : 12;
+        // "plan" is optional and ignored (no paid plans); when present it must still be a string.
+        const bool hasPlanField = payloadObj.contains(QLatin1String("plan"));
+        if (hasPlanField && !payloadObj.value(QLatin1String("plan")).isString())
+            return failInvalid(QStringLiteral("invalid_claims"));
+        const int expectedTopKeys = 11 + (hasDidField ? 1 : 0) + (hasPlanField ? 1 : 0);
         if (payloadObj.size() != expectedTopKeys)
             return failInvalid(QStringLiteral("invalid_claims"));
 
         EntitlementClaims claims;
         claims.keyId = kid;
 
-        QString planStr;
+        // The "plan" claim is not read: there are no paid plans (the cloud services are free, 2026-11-23),
+        // so what the account may use comes from the features and quotas only. A token that still carries
+        // "plan" (the API sends "free") or one without it verifies the same way.
         QString statusStr;
         if (!extractStrictString(payloadObj, QLatin1String("iss"), &claims.issuer) ||
             !extractStrictString(payloadObj, QLatin1String("aud"), &claims.audience) ||
@@ -798,7 +804,6 @@ namespace RagoShell
             !extractStrictInt64Bounded(payloadObj, QLatin1String("nbf"), 1, kMaxSafeJsonInt, &claims.notBefore) ||
             !extractStrictInt64Bounded(payloadObj, QLatin1String("exp"), 1, kMaxSafeJsonInt, &claims.expiresAt) ||
             !extractStrictInt64Bounded(payloadObj, QLatin1String("offline_grace_until"), 1, kMaxSafeJsonInt, &claims.offlineGraceUntil) ||
-            !extractStrictString(payloadObj, QLatin1String("plan"), &planStr) ||
             !extractStrictString(payloadObj, QLatin1String("status"), &statusStr))
         {
             return failInvalid(QStringLiteral("invalid_claims"));
@@ -837,15 +842,6 @@ namespace RagoShell
             if (!isCanonicalUuid(wantDeviceId) || claims.deviceId.isEmpty() || claims.deviceId != wantDeviceId)
                 return failInvalid(QStringLiteral("device_mismatch"));
         }
-
-        if (planStr == QStringLiteral("free"))
-            claims.plan = EntitlementPlan::Free;
-        else if (planStr == QStringLiteral("pro"))
-            claims.plan = EntitlementPlan::Pro;
-        else if (planStr == QStringLiteral("team"))
-            claims.plan = EntitlementPlan::Team;
-        else
-            return failInvalid(QStringLiteral("invalid_plan"));
 
         if (statusStr == QStringLiteral("none"))
             claims.status = EntitlementStatus::None;

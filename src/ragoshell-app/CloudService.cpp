@@ -153,42 +153,6 @@ namespace RagoShell
             .arg(rem, 2, 10, QLatin1Char('0'));
     }
 
-    QString CloudService::planId() const
-    {
-        if (_debugMode == 2)
-            return QStringLiteral("pro");
-        if (!_client || !_client->isSignedIn())
-            return QStringLiteral("free");
-        switch (_client->plan())
-        {
-        case EntitlementPlan::Pro:
-            return QStringLiteral("pro");
-        case EntitlementPlan::Team:
-            return QStringLiteral("team");
-        case EntitlementPlan::Free:
-        default:
-            return QStringLiteral("free");
-        }
-    }
-
-    QString CloudService::planLabel() const
-    {
-        if (_debugMode == 2)
-            return tr("Pro");
-        if (!_client || !_client->isSignedIn())
-            return tr("Free");
-        switch (_client->plan())
-        {
-        case EntitlementPlan::Pro:
-            return tr("Pro");
-        case EntitlementPlan::Team:
-            return tr("Team");
-        case EntitlementPlan::Free:
-        default:
-            return tr("Free");
-        }
-    }
-
     QString CloudService::statusId() const
     {
         if (!_client || !_client->isSignedIn())

@@ -3995,18 +3995,6 @@
 <context>
     <name>RagoShell::CloudService</name>
     <message>
-        <source>Pro</source>
-        <translation>Pro</translation>
-    </message>
-    <message>
-        <source>Free</source>
-        <translation>Gratis</translation>
-    </message>
-    <message>
-        <source>Team</source>
-        <translation>Equipo</translation>
-    </message>
-    <message>
         <source>Not signed in</source>
         <translation>Sin sesión iniciada</translation>
     </message>

@@ -42,8 +42,6 @@ namespace RagoShell
         Q_PROPERTY(QString formattedRemainingTime READ formattedRemainingTime NOTIFY stateChanged FINAL)
         Q_PROPERTY(bool codeCopied READ codeCopied NOTIFY stateChanged FINAL)
 
-        Q_PROPERTY(QString planId READ planId NOTIFY stateChanged FINAL)
-        Q_PROPERTY(QString planLabel READ planLabel NOTIFY stateChanged FINAL)
         Q_PROPERTY(QString statusId READ statusId NOTIFY stateChanged FINAL)
         Q_PROPERTY(QString statusLabel READ statusLabel NOTIFY stateChanged FINAL)
         Q_PROPERTY(bool offlineGraceActive READ offlineGraceActive NOTIFY stateChanged FINAL)
@@ -101,8 +99,6 @@ namespace RagoShell
         QString formattedRemainingTime() const;
         bool codeCopied() const { return _codeCopied; }
 
-        QString planId() const;
-        QString planLabel() const;
         QString statusId() const;
         QString statusLabel() const;
         bool offlineGraceActive() const;
@@ -166,6 +162,6 @@ namespace RagoShell
         SyncEngine *_sync = nullptr;
         QTimer _copiedResetTimer;
         bool _codeCopied = false;
-        int _debugMode = 0; // 0 = live, 1 = pending code, 2 = signed-in Pro
+        int _debugMode = 0; // 0 = live, 1 = pending code, 2 = signed-in with every cloud feature
     };
 }

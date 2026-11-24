@@ -146,11 +146,12 @@ namespace
             {QStringLiteral("nbf"), iat},
             {QStringLiteral("exp"), exp},
             {QStringLiteral("offline_grace_until"), offlineGraceUntil},
-            {QStringLiteral("plan"), plan},
             {QStringLiteral("status"), status},
             {QStringLiteral("features"), features},
             {QStringLiteral("quotas"), quotas},
         };
+        if (!plan.isEmpty())
+            obj.insert(QStringLiteral("plan"), plan);
         if (!did.isEmpty())
             obj.insert(QStringLiteral("did"), did);
         return QJsonDocument(obj).toJson(QJsonDocument::Compact);
@@ -182,7 +183,6 @@ TEST(EntitlementTokenTest, VerifiesExactGoGeneratedEntitlementJwtVector)
     ASSERT_EQ(online.state, EntitlementState::ValidOnline) << online.errorCode.toStdString();
     EXPECT_TRUE(online.isUsable());
     EXPECT_EQ(online.claims.keyId, QStringLiteral("vec-2026-11"));
-    EXPECT_EQ(online.claims.plan, EntitlementPlan::Pro);
     EXPECT_EQ(online.claims.status, EntitlementStatus::Active);
     EXPECT_TRUE(online.claims.features.sync);
     EXPECT_TRUE(online.claims.features.hostedAi);
@@ -244,6 +244,26 @@ TEST(EntitlementTokenTest, SupportsZeroDowntimeMultiKeyRotationAndKeyRetirement)
     EXPECT_EQ(oldRes.state, EntitlementState::Invalid);
     EXPECT_EQ(oldRes.errorCode, QStringLiteral("unknown_kid"));
     EXPECT_EQ(retiredRing.verify(tok2, kNow + 60).state, EntitlementState::ValidOnline);
+}
+
+// There are no paid plans (2026-11-23): the "plan" claim is ignored, whatever it says or when it is missing.
+TEST(EntitlementTokenTest, IgnoresThePlanClaim)
+{
+    EvpPkeyPtr key = generateEcKeyByCurveName("prime256v1");
+    bool ok = false;
+    const EntitlementVerifier ring =
+        EntitlementVerifier::fromKeyRingString(formatRingEntry(QStringLiteral("kid-plan"), key.get()), &ok);
+    ASSERT_TRUE(ok);
+    constexpr qint64 kNow = 1793707200;
+    for (const QString &plan : {QStringLiteral("free"), QStringLiteral("enterprise"), QString()}) {
+        const QString tok = signCompactJwsP256(
+            key.get(),
+            QByteArrayLiteral("{\"alg\":\"ES256\",\"typ\":\"entitlement+jwt\",\"kid\":\"kid-plan\"}"),
+            makeValidPayloadJson(kNow, kNow + 604800, kNow + 1209600, plan));
+        const EntitlementVerifyResult res = ring.verify(tok, kNow + 60);
+        EXPECT_EQ(res.state, EntitlementState::ValidOnline) << plan.toStdString() << " " << res.errorCode.toStdString();
+        EXPECT_TRUE(res.claims.features.hostedBridge);
+    }
 }
 
 TEST(EntitlementTokenTest, RejectsAlgorithmTypeAudienceSignatureAndKeyTampering)

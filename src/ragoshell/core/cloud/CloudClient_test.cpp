@@ -279,7 +279,7 @@ TEST(CloudClientTest, NeverPhonesHomeWhenUnsignedInAndValidatesUrlsStrictly)
     QCoreApplication::processEvents();
 
     EXPECT_FALSE(client.isSignedIn());
-    EXPECT_EQ(client.plan(), EntitlementPlan::Free);
+    EXPECT_FALSE(client.features().sync);
     EXPECT_EQ(server.totalRequests(), 0);
 
     // API URL validation
@@ -456,7 +456,7 @@ TEST(CloudClientTest, CompletesDeviceFlowHandlesSlowDownVerifiesEs256Entitlement
 
     // Wait for the post-slow_down poll + /v1/me + /v1/me/entitlements to complete.
     ASSERT_TRUE(waitUntil(
-        [&]() { return client.isSignedIn() && client.plan() == EntitlementPlan::Pro && !client.isBusy(); },
+        [&]() { return client.isSignedIn() && client.features().sync && !client.isBusy(); },
         8000));
 
     EXPECT_EQ(tokenPollCount, 3);
@@ -490,7 +490,7 @@ TEST(CloudClientTest, CompletesDeviceFlowHandlesSlowDownVerifiesEs256Entitlement
     EXPECT_EQ(server.totalRequests(), reqBeforeRestart);
     EXPECT_TRUE(offlineClient.isSignedIn());
     EXPECT_TRUE(offlineClient.isOfflineGraceActive());
-    EXPECT_EQ(offlineClient.plan(), EntitlementPlan::Pro);
+    EXPECT_TRUE(offlineClient.features().sync);
     EXPECT_TRUE(offlineClient.features().sync);
 
     if (hadCfg)
@@ -618,7 +618,7 @@ TEST(CloudClientTest, SingleFlightRefreshRotatesOnceRevokesOn401AndSignsOutClean
     client.withValidAccessToken([&](bool ok, const QString &, const QString &) { waiterFailed = !ok; });
     ASSERT_TRUE(waitUntil([&]() { return waiterFailed && revokedSignal; }));
     EXPECT_FALSE(client.isSignedIn());
-    EXPECT_EQ(client.plan(), EntitlementPlan::Free);
+    EXPECT_FALSE(client.features().sync);
     EXPECT_EQ(creds->size(), 0);
 
     if (hadCfg)
@@ -725,7 +725,7 @@ TEST(CloudClientTest, SessionOnlyRamModeWhenKeyStoreUnavailableNeverPersistsGhos
 
     client.startDeviceSignIn(QStringLiteral("Portable Box"));
     ASSERT_TRUE(waitUntil(
-        [&]() { return client.isSignedIn() && client.plan() == EntitlementPlan::Pro && !client.isBusy(); }));
+        [&]() { return client.isSignedIn() && client.features().sync && !client.isBusy(); }));
 
     // ragoshell.json MUST NOT record cloudSignedIn: true or any user/device/token data!
     EXPECT_FALSE(settings.cacheData(QStringLiteral("cloudSignedIn")).toBool());

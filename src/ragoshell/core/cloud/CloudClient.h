@@ -141,9 +141,8 @@ namespace RagoShell
         int codeRemainingSeconds() const;
         int pollIntervalMs() const noexcept { return m_pollIntervalMs; }
 
-        // Verified entitlement state (defaults to Free / None when unsigned-in or unverified)
+        // Verified entitlement state (no features / None when unsigned-in or unverified)
         EntitlementState entitlementState() const noexcept { return m_entitlementState; }
-        EntitlementPlan plan() const noexcept { return m_claims.plan; }
         EntitlementStatus subscriptionStatus() const noexcept { return m_claims.status; }
         EntitlementFeatures features() const noexcept { return m_claims.features; }
         EntitlementQuotas quotas() const noexcept { return m_claims.quotas; }

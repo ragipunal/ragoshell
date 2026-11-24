@@ -3989,18 +3989,6 @@
 <context>
     <name>RagoShell::CloudService</name>
     <message>
-        <source>Pro</source>
-        <translation>Pro</translation>
-    </message>
-    <message>
-        <source>Free</source>
-        <translation>Ücretsiz</translation>
-    </message>
-    <message>
-        <source>Team</source>
-        <translation>Ekip</translation>
-    </message>
-    <message>
         <source>Not signed in</source>
         <translation>Oturum açılmadı</translation>
     </message>

@@ -3996,18 +3996,6 @@
 <context>
     <name>RagoShell::CloudService</name>
     <message>
-        <source>Pro</source>
-        <translation>Pro</translation>
-    </message>
-    <message>
-        <source>Free</source>
-        <translation>Bepul</translation>
-    </message>
-    <message>
-        <source>Team</source>
-        <translation>Jamoa</translation>
-    </message>
-    <message>
         <source>Not signed in</source>
         <translation>Tizimga kirilmagan</translation>
     </message>
