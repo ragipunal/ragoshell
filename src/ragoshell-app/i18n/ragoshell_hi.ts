@@ -4076,8 +4076,8 @@
         <translation>सिंक हो रहा है…</translation>
     </message>
     <message>
-        <source>Blocked (plan required)</source>
-        <translation>अवरुद्ध (प्लान आवश्यक)</translation>
+        <source>Not available for this account</source>
+        <translation>इस खाते के लिए उपलब्ध नहीं</translation>
     </message>
     <message>
         <source>Error</source>

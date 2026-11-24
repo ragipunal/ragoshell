@@ -388,7 +388,7 @@ namespace RagoShell
         switch (_sync->state())
         {
         case SyncEngine::State::Syncing: return tr("Syncing…");
-        case SyncEngine::State::Blocked: return tr("Blocked (plan required)");
+        case SyncEngine::State::Blocked: return tr("Not available for this account");
         case SyncEngine::State::Error:   return tr("Error");
         case SyncEngine::State::Disabled:return tr("Off");
         case SyncEngine::State::Idle:    return tr("Ready");

@@ -4069,8 +4069,8 @@
         <translation>正在同步…</translation>
     </message>
     <message>
-        <source>Blocked (plan required)</source>
-        <translation>已阻止（需要套餐）</translation>
+        <source>Not available for this account</source>
+        <translation>此账户不可用</translation>
     </message>
     <message>
         <source>Error</source>

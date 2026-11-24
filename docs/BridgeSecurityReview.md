@@ -1,12 +1,17 @@
 # Bridge Security Review — consolidated report (roadmap 8.6)
 
 Date: 2026-11-04 · Scope: `ragoshell-agent` (8.3), `ragoshell-web-gateway`
-self-hosted (8.4) and hosted Pro mode (8.5), the client
+self-hosted (8.4) and hosted mode (8.5), the client
 `WebSocketGatewayTransport`, `EgressPolicy`, `GatewayProtocol` /
 `GatewaySession` / `DeviceSessionLedger`, pairing-token and entitlement-JWT
 lifecycles, sync/export handling, Dockerfile, and the docs that describe
 the system (`LocalAgent.md`, `WebGateway.md`, `HostedGateway.md`,
 `TransportSeam.md`, `WebAssembly.md`).
+
+> Note 2026-11-24: the hosted bridge is free for every verified account (no
+> Pro plan), and the per-device cap of 2 became **1 session per account**
+> with session, idle and monthly limits — see `HostedGateway.md` §9. The
+> findings below are the 2026-11-04 review as it was.
 
 Review method: four passes — per-phase diff reviews during 8.3/8.4/8.5
 (each SHIP-WITH-FIXES, all findings closed in phase) plus a final holistic

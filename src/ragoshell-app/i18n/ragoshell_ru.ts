@@ -4083,8 +4083,8 @@
         <translation>Синхронизация…</translation>
     </message>
     <message>
-        <source>Blocked (plan required)</source>
-        <translation>Заблокировано (нужен тариф)</translation>
+        <source>Not available for this account</source>
+        <translation>Недоступно для этой учётной записи</translation>
     </message>
     <message>
         <source>Error</source>

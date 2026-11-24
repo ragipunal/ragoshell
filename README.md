@@ -1,8 +1,8 @@
 # RagoShell
 
-RagoShell is a cross-platform MongoDB management tool — a community-driven continuation of the open-source Robomongo 1.4.4 codebase, modernized for current toolchains and platforms.
+RagoShell is an open-source, cross-platform MongoDB client for desktop and mobile.
 
-## What's different from the 1.4.4 codebase
+## Highlights
 
 - **Qt 6** (tested with 6.12.x) — migrated from Qt 5.12.
 - **Qt Quick (QML) user interface** — the old Qt Widgets UI was rewritten in QML (`src/ragoshell-app/`) on top of a GUI-free core library (`rago-core`); the shell editor still renders through QScintilla.
@@ -55,7 +55,7 @@ See `docs/BuildRagoShellOnWindows.md`, `docs/BuildRagoShellOnMacAndLinux.md` and
 
 ### More documents
 
-`docs/DesignSystem.md` (how the interface is built and its rules), `docs/UiMatrix.md` (how every screen was checked), `docs/Platforms.md` (what runs where), `docs/Shell.md` (the embedded shell), `docs/MacOsWork.md` (what needs a Mac), `docs/TodoMac.md` (the open work, for a session on the Mac), `docs/McpServer.md`, `docs/ManualTests.md`, `docs/Roadmap.md` (the website, account service, hosting and business plan; in Turkish), `docs/Brand.md` (how the name RagoShell is written and used).
+`docs/DesignSystem.md` (how the interface is built and its rules), `docs/UiMatrix.md` (how every screen was checked), `docs/Platforms.md` (what runs where), `docs/Shell.md` (the embedded shell), `docs/MacOsWork.md` (what needs a Mac), `docs/TodoMac.md` (the open work, for a session on the Mac), `docs/McpServer.md`, `docs/ManualTests.md`, `docs/Brand.md` (how the name RagoShell is written and used).
 
 ### Local CI / packaging
 

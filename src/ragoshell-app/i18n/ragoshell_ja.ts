@@ -4069,8 +4069,8 @@
         <translation>同期中…</translation>
     </message>
     <message>
-        <source>Blocked (plan required)</source>
-        <translation>ブロック中 (プランが必要)</translation>
+        <source>Not available for this account</source>
+        <translation>このアカウントでは利用できません</translation>
     </message>
     <message>
         <source>Error</source>

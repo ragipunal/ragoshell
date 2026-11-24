@@ -84,7 +84,11 @@ Flow per sync run:
 3. Merge pulled payload with local (§5), then `PUT` with `If-Match "<etag>"` (or
    `If-None-Match: *` when absent). `412` → re-GET, merge once more, single retry, then
    report `sync_conflict`.
-4. `403 sync_entitlement_required` → `Blocked` state (upsell copy; sync stays configured).
+4. `403 sync_entitlement_required` → `Blocked` state (sync stays configured). Every verified account
+   has sync (free, 20 collections × 1 MiB since 2026-11-23), so 403 now means the operator switched
+   sync off for the account or the email is unverified.
+   `429 sync_daily_write_limit` (500 uploads per account per UTC day, `Retry-After`) → per-collection
+   error `put_http_429`; the next run is user-initiated.
 5. `409 sync_collection_limit_reached` / `413` → surface per-collection error.
 6. `401` → engine stops; `CloudClient` handles session expiry (existing `sessionRevoked`).
 
@@ -107,7 +111,7 @@ New `SyncSetupWizard.qml` dialog opened from `PreferencesAccountSection.qml` (Ph
 section): steps = intro/zero-knowledge note → mode choice (passphrase vs device-key, warnings) →
 passphrase set+confirm with strength hint → collection checkboxes + password toggle → finish.
 Post-setup: sync status row in Account section (`lastSyncAt`, "Sync now", per-collection errors,
-Pro upsell when blocked). All strings `qsTr()`; forms one column < 520 dp; `Theme`/`UiDensity`
+blocked state when sync is not enabled for the account; no upsell — 2026-11-22). All strings `qsTr()`; forms one column < 520 dp; `Theme`/`UiDensity`
 sizes; `Platform` for any shortcut text.
 
 ## 7. Threats and edge cases
@@ -121,10 +125,10 @@ sizes; `Platform` for any shortcut text.
 | C5 | Corrupted/malformed pulled blob (bad b64, wrong tag, huge kdf) | Strict decode + GCM verify; on failure keep local copy, mark collection `error`, never merge garbage |
 | C6 | Clock skew breaking last-writer-wins | Compare `saved_at` only within skew bound; deterministic device-name tiebreak |
 | C7 | Payload > 1 MiB (500-entry history) | §3 size guard + trim query_history oldest-first |
-| C8 | Downgrade Team→Pro over limit | Server `409`/`412` handled; UI lists which collections to uncheck |
+| C8 | Over the collection quota (20 × 1 MiB; originally a Team→Pro downgrade) | Server `409`/`413` handled; UI lists which collections to uncheck |
 | C9 | Sync runs while signed out / revoked | `401` → stop + `sessionRevoked` path; no retry loop |
 | C10 | Two devices push simultaneously | Mandatory preconditions + `412` retry-once; ABA-proof etags server-side |
-| C11 | Free user enables sync | `403` → `Blocked` state; no data loss locally |
+| C11 | Sync switched off by the operator / email unverified (originally: free user) | `403` → `Blocked` state; no data loss locally |
 | C12 | KeyStore unavailable (headless Linux) | Refuse sync setup with clear error (never fall back to plaintext storage) |
 | C13 | Hostile server swaps `kdf_params` (desync / weak-KDF) | Params pinned at provisioning (`configure*`/`attachToRemoteVault`); never adopted from pulled envelopes; inbound params must be ≥ shipped defaults |
 | C14 | `startup_script`/`autoExec` synced → remote code execution on every device | Both excluded from sync: `startup_script` is not a collection, `autoExec` never exported/applied |
@@ -139,7 +143,7 @@ sizes; `Platform` for any shortcut text.
 
 encrypt→decrypt roundtrip incl. wrong-key GCM failure; KDF determinism vs `kdf_params` (salt reuse);
 manifest GET + 304 path; create via `If-None-Match: *`; update via `If-Match`; `412` → merge → retry;
-union merge + tiebreak; `403` free account; `409`/`413` surfaces; offline queue keeps local etags;
+union merge + tiebreak; `403` blocked account; `409`/`413` surfaces; offline queue keeps local etags;
 KeyStore slot isolation; no secrets in written settings.
 
 ## 9. Offline tolerance, revocation and device removal (5.4)

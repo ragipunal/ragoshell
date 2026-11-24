@@ -4104,8 +4104,8 @@
         <translation>جارٍ المزامنة…</translation>
     </message>
     <message>
-        <source>Blocked (plan required)</source>
-        <translation>محظور (يتطلب خطة)</translation>
+        <source>Not available for this account</source>
+        <translation>غير متاح لهذا الحساب</translation>
     </message>
     <message>
         <source>Error</source>

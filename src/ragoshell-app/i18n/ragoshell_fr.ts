@@ -4076,8 +4076,8 @@
         <translation>Synchronisation…</translation>
     </message>
     <message>
-        <source>Blocked (plan required)</source>
-        <translation>Bloqué (forfait requis)</translation>
+        <source>Not available for this account</source>
+        <translation>Non disponible pour ce compte</translation>
     </message>
     <message>
         <source>Error</source>

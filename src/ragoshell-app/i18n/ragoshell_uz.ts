@@ -4076,8 +4076,8 @@
         <translation>Sinxronlanmoqda…</translation>
     </message>
     <message>
-        <source>Blocked (plan required)</source>
-        <translation>Bloklangan (tarif kerak)</translation>
+        <source>Not available for this account</source>
+        <translation>Bu hisob uchun mavjud emas</translation>
     </message>
     <message>
         <source>Error</source>

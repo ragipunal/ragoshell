@@ -210,7 +210,7 @@ Multi-stage, `ragoshell/web`:
 
 ## 8. Out of scope
 
-- Hosted/Pro auth via `ragoshell-api` entitlements (8.5).
+- Hosted auth via `ragoshell-api` entitlements (8.5; `HostedGateway.md`).
 - TLS-automation (ACME) — operator supplies cert or reverse proxy.
 - Session admission quotas beyond the 8.3 constants (per-IP rate limits —
   8.5, where the gateway is public).

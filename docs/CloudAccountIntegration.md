@@ -1,7 +1,7 @@
 # Cloud Account Integration, Signed Update Verification & About Dialog (`Faz 5.1` — `A1`–`A4`)
 
 This document defines the architecture, wire contracts, state machines, threat model, and security
-verification plan for Roadmap Phase `5.1` (`docs/Roadmap.md` §3.4, §4.6, §6 `A1`–`A4`, §7 Faz 5 `5.1`, §12.1):
+verification plan for Roadmap Phase `5.1` (internal roadmap, not published: §3.4, §4.6, §6 `A1`–`A4`, §7 Faz 5 `5.1`, §12.1):
 
 - **`A1` — `CloudClient` & `CloudService`**: RFC 8628 OAuth 2.0 Device Authorization Grant, rotating refresh
   tokens in OS `KeyStore`, offline-verifiable ES256 `entitlement+jwt` caching, and single-source brand URLs.
@@ -16,7 +16,7 @@ verification plan for Roadmap Phase `5.1` (`docs/Roadmap.md` §3.4, §4.6, §6 `
 
 ## 1. Core Principles & Privacy Invariants
 
-1. **Zero unsolicited network traffic (`Roadmap.md` §3.4)**:
+1. **Zero unsolicited network traffic (internal roadmap §3.4)**:
    - Local MongoDB features (connections, SSH, TLS, replica sets, shell, schema analyzer, index advisor,
      collection compare, import/export, BYOK AI) work **100% offline and unsigned-in** forever.
    - `CloudClient` makes **zero network calls on startup or in the background** when unsigned-in.
@@ -35,9 +35,10 @@ verification plan for Roadmap Phase `5.1` (`docs/Roadmap.md` §3.4, §4.6, §6 `
 3. **Single-source brand configuration (`docs/Brand.md`)**:
    - Domain and product URLs are derived once in `cmake/RagoShellDefaults.cmake` -> `BrandInfo.h` ->
      `BrandBridge` (`Brand` QML singleton). No URL or product name literal is hardcoded in C++ or QML.
-4. **App Store / Play Store compliance (`Roadmap.md` §12.1)**:
-   - When `Platform.isMobile` (`SYSTEM_IOS` or `SYSTEM_ANDROID`) is true, external purchase/billing
-     and donation links (`Manage Account`, `Sponsor / Support`) are hidden from QML views.
+4. **App Store / Play Store compliance (internal roadmap §12.1)**:
+   - When `Platform.isMobile` (`SYSTEM_IOS` or `SYSTEM_ANDROID`) is true, external account and
+     donation links (`Manage Account`, `Sponsor / Support`) are hidden from QML views. There are no
+     purchase links at all since 2026-11-22 (no sales).
    - When built with `-DRAGO_STORE_BUILD=ON`, `UpdateService` is inert (never phones home, hides self-update
      controls in `PreferencesDialog`, `AboutDialog`, and `MandatoryUpdateDialog`).
 
@@ -97,7 +98,7 @@ Endpoints consumed:
    - Response `200`: rotated `TokenPairResponse` -> atomically persist new `refresh_token` into `KeyStore`,
      update RAM `access_token`, resolve all queued single-flight callers.
    - Response `400` / `401` (`invalid_grant`, `unauthorized`) -> token revoked/replayed; wipe cloud secrets
-     from `KeyStore`, clear session metadata, transition cleanly to `SignedOut` (`Free` plan) without
+     from `KeyStore`, clear session metadata, transition cleanly to `SignedOut` (no cloud features) without
      touching local MongoDB connections or scripts.
    - Network / `5xx` error -> preserve `refresh_token` and cached `entitlement+jwt` so offline grace continues!
 4. `GET /v1/me`
@@ -110,11 +111,11 @@ Endpoints consumed:
      - `expectedIssuer = effectiveApiUrl` (without trailing slash)
      - `expectedDeviceId = deviceId`
      - `expectedUserId = userId` (when already known from `/v1/me`)
-   - Only claims extracted from a **verified** `entitlement+jwt` signature are trusted to unlock paid
-     capabilities or persist into `KeyStore` (`cloud/entitlement_jwt`). Unsigned JSON fields outside `token`
+   - Only claims extracted from a **verified** `entitlement+jwt` signature are trusted to unlock cloud
+     features or persist into `KeyStore` (`cloud/entitlement_jwt`). Unsigned JSON fields outside `token`
      are never trusted on their own if `EntitlementVerifier` has keys configured; if no public keys are
-     compiled/configured yet (pre-`0.7` local dev without keys), `CloudClient` rejects unverified paid
-     entitlement tokens and stays on `Free` unless valid verification keys are supplied.
+     compiled/configured yet (pre-`0.7` local dev without keys), `CloudClient` rejects unverified
+     entitlement tokens and offers no cloud features unless valid verification keys are supplied.
 6. `POST /v1/auth/logout`
    - Request: `{"refresh_token": "<token>"}` **without** `Authorization` header when `refresh_token` is
      available (because `ragoshell-api` checks `Authorization` first and would reject an expired 15-minute
@@ -198,8 +199,9 @@ or top-level section consistent with existing `PreferencesDialog.qml` cards):
   - Large monospace `user_code` badge (`XXXX-XXXX`), **Copy Code** button, **Open Browser** button
     (opens validated `verification_uri_complete`), live expiry countdown (`mm:ss`), and **Cancel** button.
 - **Signed-In State**:
-  - Account email, device name + short `device_id` prefix (`first 8 chars`), **Plan** badge (`Free`,
-    `Pro`, `Team`) and **Status** badge (`Active`, `Trial`, `Offline grace`, `Past due`, `Canceled`).
+  - Account email, device name + short `device_id` prefix (`first 8 chars`), **Status** badge (`Active`,
+    `Trial`, `Offline grace`, `Past due`, `Canceled`). (The **Plan** badge `Free`/`Pro`/`Team` was
+    removed on 2026-11-24 with the plans; the token's `plan` claim is ignored.)
   - Feature summary row: Encrypted Sync (`Enabled` / `Not included`) and entitlement validity / offline
     grace timestamp. (The hosted AI quota row was removed: the AI assistant is bring-your-own-key only.)
   - Actions: **Refresh Status**, **Manage Account** (`!Platform.isMobile`, opens `Brand.portalUrl`), and
@@ -292,7 +294,7 @@ dependencies beyond `OpenSSL::Crypto` (already linked by `rago-core`):
      - **Open-Source Licenses** (opens `LicensesDialog` via signal `openLicensesRequested()`)
      - **Source Code** (`Brand.sourceRepoUrl`)
      - **Support / Donate** (`Brand.donateUrl`, visible only when `!Platform.isMobile && Brand.donateUrl.length > 0`)
-   - Keeps Robomongo / Paralect / 3T attribution notice (`Brand.md` §1) intact.
+   - Keeps the copyright line for the original codebase intact (About dialog; full attribution in `COPYRIGHT`).
    - Hides self-update check card when `Brand.isStoreBuild` is true.
 2. **Windows & Linux Installer URLs**:
    - `install/windows/ragoshell.wxs` already sets `ARPURLINFOABOUT` from `$(var.ProductUrl)` (`RAGO_PRODUCT_URL`).
@@ -309,12 +311,12 @@ dependencies beyond `OpenSSL::Crypto` (already linked by `rago-core`):
 |---|---|---|---|
 | T1 | **Phishing / Open-Redirect via `verification_uri`** | Compromised or MITM dev endpoint returns `javascript:...`, `file:///...`, or `https://evil.example/device` | Strict `QUrl` validation in `CloudClient::isAllowedVerificationUrl`: `https://` only (loopback `http://` only when API URL is loopback), exact host match against `BrandInfo::portalUrl`, no userinfo, max 512 chars. |
 | T2 | **Token leakage into plaintext config or logs** | Writing `refresh_token` / `access_token` into `ragoshell.json` or `qWarning()` | Secrets stored strictly via `ICloudCredentialStore` (`KeyStore`); `access_token` RAM-only + `OPENSSL_cleanse`; never logged; `CloudClient_test` asserts `ragoshell.json` contains zero token substrings. |
-| T3 | **Forged paid entitlement response** | Compromised CDN/proxy returns `{"plan": "pro", "features": {"sync": true}}` without valid signature | `CloudClient` verifies `token` (`entitlement+jwt`) via `EntitlementVerifier` (OpenSSL P-256 ES256) bound to `iss == apiUrl` and `did == deviceId`; unsigned outer JSON fields never grant paid features. |
+| T3 | **Forged paid entitlement response** | Compromised CDN/proxy returns `{"plan": "pro", "features": {"sync": true}}` without valid signature | `CloudClient` verifies `token` (`entitlement+jwt`) via `EntitlementVerifier` (OpenSSL P-256 ES256) bound to `iss == apiUrl` and `did == deviceId`; unsigned outer JSON fields never grant cloud features. |
 | T4 | **Refresh token race / reuse revocation** | Sync + AI + UI trigger simultaneous token refreshes on an expired `access_token`, sending the same single-use `refresh_token` twice | Single-flight queue (`m_refreshInFlight` + `m_pendingTokenWaiters`) ensures only one `/v1/auth/refresh` runs at a time; rotated `refresh_token` is written to `KeyStore` before waking waiters. |
 | T5 | **Tampered update manifest / fake mandatory update** | Compromised `/v1/release-check` or mirror serves malicious `downloadUrl` or bogus `mandatory: true` | When `minisignPubkey` is configured, `UpdateService` fetches raw `releases.json` + `.minisig`, verifies Ed25519 + BLAKE2b-512 + `global_sig` + `trusted comment` (`file:releases.json`, `release:<ver>`), and parses `downloadUrl`/`mandatory` solely from the verified bytes. |
 | T6 | **Redirect stripping or leaking `Authorization` header** | `301`/`302`/`307` redirect on API endpoint forwards Bearer token to third-party host | Redirects disabled (`maxRedirects = 0`) on `CloudClient` requests; HTTPS enforced for non-loopback endpoints. |
 | T7 | **Memory exhaustion via oversized HTTP response** | Rogue server streams multi-gigabyte response body | Hard `64 KiB` (`65,536` bytes) cap enforced incrementally on `QIODevice::readyRead` + `15s` transfer timeout across `CloudClient` and `UpdateService`. |
-| T8 | **Revoked session blocks local database work** | `401 invalid_grant` on refresh locks UI or deletes saved MongoDB connections | `401` clears only `cloud/*` `KeyStore` slots and resets plan to `Free`; local connections, SSH/TLS keys, and scripts remain completely untouched. |
+| T8 | **Revoked session blocks local database work** | `401 invalid_grant` on refresh locks UI or deletes saved MongoDB connections | `401` clears only `cloud/*` `KeyStore` slots and leaves no cloud features; local connections, SSH/TLS keys, and scripts remain completely untouched. |
 | T9 | **Update manifest rollback / replay attack** | Compromised mirror or DNS replays an older validly signed `releases.json` + `.minisig` | `UpdateService` persists `cachedManifestTimestampSec` monotonically and passes it as `Minisign::VerifyOptions::minTimestampSec`; older signed manifests and unsigned `/v1/release-check` downgrades are rejected. |
 | T10 | **Missing or temporarily locked OS KeyStore** | Portable/headless build without `libsecret`/Keychain or temporarily locked login keychain | When `!KeyStore::isAvailable()`, `m_volatileRefreshToken` stays strictly in RAM for the running session (`cloudSignedIn: false` on disk, cleansed on exit/logout); transient `KeyStore::Result::Error` preserves local session metadata instead of revoking. |
 
@@ -331,14 +333,14 @@ In accordance with repository security guidelines and secure coding verification
      1-bit edit in `trusted comment` (`release:9.9.9`), mismatched 8-byte `keyId`, truncated Base64,
      wrong public key, `expectedFile` / `expectedRelease` mismatch.
    - Entitlement token verification tests: valid ES256 `entitlement+jwt` bound to `device_id` accepted;
-     tampered payload, wrong `device_id`, wrong `iss`, or expired offline grace rejected -> stays `Free`.
+     tampered payload, wrong `device_id`, wrong `iss`, or expired offline grace rejected -> no cloud features.
 2. **Authentication & Session Lifecycle Tests (`CloudClient_test.cpp`)**:
    - Zero network traffic on construction and startup when unsigned-in.
    - Full RFC 8628 device flow against in-process `QTcpServer` (`127.0.0.1:0`): `authorization_pending` ->
      `slow_down` (`+5s` interval increase) -> `200` token exchange -> `/v1/me` + `/v1/me/entitlements`.
    - Phishing `verification_uri` (`https://evil.example/device`, `javascript:alert(1)`) rejected.
    - Concurrent `withValidAccessToken` calls execute **single-flight** (`refreshHits == 1`).
-   - `401 invalid_grant` on refresh wipes `InMemoryCloudCredentialStore` secrets and degrades cleanly to `Free`.
+   - `401 invalid_grant` on refresh wipes `InMemoryCloudCredentialStore` secrets and degrades cleanly to no cloud features.
    - Offline `503` / network drop during refresh preserves cached `refresh_token` and `OfflineGrace` entitlement.
    - `signOut()` sends `{"refresh_token": "..."}` without `Authorization` header and wipes secrets even when
      server returns `500` or closes socket.

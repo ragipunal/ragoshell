@@ -1,10 +1,17 @@
-# Mod B Hosted Gateway — Pro cloud bridge (roadmap 8.5, WebAssembly.md Faz 4.3)
+# Mod B Hosted Gateway — hosted cloud bridge (roadmap 8.5, WebAssembly.md Faz 4.3)
 
 Written: 2026-11-03 · High tier (auth/tokens + money + public network path).
 Plan + threats before code.
 
+> Note 2026-11-24: the hosted bridge is free for every verified account
+> (decision 2026-11-23; no Pro/Team plans exist) and the per-device cap of 2
+> became **1 session per account** (ledger keyed by `sub`,
+> `RAGOSHELL_GW_MAX_PER_DEVICE` ignored with a warning). §1–8 are the
+> 2026-11-03/04 design and keep their original wording where it is history;
+> §9 is current.
+
 Mod B (8.4) ships a self-hosted `ragoshell-web-gateway` guarded by a shared
-pairing token. 8.5 turns the same binary + protocol into the **hosted Pro
+pairing token. 8.5 turns the same binary + protocol into the **hosted
 feature**: instead of a pairing token, the client's `hello` carries its
 `entitlement+jwt` — the ES256 token `ragoshell-api` already mints for
 verified, signed-in users (`internal/auth/entitlement.go`, client-side
@@ -18,9 +25,9 @@ browser ──wss://app.ragoshell.com.tr/ws──▶ nginx (TLS+per-IP limits)
               hello.token = entitlement+jwt
               ├─ EntitlementVerifier (kid→P-256 SPKI ring)
               │    exp/nbf±skew, offline_grace_until, typ, iss, aud
-              ├─ features.hosted_bridge == true       ← Pro/Team gate
+              ├─ features.hosted_bridge == true       ← hosted_bridge feature gate
               ├─ status ∈ {active, trialing}
-              └─ DeviceSessionLedger.tryAcquire(did)  ← per-device cap
+              └─ DeviceSessionLedger.tryAcquire(did)  ← per-device cap (per account since 2026-11-24, §9.1)
         ──▶ EgressPolicy (public targets only, TLS-required in hosted mode)
         ──▶ NativeMongoTransport → user's MongoDB
 ```
@@ -50,7 +57,8 @@ same embedded ring the desktop client verifies with — `fromEmbeddedDefaults`).
 - `RAGOSHELL_GW_ENT_ISS` / `RAGOSHELL_GW_ENT_AUD` — expected iss/aud;
   defaults `EntitlementVerifier::defaultApiIssuer()/defaultAppAudience()`.
 - `RAGOSHELL_GW_MAX_PER_DEVICE` — concurrent authed sessions per `did`
-  (default 2).
+  (default 2). Ignored with a warning since 2026-11-24: replaced by
+  `RAGOSHELL_GW_MAX_PER_ACCOUNT` (1, keyed by `sub`; §9.1).
 - `RAGOSHELL_GW_REQUIRE_TLS=1` — refused non-TLS Mongo targets (default on
   in hosted mode).
 
@@ -58,10 +66,10 @@ same embedded ring the desktop client verifies with — `fromEmbeddedDefaults`).
 
 | # | Threat | Mitigation |
 |---|---|---|
-| H1 | **Free-tier bypass**: forged/expired token, hosted_bridge=false, canceled plan | ES256 signature + typ/iss/aud + exp/nbf+skew + `hosted_bridge` + status ∈ {active, trialing} all enforced at hello; failure → close `unauthorized`. The session itself ends at the token's `exp` (closes `entitlement expired`, frames after `exp` refused — review R8); a plan canceled before `exp` is not revoked (no `jti` check) and stays usable until `exp` |
+| H1 | **Unauthorized use**: forged/expired token, account without `hosted_bridge`, canceled status | ES256 signature + typ/iss/aud + exp/nbf+skew + `hosted_bridge` + status ∈ {active, trialing} all enforced at hello; failure → close `unauthorized`. The session itself ends at the token's `exp` (closes `entitlement expired`, frames after `exp` refused — review R8); access ended before `exp` is not revoked (no `jti` check) and stays usable until `exp` (the operator deny list, §9.4, now covers urgent cases) |
 | H2 | **Key rotation mismatch**: API rotates `kid`, gateway holds stale ring | kid-indexed ring + `GW_ENT_KEYRING` accepts multiple entries; restart-less pickup is an ops reload (documented — 8.6) |
 | H3 | **Token replay across devices**: JWT stolen from device A used from device B | `did` embedded in the token — sessions counted by `did`; theft window bounded by 7-day TTL (offline grace does not extend minted validity for auth here — `isUsable()` allows grace; the gateway accepts `ValidOnline` **only**: `offline_grace_until` exists for offline client features, not a hosted network service) |
-| H4 | **Per-device DoS**: one user opens all 8 global slots | `kMaxSessions` global cap + `maxPerDevice` (2) — one account can never starve others |
+| H4 | **Per-device DoS**: one user opens all 8 global slots | `kMaxSessions` global cap + `maxPerDevice` (2) — one account can never starve others (since 2026-11-24: 1 session per account, §9.1) |
 | H5 | **SSRF / plaintext exfil**: hosted gateway must never dial internal nets or ship creds over plaintext | `EgressPolicy` public-only: one host, forced `directConnection`, no `+srv`, no host-side auth/file options, clamped timeouts (review R1/R3/R5/R6) + `requireTls` (deny non-TLS URI) |
 | H6 | **Token in logs** | JWT never logged; session close reason is generic |
 | H7 | **Replay of `at+jwt` access token instead of entitlement** | verifier pins `typ="entitlement+jwt"` — `at+jwt`/`refresh` rejected by type |
@@ -75,17 +83,18 @@ same embedded ring the desktop client verifies with — `fromEmbeddedDefaults`).
 cached `entitlement+jwt` as `transportToken` on the cloned
 `ConnectionSettings` (memory only). If the user is signed out or
 `hosted_bridge` is false the dialog hides the channel (defense-in-depth —
-the gateway is authoritative anyway). UI hint: "Pro plan requires TLS
+the gateway is authoritative anyway). UI hint (original 2026-11-03 wording, since replaced): "Pro plan requires TLS
 targets (mongodb+srv:// or ?tls=true)". (Outdated since the 2026-11-04
-review: the hosted gateway refuses `mongodb+srv://` for now — the hint
-text is a QML string and is left for a translation pass.)
+review: the hosted gateway refuses `mongodb+srv://` for now; the hint now
+reads "Signs in with your RagoShell account. Targets must use TLS
+(mongodb+srv:// or ?tls=true).")
 
 ## 6. Tests
 
 - `DeviceSessionLedger_test`: acquire/release/exhaust/different-keys.
 - `WebSocketGatewayTransport_test` (hosted block): mint ES256 entitlement
-  JWTs with the existing test helpers — valid pro token connects; free
-  plan (`hosted_bridge=false`) denied; expired denied; `at+jwt`-typ denied;
+  JWTs with the existing test helpers — valid token connects; account
+  without `hosted_bridge` denied; expired denied; `at+jwt`-typ denied;
   second concurrent session same `did` denied while first lives, allowed
   after disconnect; `requireTls` → non-TLS URI denied.
 - `EgressPolicy_test`: requireTls cases.
@@ -107,7 +116,8 @@ All §2 pieces landed:
   {active, trialing} enforced, ledger key = `did` else `sub`, missing key →
   deny. Slot released on disconnect and in the destructor.
 - `DeviceSessionLedger` (header-only, single event-loop) +
-  `RAGOSHELL_GW_MAX_PER_DEVICE` (default 2).
+  `RAGOSHELL_GW_MAX_PER_DEVICE` (default 2; replaced by one session per
+  account on 2026-11-24, §9.1).
 - `EgressPolicy::setRequireTls` — `mongodb://` requires `tls=true`/`ssl=true`;
   `mongodb+srv://` implies TLS (but is refused on public gateways since
   review R6). Independent of `allowPrivate`; default on in hosted mode
@@ -123,13 +133,14 @@ All §2 pieces landed:
   JWT into the in-memory settings clone (never persisted), `MongoWorker`
   maps `hosted` → `wss://app.<brand-domain>/ws`. Cleartext `ws://` to
   non-loopback stays refused.
-- QML: channel list is dynamic — "RagoShell Cloud (Pro)" appears only while
+- QML: channel list is dynamic — "RagoShell Cloud" (originally labelled "(Pro)"; the label is "%1 Cloud"
+  since 2026-11-24) appears only while
   `CloudService.hostedBridgeEnabled`; choosing it never persists a pairing
   token.
 
 Tests (§6) landed as `DeviceSessionLedgerTest` + a `hosted_*` block in
 `WebSocketGatewayTransport_test` minting real ES256 tokens (valid connects;
-free plan/expired/wrong-typ denied; per-device cap enforced and frees on
+no hosted_bridge/expired/wrong-typ denied; per-device cap enforced and frees on
 disconnect) and `EgressPolicyTest.require_tls_enforces_tls_targets`.
 
 Security review (2026-11-04) fixes applied: `+srv` URIs with an explicit
@@ -152,8 +163,9 @@ yet"): Atlas users connect with a single-host `mongodb://…?tls=true` URI
 until the gateway dials through its own checked connector
 (`docs/WebGateway.md` §2). Ledger
 slots are per WebSocket — only the primary `MongoWorker` opens one, so a
-client can hold two concurrent server connections per device under the
-default cap; a third server connection gets `unauthorized` until a slot
+client could hold two concurrent server connections per device under the
+then-default cap of 2 (one per account since 2026-11-24, §9.1); a further
+server connection gets refused until a slot
 frees (corrected by the 8.6 review — shell/monitor tabs currently do NOT
 open a WebSocket because secondary workers bypass `IMongoTransport`;
 they are refused client-side until a transport-routed shell ships).
@@ -258,15 +270,19 @@ empty the file. Lines that are not UUIDs are ignored with a warning. The runbook
 
 ### 9.6 Out of scope
 
-- Deployment: the `web-gateway` compose service and the nginx `/ws`
-  location do not exist in `ragoshell-infra` yet; the quota file and deny
-  file need a writable private volume there (`read_only` root stays).
+- Deployment: done in `ragoshell-infra` on 2026-11-24 (`docs/bridge.md`):
+  compose service `web-gateway` behind the profile `bridge`, nginx
+  `location = /ws` on the app host, a host state directory for the quota and
+  status files and a read-only one for the deny list (`read_only` root
+  stays). Still open there: an image (no CI publishes one) and the human
+  steps of its runbook. Client keepalive: Cloudflare may close an idle
+  WebSocket after about 100 s and the client sends no WebSocket ping.
 - Several gateway instances: move the monthly counter to the API (an
   internal endpoint), keep the per-instance session ledger.
-- The client fetches a new entitlement token only at sign-in or on the
-  manual refresh in Preferences, so the bridge refuses a 7-day-old token
-  until the user refreshes; and the client strings still say "Pro". Both
-  belong to the client release before the bridge goes live.
+- ~~The client fetches a new entitlement token only at sign-in or on the
+  manual refresh in Preferences; the client strings still say "Pro".~~
+  Both done 2026-11-24 (§9.8): automatic refresh at half-life, channel
+  label "%1 Cloud", no "Pro" wording.
 
 ### 9.7 Status file for monitoring — 2026-11-24
 

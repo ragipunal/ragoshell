@@ -779,7 +779,8 @@ quick automatic check of the engine (19 checks, `SHELLSELFTEST PASS` lines) and 
 ## 33. Account and sync (docs/SyncClient.md, docs/SyncProtocol.md in ragoshell-api)
 
 Prerequisite: a running API + portal (staging or local `ragoshell-api` + `ragoshell-infra`), two
-machines or user profiles (A and B), one free account and one Pro/Team account.
+machines or user profiles (A and B), and one verified account (every verified account has sync and
+the hosted bridge, free with limits — no plan account is needed).
 
 - [ ] **Device-flow sign-in (desktop)** — Preferences → Account → Sign in opens the device code
       dialog; the shown URL + user code authenticate in a browser; the dialog closes on its own and
@@ -803,14 +804,28 @@ machines or user profiles (A and B), one free account and one Pro/Team account.
       Account section shows no error, the merged value matches B
 - [ ] **412 recovery** — while A is mid-sync (or holding a stale etag), PUT from B; A's next sync
       retries once with a fresh GET and completes — no stuck "conflict" state
-- [ ] **Free-account upsell** — on the free account, enabling sync shows the Pro/Team upsell state
-      in the Account section; no crash, sign-in still works
 - [ ] **Sign-out mid-sync** — start a sync on A, then Sign out from Account during it: the run
       ends once (no repeated dialogs), Account returns to the signed-out state, no crash
 - [ ] **Device revoke from portal** — sign in on the portal → Devices → remove machine A's device;
       on A run Sync now: exactly one sign-out notice, the app settles to signed-out, no retry loop
       (log panel shows no repeated requests)
-- [ ] **90-day read-only** — (API admin or a short-lived entitlement) expire the entitlement on the
-      account used above: GET sync data still works (collections download), but Sync now PUTs fail
-      with `sync_entitlement_required` and the Account section shows the read-only/blocked state;
-      local data is untouched
+- [ ] **3-device limit** — with three active devices on the account, start the device flow on a
+      fourth: approving the code on the portal is refused (device limit reached); after removing one
+      device under Devices the same approval works
+- [ ] **500 uploads per day** — (staging with a lowered limit, or a scripted loop of Sync now) after
+      the daily limit the PUT returns `429 sync_daily_write_limit` with `Retry-After`; the Account
+      section shows the per-collection error (`put_http_429`), no retry loop, and downloads still work; it clears after
+      the UTC day turns
+- [ ] **Bridge: one session per account** — connect through the "RagoShell Cloud" channel on A, then
+      on B with the same account: B is refused with "session limit reached: one cloud bridge session
+      per account"; after A disconnects, B connects
+- [ ] **Bridge: monthly limit** — (staging with a small `RAGOSHELL_GW_MONTHLY_BYTES`) run queries until
+      the limit: the session closes with "monthly transfer limit reached" and a new connection is
+      refused with the same message until the next UTC month
+- [ ] **Automatic token refresh** — leave the app signed in and running past the token's half-life
+      (3.5 days), or restart it after 4 days: the hosted channel still connects without a manual
+      refresh; with no usable token, connecting shows "Your cloud access is being renewed…" and works
+      on the next try (HostedGateway.md §9.8)
+- [ ] **Inactivity rule** (describe only, not practical by hand) — an account inactive for 12 months
+      gets a warning email; its sync data is deleted 30 days after delivery, the account stays. Check it
+      with the API tests, not here

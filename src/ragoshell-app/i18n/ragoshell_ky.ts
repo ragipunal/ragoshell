@@ -4076,8 +4076,8 @@
         <translation>Синхрондоштурулууда…</translation>
     </message>
     <message>
-        <source>Blocked (plan required)</source>
-        <translation>Бөгөттөлгөн (тариф керек)</translation>
+        <source>Not available for this account</source>
+        <translation>Бул каттоо эсеби үчүн жеткиликсиз</translation>
     </message>
     <message>
         <source>Error</source>

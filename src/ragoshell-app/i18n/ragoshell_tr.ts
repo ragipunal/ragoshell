@@ -4069,8 +4069,8 @@
         <translation>Eşitleniyor…</translation>
     </message>
     <message>
-        <source>Blocked (plan required)</source>
-        <translation>Engellendi (plan gerekli)</translation>
+        <source>Not available for this account</source>
+        <translation>Bu hesapta kullanılamıyor</translation>
     </message>
     <message>
         <source>Error</source>

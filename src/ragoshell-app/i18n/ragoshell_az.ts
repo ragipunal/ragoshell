@@ -4076,8 +4076,8 @@
         <translation>Sinxronizasiya edilir…</translation>
     </message>
     <message>
-        <source>Blocked (plan required)</source>
-        <translation>Bloklanıb (plan tələb olunur)</translation>
+        <source>Not available for this account</source>
+        <translation>Bu hesab üçün əlçatan deyil</translation>
     </message>
     <message>
         <source>Error</source>
