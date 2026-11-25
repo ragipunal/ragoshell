@@ -27,6 +27,7 @@ import {
   validateAllowedHttpsUrl,
   verifyReleaseDirectory,
 } from './generate-releases-json.mjs';
+import { verifyReleaseTag } from './check-release-tag.mjs';
 import {
   generateEphemeralTestKeyPair,
   parseMinisignPublicKey,
@@ -317,6 +318,32 @@ function testNegativeManifestAndFilesystemGuards(brand, tmpRoot) {
     () => generateReleaseManifest({ repoRoot, distDir: distUnlisted, version: '9.9.9' }),
     /not found in .*CHANGELOG/
   );
+  const distUnlistedRc = path.join(tmpRoot, 'dist-unlisted-rc');
+  populateFakeDist(distUnlistedRc, brand.productId, '9.9.9-rc.1');
+  assert.throws(
+    () => generateReleaseManifest({ repoRoot, distDir: distUnlistedRc, version: '9.9.9-rc.1' }),
+    /not found in .*CHANGELOG/
+  );
+
+  // 3b. Pre-release tag reuses matching base X.Y.Z section in CHANGELOG without allowUnlistedChangelog
+  const distBaseRc = path.join(tmpRoot, 'dist-base-rc');
+  populateFakeDist(distBaseRc, brand.productId, '2.1.0-rc.1');
+  const rcManifest = generateReleaseManifest({ repoRoot, distDir: distBaseRc, version: '2.1.0-rc.1' });
+  assert.equal(rcManifest.manifest.latestVersion, '2.1.0-rc.1');
+
+  // 3c. Strict release tag verifier matches SemVer 2.0.0, CMakeLists.txt PROJECT_VERSION, and CHANGELOG
+  const stableTagInfo = verifyReleaseTag({ repoRoot, tag: 'v2.1.0' });
+  assert.equal(stableTagInfo.isPrerelease, false);
+  const rcTagInfo = verifyReleaseTag({ repoRoot, tag: 'v2.1.0-rc.1' });
+  assert.equal(rcTagInfo.isPrerelease, true);
+  assert.equal(rcTagInfo.changelogVersion, '2.1.0');
+  for (const badTag of ['', '2.1.0', 'v2.1', 'v2.2.0', 'v2.1.0-rc.01', 'v2.1.0-foo.1', 'widgets-final']) {
+    assert.throws(
+      () => verifyReleaseTag({ repoRoot, tag: badTag }),
+      /required|Invalid release tag|does not match/,
+      `Expected release tag "${badTag}" to be rejected`
+    );
+  }
 
   // 4. minSupportedVersion > latestVersion refused
   const distMinGt = path.join(tmpRoot, 'dist-mingt');

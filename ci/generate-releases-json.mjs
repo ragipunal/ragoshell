@@ -536,6 +536,10 @@ export function generateReleaseManifest(options = {}) {
   if (fs.existsSync(changelogPath)) {
     const entries = parseChangelog(fs.readFileSync(changelogPath, 'utf8'));
     changelogEntry = entries.find((e) => e.version === version) || null;
+    if (!changelogEntry && version.includes('-')) {
+      const baseVersion = version.slice(0, version.indexOf('-'));
+      changelogEntry = entries.find((e) => e.version === baseVersion) || null;
+    }
   }
   if (!changelogEntry && !options.allowUnlistedChangelog) {
     throw new Error(

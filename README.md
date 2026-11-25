@@ -11,7 +11,7 @@ RagoShell is an open-source, cross-platform MongoDB client for desktop and mobil
 - **CMake + CMakePresets** — replaces the old qmake/PowerShell build system.
 - **Lighter startup and memory profile** — the QtWebEngine-based welcome tab was replaced with a lightweight network implementation, and the output log is bounded.
 - **Optional read-only MCP server** — `ragoshell-mcp` lets AI clients (Claude Code, Claude Desktop) inspect MongoDB through saved connections you explicitly allow; off by default. See `docs/McpServer.md`.
-- **Cross-platform local CI** — per-platform build/packaging scripts under `ci/` producing distributable archives, plus Gitea release publishing helpers.
+- **Cross-platform CI & signed releases** — per-platform build/packaging scripts under `ci/` producing distributable installers and archives, SPDX 2.3 SBOMs, and Minisign-verified release manifests.
 
 MongoDB 4.0 compatibility is preserved and tested against MongoDB 4.0.x.
 
@@ -27,7 +27,7 @@ MongoDB 4.0 compatibility is preserved and tested against MongoDB 4.0.x.
 
 ## Download
 
-Prebuilt packages are published on the project's Gitea releases page (see repository Releases).
+Prebuilt packages and checksums are published on [GitHub Releases](https://github.com/ragipunal/ragoshell/releases) and [ragoshell.com.tr/download](https://ragoshell.com.tr/download/).
 
 ## Build
 
@@ -72,14 +72,7 @@ See `docs/BuildRagoShellOnWindows.md`, `docs/BuildRagoShellOnMacAndLinux.md` and
 ./ci/build-android.sh 2.1.0
 ```
 
-Packages land in `dist/` (git-ignored). Release publishing to Gitea:
-
-```bash
-./ci/gitea-release.sh v2.1.0        # bash
-.\ci\gitea-release.ps1 v2.1.0       # PowerShell
-```
-
-The token is read from `GITEA_TOKEN`, `ci/.env`, or an interactive prompt. See `ci/README.md`.
+Packages land in `dist/` (git-ignored). Release manifest generation, SPDX 2.3 SBOM creation, Minisign signing, and automated publishing are documented in `ci/README.md` and `docs/ReleasePipeline.md`.
 
 ### Test data
 

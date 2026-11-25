@@ -59,6 +59,12 @@ jobs:
       - name: Check shell script syntax
         run: bash -n ci/*.sh
 
+      - name: Verify release tag matches SemVer, CMakeLists.txt, and CHANGELOG
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: node ci/check-release-tag.mjs "$RELEASE_TAG"
+
       - name: Run check-i18n.mjs
         run: node ci/check-i18n.mjs
 

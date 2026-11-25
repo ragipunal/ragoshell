@@ -3,6 +3,16 @@ RagoShell changelog
 
 RagoShell 2.1.0
 ---------------
+- Optional RagoShell Cloud account and encrypted cross-device sync: RFC 8628 browser sign-in, OS KeyStore secret
+  storage, ES256 offline-verifiable entitlements, client-encrypted Argon2id + AES-256-GCM settings/connection/history
+  sync, and hosted cloud bridge connections
+- Enterprise custom server profile and policy lock: configurable custom API/portal/bridge URLs and ES256 key ring in
+  Preferences, read-only system `policy.json` override lock, isolated per-server credentials and device IDs, and
+  automatic SaaS update-check suppression
+- Optional read-only MCP server (`ragoshell-mcp`) over stdio for AI clients such as Claude Code and Claude Desktop,
+  restricted to explicitly allowed saved connections (`docs/McpServer.md`)
+- Security hardening across the client: OS KeyStore isolation for AI assistant API keys, origin-bound custom AI endpoints,
+  strict SSH known-hosts checks, a global HTTPS kill switch, and Minisign-verified release manifests with SPDX 2.3 SBOMs
 - Keyboard shortcuts are written for the platform and shown only where they work: the Command key (⌘) on a Mac and an
   iPad, Ctrl elsewhere, and on a phone or tablet only while a hardware keyboard is attached (a tablet no longer
   says "Ctrl+L"); the Welcome texts name the gesture on a touch screen
