@@ -119,12 +119,15 @@ SyncEngine::SyncEngine(CloudClient *cloud,
 {
     loadSyncState();
     setState(syncEnabled() ? State::Idle : State::Disabled);
-    if (m_cloud)
+    if (m_cloud) {
         connect(m_cloud, &CloudClient::signedOut, this, [this]() {
             if (m_state == State::Syncing)
                 finishRun(false, QStringLiteral("unauthorized"));
             setState(syncEnabled() ? State::Idle : State::Disabled);
         });
+        connect(m_cloud, &CloudClient::serverProfileSwitched,
+                this, &SyncEngine::resetLocalSyncStateForServerSwitch);
+    }
 }
 
 bool SyncEngine::syncEnabled() const
@@ -341,11 +344,74 @@ void SyncEngine::disable()
     setState(State::Disabled);
 }
 
+void SyncEngine::resetLocalSyncStateForServerSwitch()
+{
+    ++m_runGeneration;
+    m_runIndex = -1;
+    m_runQueue.clear();
+    m_accessToken.clear();
+    m_wipeInFlight = false;
+    if (m_wipeReply)
+    {
+        m_wipeReply->disconnect(this);
+        m_wipeReply->abort();
+        m_wipeReply->deleteLater();
+        m_wipeReply.clear();
+    }
+    if (m_attachReply)
+    {
+        m_attachReply->disconnect(this);
+        m_attachReply->abort();
+        m_attachReply->deleteLater();
+        m_attachReply.clear();
+    }
+    if (!m_attachDone)
+        finishAttach(QStringLiteral("server_switched"), false);
+    m_offline = false;
+    m_retryTimer.stop();
+    m_retryBackoffMs = 0;
+    m_retried412 = 0;
+    m_lastSyncAtMs = 0;
+    m_lastError.clear();
+    m_conflictLabels.clear();
+    m_states.clear();
+    m_kdfParams.clear();
+    m_collectionStatus.clear();
+    if (m_creds && m_creds->isAvailable())
+        m_creds->removeSecret(QString::fromLatin1(ICloudCredentialStore::kSyncMasterKeySlot));
+    if (m_settings)
+    {
+        m_settings->setSyncEnabled(false);
+        m_settings->setSyncKeyMode(QString());
+        m_settings->save();
+    }
+    QFile::remove(syncStatePath());
+    setState(State::Disabled);
+}
+
 void SyncEngine::syncNow()
 {
     if (!syncEnabled() || m_state == State::Syncing || m_wipeInFlight)
         return;
-    if (!m_cloud || !m_cloud->isSignedIn())
+    if (m_cloud && m_cloud->isPolicyInvalid())
+    {
+        m_lastError = QStringLiteral("policy_invalid");
+        setState(State::Error);
+        return;
+    }
+    if (m_settings && m_settings->disableHttpsFeatures())
+    {
+        m_lastError = QStringLiteral("https_disabled");
+        setState(State::Error);
+        return;
+    }
+    if (!m_cloud || !CloudClient::isAllowedApiBaseUrl(m_cloud->effectiveApiUrl()))
+    {
+        m_lastError = QStringLiteral("unsafe_api_url");
+        setState(State::Error);
+        return;
+    }
+    if (!m_cloud->isSignedIn())
     {
         m_lastError = QStringLiteral("unauthorized");
         setState(State::Error);
@@ -367,13 +433,23 @@ void SyncEngine::syncNow()
 void SyncEngine::wipeRemote()
 {
     // A running sync would re-create collections right after the DELETE (§10 R10).
-    if (m_wipeInFlight || m_state == State::Syncing || !m_cloud || !m_cloud->isSignedIn())
+    if (m_wipeInFlight || m_state == State::Syncing || !m_cloud || !m_cloud->isSignedIn()
+        || m_cloud->isPolicyInvalid()
+        || (m_settings && m_settings->disableHttpsFeatures())
+        || !CloudClient::isAllowedApiBaseUrl(m_cloud->effectiveApiUrl()))
     {
         emit wipeFinished(false);
         return;
     }
     m_wipeInFlight = true;
-    m_cloud->withValidAccessToken([this](bool ok, const QString &token, const QString &) {
+    const quint64 gen = m_runGeneration;
+    m_cloud->withValidAccessToken([this, gen](bool ok, const QString &token, const QString &) {
+        if (gen != m_runGeneration)
+        {
+            m_wipeInFlight = false;
+            emit wipeFinished(false);
+            return;
+        }
         if (!ok)
         {
             m_wipeInFlight = false;
@@ -382,10 +458,18 @@ void SyncEngine::wipeRemote()
         }
         QNetworkRequest req = buildRequest(QStringLiteral("/v1/sync"), token);
         QNetworkReply *reply = m_nam.deleteResource(req);
+        m_wipeReply = reply;
         capReply(reply);
-        connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        connect(reply, &QNetworkReply::finished, this, [this, reply, gen]() {
             reply->deleteLater();
+            if (m_wipeReply == reply)
+                m_wipeReply.clear();
             m_wipeInFlight = false;
+            if (gen != m_runGeneration)
+            {
+                emit wipeFinished(false);
+                return;
+            }
             const int status =
                 reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
             const bool ok = (status == 204 || status == 404)
@@ -406,6 +490,8 @@ QNetworkRequest SyncEngine::buildRequest(const QString &path, const QString &acc
     QNetworkRequest req(QUrl(m_cloud->effectiveApiUrl() + path));
     req.setRawHeader("Authorization", QByteArray("Bearer ") + accessToken.toUtf8());
     req.setRawHeader("Accept", "application/json");
+    req.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::ManualRedirectPolicy);
+    req.setMaximumRedirectsAllowed(0);
     req.setTransferTimeout(kRequestTimeoutMs);
     return req;
 }
@@ -1049,7 +1135,22 @@ bool SyncEngine::attachToRemoteVault(const QString &passphrase, QString *error)
 {
     // Pull one remote envelope, derive the key from its kdf_params, verify by decrypting.
     // Runs synchronously through a nested request chain driven by the caller's event loop.
-    if (!m_cloud || !m_cloud->isSignedIn() || !m_creds || !m_creds->isAvailable())
+    if (m_cloud && m_cloud->isPolicyInvalid())
+    {
+        if (error) *error = QStringLiteral("policy_invalid");
+        return false;
+    }
+    if (m_settings && m_settings->disableHttpsFeatures())
+    {
+        if (error) *error = QStringLiteral("https_disabled");
+        return false;
+    }
+    if (!m_cloud || !CloudClient::isAllowedApiBaseUrl(m_cloud->effectiveApiUrl()))
+    {
+        if (error) *error = QStringLiteral("unsafe_api_url");
+        return false;
+    }
+    if (!m_cloud->isSignedIn() || !m_creds || !m_creds->isAvailable())
     {
         if (error) *error = QStringLiteral("unauthorized");
         return false;
@@ -1064,17 +1165,31 @@ bool SyncEngine::attachToRemoteVault(const QString &passphrase, QString *error)
     m_attachOk = false;
     m_attachError.clear();
     m_attachPassphrase = passphrase;
+    const quint64 attachGen = m_runGeneration;
 
-    m_cloud->withValidAccessToken([this](bool ok, const QString &token, const QString &) {
+    m_cloud->withValidAccessToken([this, attachGen](bool ok, const QString &token, const QString &) {
+        if (attachGen != m_runGeneration)
+        {
+            finishAttach(QStringLiteral("server_switched"), false);
+            return;
+        }
         if (!ok)
         {
             finishAttach(QStringLiteral("unauthorized"), false);
             return;
         }
         QNetworkReply *reply = m_nam.get(buildRequest(QStringLiteral("/v1/sync"), token));
+        m_attachReply = reply;
         capReply(reply);
-        connect(reply, &QNetworkReply::finished, this, [this, reply, token]() {
+        connect(reply, &QNetworkReply::finished, this, [this, reply, token, attachGen]() {
             reply->deleteLater();
+            if (m_attachReply == reply)
+                m_attachReply.clear();
+            if (attachGen != m_runGeneration)
+            {
+                finishAttach(QStringLiteral("server_switched"), false);
+                return;
+            }
             QByteArray mbody;
             const bool fits = readCapped(reply, &mbody);
             if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200
@@ -1096,9 +1211,17 @@ bool SyncEngine::attachToRemoteVault(const QString &passphrase, QString *error)
                 cols.first().toObject().value(QStringLiteral("collection")).toString();
             QNetworkReply *get = m_nam.get(
                 buildRequest(QStringLiteral("/v1/sync/%1").arg(first), token));
+            m_attachReply = get;
             capReply(get);
-            connect(get, &QNetworkReply::finished, this, [this, get, first]() {
+            connect(get, &QNetworkReply::finished, this, [this, get, first, attachGen]() {
                 get->deleteLater();
+                if (m_attachReply == get)
+                    m_attachReply.clear();
+                if (attachGen != m_runGeneration)
+                {
+                    finishAttach(QStringLiteral("server_switched"), false);
+                    return;
+                }
                 QByteArray gbody;
                 const bool fits = readCapped(get, &gbody);
                 if (get->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200
@@ -1134,6 +1257,13 @@ bool SyncEngine::attachToRemoteVault(const QString &passphrase, QString *error)
                     finishAttach(QStringLiteral("passphrase_mismatch"), false);
                     return;
                 }
+                if (attachGen != m_runGeneration || !m_cloud || !m_cloud->isSignedIn()
+                    || m_cloud->isPolicyInvalid() || !m_creds || !m_creds->isAvailable())
+                {
+                    SyncCrypto::cleanse(&key);
+                    finishAttach(QStringLiteral("server_switched"), false);
+                    return;
+                }
                 QString werr;
                 m_attachOk = m_creds->writeSecret(
                     QString::fromLatin1(ICloudCredentialStore::kSyncMasterKeySlot),
@@ -1164,6 +1294,8 @@ bool SyncEngine::attachToRemoteVault(const QString &passphrase, QString *error)
     while (!m_attachDone)
         QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
 
+    if (attachGen != m_runGeneration)
+        m_attachOk = false;
     if (m_attachOk)
         setState(State::Idle);
     if (error) *error = m_attachError;

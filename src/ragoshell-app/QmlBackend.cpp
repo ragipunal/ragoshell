@@ -310,22 +310,40 @@ namespace RagoShell
             return;
         }
         setStatus(tr("Connecting to %1...").arg(iso(QtUtils::toQString(conn->getReadableName()))));
-        whenLocalNetworkAllowed(networkHosts(*conn), [self = QPointer<QmlBackend>(this), uuid] {
+        QString hostedBridgeUrl;
+        if (conn->transportKind() == "hosted") {
+            if (CloudService *cloud = QmlSingletonInstance<CloudService>::get())
+                hostedBridgeUrl = cloud->effectiveBridgeUrl();
+        }
+        whenLocalNetworkAllowed(networkHosts(*conn, hostedBridgeUrl), [self = QPointer<QmlBackend>(this), uuid] {
             if (!self)
                 return;
             auto *settings = AppRegistry::instance().settingsManager();
             if (ConnectionSettings *current = settings->getConnectionSettingsByUuid(uuid)) {
                 std::unique_ptr<ConnectionSettings> clone(current->clone());
                 // Hosted channel (docs/HostedGateway.md §5): the hello
-                // token is the cached entitlement+jwt — injected only into
-                // this in-memory clone, never written to settings.
+                // token is the cached entitlement+jwt and the resolved
+                // ws:// / wss:// bridge URL is injected only into this
+                // in-memory clone, never written to settings.
                 if (clone->transportKind() == "hosted") {
                     CloudService *cloud = QmlSingletonInstance<CloudService>::get();
-                    const QString jwt = cloud->entitlementJwt();
-                    if (jwt.isEmpty()) {
-                        emit self->connectionError(uuid, cloud->hostedTokenMissingMessage());
+                    const QString bridgeUrl = cloud ? cloud->effectiveBridgeUrl() : QString();
+                    if (!CloudClient::isAllowedBridgeUrl(bridgeUrl)) {
+                        const QString msg = (cloud && !cloud->errorMessage().isEmpty())
+                            ? cloud->errorMessage()
+                            : tr("Cloud service URL failed security validation.");
+                        emit self->connectionError(uuid, msg);
                         return;
                     }
+                    const QString jwt = cloud ? cloud->entitlementJwt() : QString();
+                    if (jwt.isEmpty()) {
+                        emit self->connectionError(
+                            uuid,
+                            cloud ? cloud->hostedTokenMissingMessage()
+                                  : tr("Sign in to your cloud account to use the cloud gateway."));
+                        return;
+                    }
+                    clone->setTransportKind(bridgeUrl.toStdString());
                     clone->setTransportToken(jwt.toStdString());
                 }
                 self->_app->openServer(clone.release(), ConnectionPrimary);

@@ -79,6 +79,10 @@ namespace RagoShell
         void syncNow();     ///< explicit user action
         void wipeRemote();  ///< DELETE /v1/sync (all collections), keeps local config
 
+    public Q_SLOTS:
+        /// Clears local sync key, sync-state.json ETags/fingerprints, and timers when switching cloud servers.
+        void resetLocalSyncStateForServerSwitch();
+
     Q_SIGNALS:
         void stateChanged();
         void syncStarted();
@@ -165,5 +169,7 @@ namespace RagoShell
         bool m_attachOk = false;
         QString m_attachError;
         QString m_attachPassphrase;
+        QPointer<QNetworkReply> m_wipeReply;
+        QPointer<QNetworkReply> m_attachReply;
     };
 }

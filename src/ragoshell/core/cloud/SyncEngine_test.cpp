@@ -713,3 +713,49 @@ TEST(SyncEngineTest, RepliesAfterSignOutAreIgnored)
     EXPECT_FALSE(f.lastSyncOk);
     EXPECT_EQ(f.engine->lastError(), QLatin1String("unauthorized"));
 }
+
+TEST(SyncEngineTest, ServerProfileSwitchResetsSyncEngineWithoutTouchingLocalData)
+{
+    Fixture f;
+    auto *localConn = new RagoShell::ConnectionSettings(false);
+    localConn->setConnectionName("Corp Prod DB");
+    localConn->setServerHost("mongo.corp.internal");
+    RagoShell::SettingsManager::addConnection(localConn);
+    RagoShell::QueryHistoryEntry historyEntry;
+    historyEntry.script = QStringLiteral("db.orders.find({})");
+    historyEntry.serverName = QStringLiteral("Corp Prod DB");
+    historyEntry.database = QStringLiteral("app");
+    ASSERT_GT(f.history->record(historyEntry), 0);
+    f.settings->save();
+    ASSERT_EQ(f.settings->connections().size(), 1u);
+    ASSERT_EQ(f.history->entries().size(), 1u);
+
+    ASSERT_TRUE(f.engine->configureDeviceKey());
+    ASSERT_TRUE(f.runSync());
+    ASSERT_TRUE(f.lastSyncOk);
+    ASSERT_GT(f.engine->lastSyncAtMs(), 0);
+    ASSERT_TRUE(QFile::exists(f.dir.path() + QStringLiteral("/sync-state.json")));
+
+    RagoShell::SettingsManager::CloudServerConfig custom;
+    custom.mode = QStringLiteral("custom");
+    custom.apiUrl = QStringLiteral("https://api.corp.example");
+    custom.portalUrl = QStringLiteral("https://app.corp.example");
+    custom.entitlementPubkeys = QString();
+    f.settings->setUserCloudServerConfig(custom);
+    f.settings->save();
+
+    f.cloud->applyServerProfileChange();
+
+    EXPECT_FALSE(f.cloud->isSignedIn());
+    EXPECT_TRUE(f.cloud->deviceId().isEmpty());
+    EXPECT_FALSE(f.settings->syncEnabled());
+    EXPECT_EQ(f.engine->state(), SyncEngine::State::Disabled);
+    EXPECT_EQ(f.engine->lastSyncAtMs(), 0);
+    EXPECT_FALSE(f.engine->keyAvailable());
+    EXPECT_FALSE(f.creds->contains(QLatin1String(ICloudCredentialStore::kSyncMasterKeySlot)));
+    EXPECT_FALSE(QFile::exists(f.dir.path() + QStringLiteral("/sync-state.json")));
+
+    // Local MongoDB connections and query history remain completely untouched.
+    EXPECT_EQ(f.settings->connections().size(), 1u);
+    EXPECT_EQ(f.history->entries().size(), 1);
+}

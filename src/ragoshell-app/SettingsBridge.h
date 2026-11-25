@@ -83,6 +83,8 @@ namespace RagoShell
                    WRITE setSchemaBackgroundMaxCollections NOTIFY schemaSettingsChanged FINAL)
         Q_PROPERTY(bool checkForUpdates READ checkForUpdates
                    WRITE setCheckForUpdates NOTIFY updateSettingsChanged FINAL)
+        Q_PROPERTY(bool checkForUpdatesLocked READ checkForUpdatesLocked CONSTANT FINAL)
+        Q_PROPERTY(bool disableHttpsFeatures READ disableHttpsFeatures NOTIFY updateSettingsChanged FINAL)
         Q_PROPERTY(bool shareAnonymousUsage READ shareAnonymousUsage
                    WRITE setShareAnonymousUsage NOTIFY updateSettingsChanged FINAL)
 
@@ -144,6 +146,8 @@ namespace RagoShell
         void setSchemaBackgroundMaxCollections(int count);
         bool checkForUpdates() const;
         void setCheckForUpdates(bool on);
+        bool checkForUpdatesLocked() const;
+        bool disableHttpsFeatures() const;
         bool shareAnonymousUsage() const;
         void setShareAnonymousUsage(bool on);
         void setAiAutoFallback(bool v);

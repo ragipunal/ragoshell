@@ -102,8 +102,23 @@ namespace RagoShell
         void checkCompleted(bool ok, bool updateAvailable, bool mandatory);
 
     private:
-        enum class StatusKind { None, Checking, UpToDate, Available, Disabled, Offline, Failed, SignatureFailed };
+        enum class StatusKind
+        {
+            None,
+            Checking,
+            UpToDate,
+            Available,
+            Disabled,
+            PolicyDisabled,
+            CustomServerSuppressed,
+            Offline,
+            Failed,
+            SignatureFailed
+        };
 
+        QString resolveActiveEndpoint(bool manual,
+                                      bool *suppressedByPolicyOut = nullptr,
+                                      bool *suppressedByServerOut = nullptr) const;
         bool isOnlineForEndpoint(const QString &endpoint) const;
         bool shareAnonymousUsageEnabled() const;
         UpdatePulse::TelemetrySnapshot buildSnapshot() const;

@@ -231,6 +231,7 @@ RagoDialog {
         schemaSection.maxCollections = AppSettings.schemaBackgroundMaxCollections
         schemaSection.unmeteredOnly = AppSettings.schemaUnmeteredOnly
         mcpSection.syncFields()
+        accountSection.closeEditors()
         accountSection.syncFields()
         updateCheck.checked = AppSettings.checkForUpdates
         usageStatsCheck.checked = AppSettings.shareAnonymousUsage
@@ -287,13 +288,15 @@ RagoDialog {
         AppSettings.schemaBackgroundSampleSize = schemaSection.sampleSize
         AppSettings.schemaBackgroundMaxCollections = schemaSection.maxCollections
         mcpSection.apply()
-        AppSettings.checkForUpdates = updateCheck.checked
+        if (!AppSettings.checkForUpdatesLocked)
+            AppSettings.checkForUpdates = updateCheck.checked
         AppSettings.shareAnonymousUsage = usageStatsCheck.checked
         AppSettings.save()
     }
 
     onClosed: {
         _aiResetEntry()
+        accountSection.closeEditors()
         if (!_saved && !_loading) {
             if (_origFontFamily.length > 0)
                 AppSettings.codeFontFamily = _origFontFamily
@@ -1120,13 +1123,31 @@ RagoDialog {
                 RagoCheckBox {
                     id: updateCheck
                     Layout.fillWidth: true
+                    enabled: !AppSettings.checkForUpdatesLocked
+                             && !AppSettings.disableHttpsFeatures
+                             && !CloudService.updateChecksSuppressedByServer
                     text: qsTr("Automatically check for updates on startup")
+                }
+
+                Label {
+                    visible: AppSettings.checkForUpdatesLocked
+                             || AppSettings.disableHttpsFeatures
+                             || CloudService.updateChecksSuppressedByServer
+                    Layout.fillWidth: true
+                    wrapMode: Text.WordWrap
+                    font.pixelSize: 11
+                    color: Theme.disabledTextColor
+                    text: AppSettings.checkForUpdatesLocked
+                          ? qsTr("Managed by organization policy.")
+                          : (AppSettings.disableHttpsFeatures
+                             ? qsTr("Disabled while HTTPS network features are off.")
+                             : qsTr("Suppressed while a custom cloud server is active unless an internal update URL is configured."))
                 }
 
                 RagoCheckBox {
                     id: usageStatsCheck
                     Layout.fillWidth: true
-                    enabled: updateCheck.checked
+                    enabled: updateCheck.checked && updateCheck.enabled
                     text: qsTr("Share anonymous usage statistics with update checks")
                 }
             }

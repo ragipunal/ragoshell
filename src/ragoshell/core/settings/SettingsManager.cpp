@@ -9,14 +9,34 @@
 #include <QVariantList>
 #include <QUuid>
 #include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonParseError>
 #include <QDirIterator>
 
 #include <openssl/crypto.h>
 
+#ifdef Q_OS_WIN
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <combaseapi.h>
+#include <shlobj.h>
+#elif defined(Q_OS_UNIX)
+#include <cerrno>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
+
 #include <parser.h>
 #include <serializer.h>
 
+#include "ragoshell/core/BrandInfo.h"
+#include "ragoshell/core/cloud/CloudClient.h"
+#include "ragoshell/core/cloud/EntitlementToken.h"
 #include "ragoshell/core/settings/ConnectionSettings.h"
+#include "ragoshell/core/utils/UpdatePulse.h"
 #include "ragoshell/core/utils/WasmPersist.h"
 #include "ragoshell/core/utils/AiQueryAssistant.h"
 #include "ragoshell/core/settings/CredentialSettings.h"
@@ -95,6 +115,411 @@ namespace RagoShell
             } else if (!value.isEmpty()) {
                 keys.insert(provider, value);
             }
+        }
+
+        constexpr qint64 kMaxPolicyFileBytes = 65536;
+
+        QString &policyFileOverrideStorage()
+        {
+            static QString s_path;
+            return s_path;
+        }
+
+        bool &policyFileOverrideSetStorage()
+        {
+            static bool s_isSet = false;
+            return s_isSet;
+        }
+
+        QString stripTrailingSlashesPolicy(const QString &url)
+        {
+            QString out = url.trimmed();
+            while (out.size() > 1 && out.endsWith(QLatin1Char('/')))
+                out.chop(1);
+            return out;
+        }
+
+        enum class PolicyFileReadStatus
+        {
+            Missing,
+            Ok,
+            Invalid
+        };
+
+        PolicyFileReadStatus readBoundedRegularPolicyFile(const QString &path,
+                                                          QByteArray *out,
+                                                          QString *error)
+        {
+            out->clear();
+#if defined(Q_OS_UNIX)
+            // Open without following symlinks and verify regular file on fd to avoid POSIX TOCTOU.
+            const QByteArray encodedPath = QFile::encodeName(path);
+            int fd = -1;
+            do {
+                fd = ::open(encodedPath.constData(), O_RDONLY | O_NOFOLLOW | O_NONBLOCK);
+            } while (fd < 0 && errno == EINTR);
+            if (fd < 0) {
+                if (errno == ENOENT)
+                    return PolicyFileReadStatus::Missing;
+                if (error)
+                    *error = QStringLiteral("cannot open regular policy file (errno=%1)").arg(errno);
+                return PolicyFileReadStatus::Invalid;
+            }
+            struct stat st {};
+            if (::fstat(fd, &st) != 0 || !S_ISREG(st.st_mode)) {
+                ::close(fd);
+                if (error)
+                    *error = QStringLiteral("policy path is not a regular file");
+                return PolicyFileReadStatus::Invalid;
+            }
+            if (st.st_size > kMaxPolicyFileBytes) {
+                ::close(fd);
+                if (error)
+                    *error = QStringLiteral("policy file exceeds %1 bytes").arg(kMaxPolicyFileBytes);
+                return PolicyFileReadStatus::Invalid;
+            }
+            char buf[8192];
+            while (out->size() <= kMaxPolicyFileBytes) {
+                const qint64 want = std::min(static_cast<qint64>(sizeof(buf)),
+                                             (kMaxPolicyFileBytes + 1) - out->size());
+                ssize_t n = -1;
+                do {
+                    n = ::read(fd, buf, static_cast<size_t>(want));
+                } while (n < 0 && errno == EINTR);
+                if (n < 0) {
+                    const int readErr = errno;
+                    ::close(fd);
+                    if (error)
+                        *error = QStringLiteral("cannot read policy file (errno=%1)").arg(readErr);
+                    return PolicyFileReadStatus::Invalid;
+                }
+                if (n == 0)
+                    break;
+                out->append(buf, static_cast<qsizetype>(n));
+            }
+            ::close(fd);
+            if (out->size() > kMaxPolicyFileBytes) {
+                if (error)
+                    *error = QStringLiteral("policy file exceeds %1 bytes").arg(kMaxPolicyFileBytes);
+                return PolicyFileReadStatus::Invalid;
+            }
+            return PolicyFileReadStatus::Ok;
+#else
+            const QFileInfo info(path);
+            if (info.isSymLink() || info.isJunction()) {
+                if (error)
+                    *error = QStringLiteral("policy file must not be a symlink");
+                return PolicyFileReadStatus::Invalid;
+            }
+            if (!info.exists())
+                return PolicyFileReadStatus::Missing;
+            if (!info.isFile()) {
+                if (error)
+                    *error = QStringLiteral("policy path is not a regular file");
+                return PolicyFileReadStatus::Invalid;
+            }
+            QFile f(path);
+            if (!f.open(QIODevice::ReadOnly)) {
+                if (error)
+                    *error = QStringLiteral("cannot open policy file: %1").arg(f.errorString());
+                return PolicyFileReadStatus::Invalid;
+            }
+            constexpr qint64 kChunkBytes = 65536;
+            while (out->size() <= kMaxPolicyFileBytes) {
+                const qint64 want = std::min(kChunkBytes, (kMaxPolicyFileBytes + 1) - out->size());
+                const QByteArray chunk = f.read(want);
+                if (f.error() != QFileDevice::NoError) {
+                    if (error)
+                        *error = QStringLiteral("cannot read policy file: %1").arg(f.errorString());
+                    return PolicyFileReadStatus::Invalid;
+                }
+                if (chunk.isEmpty())
+                    break;
+                out->append(chunk);
+            }
+            if (out->size() > kMaxPolicyFileBytes) {
+                if (error)
+                    *error = QStringLiteral("policy file exceeds %1 bytes").arg(kMaxPolicyFileBytes);
+                return PolicyFileReadStatus::Invalid;
+            }
+            return PolicyFileReadStatus::Ok;
+#endif
+        }
+    }
+
+    QString SettingsManager::defaultSystemPolicyFilePath()
+    {
+#if defined(Q_OS_IOS) || defined(Q_OS_ANDROID) || defined(Q_OS_WASM)
+        return QString();
+#elif defined(Q_OS_WIN)
+        PWSTR rawPath = nullptr;
+        QString baseDir;
+        if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_ProgramData, KF_FLAG_DEFAULT, nullptr, &rawPath)) && rawPath)
+            baseDir = QString::fromWCharArray(rawPath);
+        if (rawPath)
+            CoTaskMemFree(rawPath);
+        if (baseDir.isEmpty())
+            return QString();
+        return QDir(baseDir).filePath(QString::fromUtf8(BrandInfo::productName) + QStringLiteral("/policy.json"));
+#elif defined(Q_OS_MACOS)
+        return QStringLiteral("/Library/Application Support/%1/policy.json")
+            .arg(QString::fromUtf8(BrandInfo::productName));
+#else
+        return QStringLiteral("/etc/%1/policy.json")
+            .arg(QString::fromUtf8(BrandInfo::productId));
+#endif
+    }
+
+    void SettingsManager::setPolicyFilePathForTest(const QString &path)
+    {
+        policyFileOverrideSetStorage() = true;
+        policyFileOverrideStorage() = path;
+    }
+
+    void SettingsManager::clearPolicyFilePathForTest()
+    {
+        policyFileOverrideSetStorage() = false;
+        policyFileOverrideStorage().clear();
+    }
+
+    void SettingsManager::setCheckForUpdates(bool checkForUpdates)
+    {
+        if (isCheckForUpdatesLocked())
+            return;
+        _checkForUpdates = checkForUpdates;
+        _userHasCheckForUpdates = true;
+    }
+
+    bool SettingsManager::checkForUpdates() const
+    {
+        if (_policyInvalid)
+            return false;
+        if (_hasEnterprisePolicy && _policyLocked && _policyHasCheckForUpdates)
+            return _policyCheckForUpdates;
+        if (_userHasCheckForUpdates)
+            return _checkForUpdates;
+        if (_hasEnterprisePolicy && !_policyLocked && _policyHasCheckForUpdates)
+            return _policyCheckForUpdates;
+        return _checkForUpdates;
+    }
+
+    bool SettingsManager::isCheckForUpdatesLocked() const
+    {
+        return _hasEnterprisePolicy && (_policyInvalid || (_policyLocked && _policyHasCheckForUpdates));
+    }
+
+    bool SettingsManager::disableHttpsFeatures() const
+    {
+        if (_hasEnterprisePolicy && !_policyInvalid && _policyLocked && _policyHasDisableHttpsFeatures)
+            return _policyDisableHttpsFeatures;
+        if (_disableHttpsFeatures || _userHasDisableHttpsFeatures)
+            return _disableHttpsFeatures;
+        if (_hasEnterprisePolicy && !_policyInvalid && !_policyLocked && _policyHasDisableHttpsFeatures)
+            return _policyDisableHttpsFeatures;
+        return _disableHttpsFeatures;
+    }
+
+    void SettingsManager::setUserCloudServerConfig(const CloudServerConfig &config)
+    {
+        if (isCloudServerPolicyLocked())
+            return;
+        CloudServerConfig clean;
+        clean.mode = (config.mode.trimmed() == QLatin1String("custom"))
+                         ? QStringLiteral("custom")
+                         : QStringLiteral("default");
+        clean.apiUrl = stripTrailingSlashesPolicy(config.apiUrl);
+        clean.portalUrl = stripTrailingSlashesPolicy(config.portalUrl);
+        clean.bridgeUrl = stripTrailingSlashesPolicy(config.bridgeUrl);
+        clean.entitlementPubkeys = config.entitlementPubkeys.trimmed();
+        _userCloudServer = clean;
+        _userHasCloudServerConfig = true;
+    }
+
+    void SettingsManager::clearUserCloudServerConfig()
+    {
+        if (isCloudServerPolicyLocked())
+            return;
+        _userCloudServer = CloudServerConfig{};
+        _userHasCloudServerConfig = false;
+    }
+
+    void SettingsManager::loadEnterprisePolicy()
+    {
+        _hasEnterprisePolicy = false;
+        _policyLocked = false;
+        _policyInvalid = false;
+        _policyHasCloudServer = false;
+        _policyCloudServer = CloudServerConfig{};
+        _policyHasDisableHttpsFeatures = false;
+        _policyDisableHttpsFeatures = false;
+        _policyHasCheckForUpdates = false;
+        _policyCheckForUpdates = true;
+        _policyUpdateUrl.clear();
+
+        const QString policyPath = policyFileOverrideSetStorage()
+                                       ? policyFileOverrideStorage()
+                                       : defaultSystemPolicyFilePath();
+        if (policyPath.isEmpty())
+            return;
+
+        QByteArray raw;
+        QString readErr;
+        const PolicyFileReadStatus status = readBoundedRegularPolicyFile(policyPath, &raw, &readErr);
+        if (status == PolicyFileReadStatus::Missing)
+            return;
+        _hasEnterprisePolicy = true;
+        if (status == PolicyFileReadStatus::Invalid) {
+            _policyLocked = true;
+            _policyInvalid = true;
+            LOG_MSG(QStringLiteral("Enterprise policy error (%1): %2; cloud features blocked.")
+                        .arg(policyPath, readErr),
+                    LogSeverity::Error, false);
+            return;
+        }
+
+        QJsonParseError parseErr{};
+        const QJsonDocument doc = QJsonDocument::fromJson(raw, &parseErr);
+        if (parseErr.error != QJsonParseError::NoError || !doc.isObject()) {
+            _policyLocked = true;
+            _policyInvalid = true;
+            LOG_MSG(QStringLiteral("Enterprise policy error (%1): invalid JSON; cloud features blocked.")
+                        .arg(policyPath),
+                    LogSeverity::Error, false);
+            return;
+        }
+
+        const QJsonObject obj = doc.object();
+        auto markInvalid = [this, &policyPath](const QString &reason) {
+            _policyLocked = true;
+            _policyInvalid = true;
+            LOG_MSG(QStringLiteral("Enterprise policy error (%1): %2; cloud features blocked.")
+                        .arg(policyPath, reason),
+                    LogSeverity::Error, false);
+        };
+
+        if (obj.contains(QStringLiteral("locked"))) {
+            const QJsonValue v = obj.value(QStringLiteral("locked"));
+            if (!v.isBool()) {
+                markInvalid(QStringLiteral("'locked' must be a boolean"));
+                return;
+            }
+            _policyLocked = v.toBool();
+        } else {
+            _policyLocked = true;
+        }
+
+        if (obj.contains(QStringLiteral("disableHttpsFeatures"))) {
+            const QJsonValue v = obj.value(QStringLiteral("disableHttpsFeatures"));
+            if (!v.isBool()) {
+                markInvalid(QStringLiteral("'disableHttpsFeatures' must be a boolean"));
+                return;
+            }
+            _policyHasDisableHttpsFeatures = true;
+            _policyDisableHttpsFeatures = v.toBool();
+        }
+
+        if (obj.contains(QStringLiteral("checkForUpdates"))) {
+            const QJsonValue v = obj.value(QStringLiteral("checkForUpdates"));
+            if (!v.isBool()) {
+                markInvalid(QStringLiteral("'checkForUpdates' must be a boolean"));
+                return;
+            }
+            _policyHasCheckForUpdates = true;
+            _policyCheckForUpdates = v.toBool();
+        }
+
+        if (obj.contains(QStringLiteral("updateUrl"))) {
+            const QJsonValue v = obj.value(QStringLiteral("updateUrl"));
+            if (!v.isString()) {
+                markInvalid(QStringLiteral("'updateUrl' must be a string"));
+                return;
+            }
+            const QString u = v.toString().trimmed();
+            if (!u.isEmpty() && !UpdatePulse::isSafeEndpointUrl(u)) {
+                markInvalid(QStringLiteral("'updateUrl' failed URL security validation"));
+                return;
+            }
+            _policyUpdateUrl = u;
+        }
+
+        if (obj.contains(QStringLiteral("cloudServer"))) {
+            const QJsonValue csVal = obj.value(QStringLiteral("cloudServer"));
+            if (!csVal.isObject()) {
+                markInvalid(QStringLiteral("'cloudServer' must be an object"));
+                return;
+            }
+            _policyHasCloudServer = true;
+            const QJsonObject cs = csVal.toObject();
+            for (const char *key : {"mode", "apiUrl", "portalUrl", "bridgeUrl", "entitlementPubkeys"}) {
+                const QString k = QLatin1String(key);
+                if (cs.contains(k) && !cs.value(k).isString()) {
+                    markInvalid(QStringLiteral("'cloudServer.%1' must be a string").arg(k));
+                    return;
+                }
+            }
+
+            const QString rawMode = cs.value(QStringLiteral("mode")).toString().trimmed();
+            const QString mode = rawMode.isEmpty() ? QStringLiteral("default") : rawMode;
+            if (mode != QLatin1String("default") && mode != QLatin1String("custom")) {
+                markInvalid(QStringLiteral("'cloudServer.mode' must be 'default' or 'custom'"));
+                return;
+            }
+
+            CloudServerConfig parsed;
+            parsed.mode = mode;
+            parsed.apiUrl = stripTrailingSlashesPolicy(cs.value(QStringLiteral("apiUrl")).toString());
+            parsed.portalUrl = stripTrailingSlashesPolicy(cs.value(QStringLiteral("portalUrl")).toString());
+            parsed.bridgeUrl = stripTrailingSlashesPolicy(cs.value(QStringLiteral("bridgeUrl")).toString());
+            parsed.entitlementPubkeys = cs.value(QStringLiteral("entitlementPubkeys")).toString().trimmed();
+
+            if (mode == QLatin1String("custom")) {
+                if (!CloudClient::isAllowedApiBaseUrl(parsed.apiUrl)) {
+                    markInvalid(QStringLiteral("'cloudServer.apiUrl' is invalid or insecure"));
+                    return;
+                }
+                if (!CloudClient::isAllowedApiBaseUrl(parsed.portalUrl)) {
+                    markInvalid(QStringLiteral("'cloudServer.portalUrl' is invalid or insecure"));
+                    return;
+                }
+                if (!parsed.bridgeUrl.isEmpty() && !CloudClient::isAllowedBridgeUrl(parsed.bridgeUrl)) {
+                    markInvalid(QStringLiteral("'cloudServer.bridgeUrl' is invalid or insecure"));
+                    return;
+                }
+                QString ringErr;
+                if (!EntitlementVerifier::isValidCustomKeyRing(parsed.entitlementPubkeys, &ringErr)) {
+                    markInvalid(QStringLiteral("'cloudServer.entitlementPubkeys' is invalid (%1)").arg(ringErr));
+                    return;
+                }
+            } else {
+                if (!parsed.apiUrl.isEmpty() && !CloudClient::isAllowedApiBaseUrl(parsed.apiUrl)) {
+                    markInvalid(QStringLiteral("'cloudServer.apiUrl' is invalid or insecure"));
+                    return;
+                }
+                if (!parsed.portalUrl.isEmpty() && !CloudClient::isAllowedApiBaseUrl(parsed.portalUrl)) {
+                    markInvalid(QStringLiteral("'cloudServer.portalUrl' is invalid or insecure"));
+                    return;
+                }
+                if (!parsed.bridgeUrl.isEmpty() && !CloudClient::isAllowedBridgeUrl(parsed.bridgeUrl)) {
+                    markInvalid(QStringLiteral("'cloudServer.bridgeUrl' is invalid or insecure"));
+                    return;
+                }
+                if (!parsed.entitlementPubkeys.isEmpty()) {
+                    QString ringErr;
+                    if (!EntitlementVerifier::isValidCustomKeyRing(parsed.entitlementPubkeys, &ringErr)) {
+                        markInvalid(QStringLiteral("'cloudServer.entitlementPubkeys' is invalid (%1)").arg(ringErr));
+                        return;
+                    }
+                }
+                const QString defaultApi = stripTrailingSlashesPolicy(QString::fromUtf8(BrandInfo::apiUrl));
+                if (!parsed.apiUrl.isEmpty()
+                    && parsed.apiUrl.compare(defaultApi, Qt::CaseInsensitive) != 0
+                    && parsed.entitlementPubkeys.isEmpty()) {
+                    markInvalid(QStringLiteral("'cloudServer.entitlementPubkeys' is required when overriding apiUrl"));
+                    return;
+                }
+            }
+
+            _policyCloudServer = parsed;
         }
     }
 
@@ -444,6 +869,8 @@ namespace RagoShell
      */
     bool SettingsManager::load()
     {
+        loadEnterprisePolicy();
+
         if (!QFile::exists(configFilePath()))
             return false;
 
@@ -654,6 +1081,8 @@ namespace RagoShell
 
         _disableHttpsFeatures = map.contains("disableHttpsFeatures") ? 
                                 map.value("disableHttpsFeatures").toBool() : false;
+        _userHasDisableHttpsFeatures = map.value("disableHttpsFeaturesUserSet").toBool()
+                                       || (map.contains("disableHttpsFeatures") && _disableHttpsFeatures);
 
         _debugMode = map.contains("debugMode") ? map.value("debugMode").toBool() : false;
 
@@ -711,8 +1140,13 @@ namespace RagoShell
             _batchSize = 50;
         _batchSize = std::min(_batchSize, kMaxBatchSize);
 
-        if (map.contains("checkForUpdates"))
+        _checkForUpdates = true;
+        _userHasCheckForUpdates = false;
+        if (map.contains("checkForUpdates")) {
             _checkForUpdates = map.value("checkForUpdates").toBool();
+            if (map.value("checkForUpdatesUserSet").toBool() || !_checkForUpdates)
+                _userHasCheckForUpdates = true;
+        }
 
         _uiDensity = map.value("uiDensity", QStringLiteral("Automatic")).toString();
         if (_uiDensity != QLatin1String("Compact") && _uiDensity != QLatin1String("Touch"))
@@ -813,6 +1247,21 @@ namespace RagoShell
         if (_syncKeyMode != QLatin1String("passphrase") && _syncKeyMode != QLatin1String("device"))
             _syncKeyMode.clear();
 
+        // Enterprise / self-hosted cloud server profile (docs/EnterpriseServerProfile.md).
+        _userHasCloudServerConfig = map.contains("cloudServer");
+        _userCloudServer = CloudServerConfig{};
+        if (_userHasCloudServerConfig) {
+            const QVariantMap cs = map.value("cloudServer").toMap();
+            const QString mode = cs.value("mode").toString().trimmed();
+            _userCloudServer.mode = (mode == QLatin1String("custom"))
+                                        ? QStringLiteral("custom")
+                                        : QStringLiteral("default");
+            _userCloudServer.apiUrl = stripTrailingSlashesPolicy(cs.value("apiUrl").toString());
+            _userCloudServer.portalUrl = stripTrailingSlashesPolicy(cs.value("portalUrl").toString());
+            _userCloudServer.bridgeUrl = stripTrailingSlashesPolicy(cs.value("bridgeUrl").toString());
+            _userCloudServer.entitlementPubkeys = cs.value("entitlementPubkeys").toString().trimmed();
+        }
+
         // Background schema collection
         const QVariantMap schema = map.value("schema").toMap();
         _schemaCollectionMode = schemaCollectionModeFromId(schema.value("collectionMode").toString());
@@ -904,6 +1353,8 @@ namespace RagoShell
         // 9. Save batchSize
         map.insert("batchSize", _batchSize);
         map.insert("checkForUpdates", _checkForUpdates);
+        if (_userHasCheckForUpdates)
+            map.insert("checkForUpdatesUserSet", true);
         map.insert("mongoTimeoutSec", _mongoTimeoutSec);
         map.insert("shellTimeoutSec", _shellTimeoutSec);
 
@@ -950,6 +1401,16 @@ namespace RagoShell
         sync.insert("keyMode", _syncKeyMode);
         map.insert("sync", sync);
 
+        if (_userHasCloudServerConfig) {
+            QVariantMap cs;
+            cs.insert("mode", _userCloudServer.mode);
+            cs.insert("apiUrl", _userCloudServer.apiUrl);
+            cs.insert("portalUrl", _userCloudServer.portalUrl);
+            cs.insert("bridgeUrl", _userCloudServer.bridgeUrl);
+            cs.insert("entitlementPubkeys", _userCloudServer.entitlementPubkeys);
+            map.insert("cloudServer", cs);
+        }
+
         // 12. Save connections
         QVariantList list;
         for (auto const conn : _connections) 
@@ -963,6 +1424,8 @@ namespace RagoShell
         map.insert("cacheData", _cacheData);
         map.insert("programExitedNormally", _programExitedNormally);
         map.insert("disableHttpsFeatures", _disableHttpsFeatures);
+        if (_userHasDisableHttpsFeatures)
+            map.insert("disableHttpsFeaturesUserSet", true);
         map.insert("debugMode", _debugMode);
         
         return map;

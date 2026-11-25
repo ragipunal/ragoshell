@@ -486,7 +486,12 @@ namespace RagoShell
     {
         ConnectionSettings probe(true);
         probe.fromVariant(map);
-        whenLocalNetworkAllowed(networkHosts(probe), [self = QPointer<QmlBackend>(this), map] {
+        QString hostedBridgeUrl;
+        if (probe.transportKind() == "hosted") {
+            if (CloudService *cloud = QmlSingletonInstance<CloudService>::get())
+                hostedBridgeUrl = cloud->effectiveBridgeUrl();
+        }
+        whenLocalNetworkAllowed(networkHosts(probe, hostedBridgeUrl), [self = QPointer<QmlBackend>(this), map] {
             if (self)
                 self->testConnectionNow(map);
         });
@@ -497,15 +502,25 @@ namespace RagoShell
         _lastTestMap = map;
         std::unique_ptr<ConnectionSettings> conn(new ConnectionSettings(true));
         conn->fromVariant(map);
-        // Hosted channel (docs/HostedGateway.md §5): same JWT injection as
-        // connectToServer — without it the probe's hello is always denied.
+        // Hosted channel (docs/HostedGateway.md §5): same resolved bridge URL and
+        // JWT injection as connectToServer — without them the probe's hello fails.
         if (conn->transportKind() == "hosted") {
             CloudService *cloud = QmlSingletonInstance<CloudService>::get();
-            const QString jwt = cloud->entitlementJwt();
-            if (jwt.isEmpty()) {
-                emit testResult(false, cloud->hostedTokenMissingMessage());
+            const QString bridgeUrl = cloud ? cloud->effectiveBridgeUrl() : QString();
+            if (!CloudClient::isAllowedBridgeUrl(bridgeUrl)) {
+                const QString msg = (cloud && !cloud->errorMessage().isEmpty())
+                    ? cloud->errorMessage()
+                    : tr("Cloud service URL failed security validation.");
+                emit testResult(false, msg);
                 return;
             }
+            const QString jwt = cloud ? cloud->entitlementJwt() : QString();
+            if (jwt.isEmpty()) {
+                emit testResult(false, cloud ? cloud->hostedTokenMissingMessage()
+                                             : tr("Sign in to your cloud account to use the cloud gateway."));
+                return;
+            }
+            conn->setTransportKind(bridgeUrl.toStdString());
             conn->setTransportToken(jwt.toStdString());
         }
 

@@ -14,6 +14,7 @@
 #include <QUrl>
 
 #include "ragoshell/core/BrandInfo.h"
+#include "ragoshell/core/cloud/CloudClient.h"
 #include "ragoshell/core/settings/ConnectionSettings.h"
 #include "ragoshell/core/settings/SettingsManager.h"
 #include "ragoshell/core/settings/SshSettings.h"
@@ -266,6 +267,31 @@ namespace RagoShell
         _settings->save();
     }
 
+    QString UpdateService::resolveActiveEndpoint(bool manual,
+                                                 bool *suppressedByPolicyOut,
+                                                 bool *suppressedByServerOut) const
+    {
+        const bool policyInvalid = _settings && _settings->isEnterprisePolicyInvalid();
+        const bool policyLocked = _settings && _settings->isEnterprisePolicyLocked();
+        const bool checkLockedOff = _settings && _settings->isCheckForUpdatesLocked() && !_settings->checkForUpdates();
+        const bool checkEnabled = manual
+            ? (!policyInvalid && !checkLockedOff)
+            : (_settings && _settings->checkForUpdates());
+        const bool customServer = _settings && CloudClient::hasCustomServerProfile(_settings);
+        const QString policyUrl = _settings ? _settings->policyUpdateUrl() : QString();
+        const QString envUrl = productEnv("UPDATE_URL").trimmed();
+
+        if (suppressedByPolicyOut)
+            *suppressedByPolicyOut = policyInvalid || checkLockedOff;
+        if (suppressedByServerOut)
+            *suppressedByServerOut = !policyInvalid && !checkLockedOff && customServer
+                                     && policyUrl.isEmpty()
+                                     && (policyLocked || envUrl.isEmpty() || !UpdatePulse::isSafeEndpointUrl(envUrl));
+
+        return UpdatePulse::resolveActiveUpdateEndpoint(
+            policyInvalid, checkEnabled, customServer, policyUrl, policyLocked);
+    }
+
     void UpdateService::onWelcomeShown()
     {
         if (BrandInfo::isStoreBuild)
@@ -287,7 +313,10 @@ namespace RagoShell
             }
         }
 
-        const QString endpoint = UpdatePulse::endpointUrl();
+        const QString endpoint = resolveActiveEndpoint(false);
+        if (endpoint.isEmpty())
+            return;
+
         if (!isOnlineForEndpoint(endpoint)) {
             _pendingOnlineCheck = true;
             return;
@@ -301,6 +330,13 @@ namespace RagoShell
     {
         if (BrandInfo::isStoreBuild)
             return;
+        if (_settings && _settings->isEnterprisePolicyInvalid()) {
+            _statusKind = StatusKind::PolicyDisabled;
+            _statusIsError = true;
+            updateStatusText();
+            emit stateChanged();
+            return;
+        }
         if (_settings && _settings->disableHttpsFeatures()) {
             _statusKind = StatusKind::Disabled;
             _statusIsError = true;
@@ -308,7 +344,16 @@ namespace RagoShell
             emit stateChanged();
             return;
         }
-        const QString endpoint = UpdatePulse::endpointUrl();
+        bool suppressedByPolicy = false;
+        bool suppressedByServer = false;
+        const QString endpoint = resolveActiveEndpoint(true, &suppressedByPolicy, &suppressedByServer);
+        if (endpoint.isEmpty()) {
+            _statusKind = suppressedByServer ? StatusKind::CustomServerSuppressed : StatusKind::PolicyDisabled;
+            _statusIsError = !suppressedByServer;
+            updateStatusText();
+            emit stateChanged();
+            return;
+        }
         if (!isOnlineForEndpoint(endpoint)) {
             _statusKind = StatusKind::Offline;
             _statusIsError = true;
@@ -323,9 +368,11 @@ namespace RagoShell
     {
         if (BrandInfo::isStoreBuild || _checking)
             return;
+        if (_settings && _settings->disableHttpsFeatures())
+            return;
 
-        const QString endpoint = UpdatePulse::endpointUrl();
-        if (!UpdatePulse::isSafeEndpointUrl(endpoint))
+        const QString endpoint = resolveActiveEndpoint(manual);
+        if (endpoint.isEmpty() || !UpdatePulse::isSafeEndpointUrl(endpoint))
             return;
 
         _debugPreviewMode = 0;
@@ -414,7 +461,8 @@ namespace RagoShell
             return;
         }
 
-        const QString manifestUrl = UpdatePulse::releasesManifestUrl(QString(), endpoint);
+        const QString manifestUrl = UpdatePulse::releasesManifestUrl(
+            QString(), endpoint, _settings && _settings->isEnterprisePolicyLocked());
         const QString minisigUrl = manifestUrl + QStringLiteral(".minisig");
         if (!UpdatePulse::isSafeEndpointUrl(manifestUrl) || !UpdatePulse::isSafeEndpointUrl(minisigUrl)) {
             qWarning().noquote() << QStringLiteral("[update] Unsafe signed manifest URL refused.");
@@ -619,6 +667,12 @@ namespace RagoShell
             break;
         case StatusKind::Disabled:
             _statusMessage = tr("HTTPS network features are disabled in configuration.");
+            break;
+        case StatusKind::PolicyDisabled:
+            _statusMessage = tr("Update checks are disabled by organization policy.");
+            break;
+        case StatusKind::CustomServerSuppressed:
+            _statusMessage = tr("Update checks are disabled while a custom cloud server is configured.");
             break;
         case StatusKind::Offline:
             _statusMessage = tr("No internet connection available.");

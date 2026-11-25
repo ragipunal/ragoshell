@@ -254,7 +254,7 @@ void CloudClient::checkEntitlementRefresh()
         emit stateChanged();
     }
 
-    if (m_settings && m_settings->disableHttpsFeatures())
+    if (isNetworkBlockedByPolicyOrSettings() || !isAllowedApiBaseUrl(effectiveApiUrl()))
         return;
 
     if (m_busy || m_refreshInFlight || m_meReply || m_entitlementsReply)
@@ -377,7 +377,13 @@ bool CloudClient::isAllowedApiBaseUrl(const QString &urlText)
         return false;
 
     const QUrl url(trimmed, QUrl::StrictMode);
-    if (!url.isValid() || !url.userInfo().isEmpty() || url.hasQuery() || url.hasFragment())
+    if (!url.isValid() || !url.userInfo().isEmpty()
+        || url.authority(QUrl::FullyEncoded).contains(QLatin1Char('@'))
+        || url.hasQuery() || url.hasFragment())
+        return false;
+
+    const QString path = url.path();
+    if (!path.isEmpty() && path != QLatin1String("/"))
         return false;
 
     const QString host = url.host().toLower();
@@ -392,6 +398,47 @@ bool CloudClient::isAllowedApiBaseUrl(const QString &urlText)
     return false;
 }
 
+bool CloudClient::isAllowedBridgeUrl(const QString &urlText)
+{
+    const QString trimmed = stripTrailingSlashes(urlText);
+    if (trimmed.isEmpty() || trimmed.size() > 512 || hasControlOrBackslash(trimmed))
+        return false;
+
+    const QUrl url(trimmed, QUrl::StrictMode);
+    if (!url.isValid() || !url.userInfo().isEmpty()
+        || url.authority(QUrl::FullyEncoded).contains(QLatin1Char('@'))
+        || url.hasQuery() || url.hasFragment())
+        return false;
+
+    const QString path = url.path();
+    if (path.contains(QStringLiteral("..")) || path.contains(QStringLiteral("//")))
+        return false;
+
+    const QString host = url.host().toLower();
+    if (host.isEmpty())
+        return false;
+
+    const QString scheme = url.scheme().toLower();
+    if (scheme == QLatin1String("wss"))
+        return true;
+    if (scheme == QLatin1String("ws") && isLoopbackHost(host))
+        return true;
+    return false;
+}
+
+QString CloudClient::deriveBridgeUrlFromPortal(const QString &portalBaseUrl)
+{
+    const QString clean = stripTrailingSlashes(portalBaseUrl);
+    if (!isAllowedApiBaseUrl(clean))
+        return QString();
+
+    QUrl url(clean, QUrl::StrictMode);
+    const QString scheme = url.scheme().toLower();
+    url.setScheme(scheme == QLatin1String("http") ? QStringLiteral("ws") : QStringLiteral("wss"));
+    url.setPath(QStringLiteral("/ws"));
+    return url.toString();
+}
+
 bool CloudClient::isAllowedVerificationUrl(const QString &candidateUrl,
                                            const QString &effectiveApiBaseUrl,
                                            const QString &effectivePortalBaseUrl)
@@ -401,7 +448,9 @@ bool CloudClient::isAllowedVerificationUrl(const QString &candidateUrl,
         return false;
 
     const QUrl url(trimmed, QUrl::StrictMode);
-    if (!url.isValid() || !url.userInfo().isEmpty() || url.hasFragment())
+    if (!url.isValid() || !url.userInfo().isEmpty()
+        || url.authority(QUrl::FullyEncoded).contains(QLatin1Char('@'))
+        || url.hasFragment())
         return false;
 
     const QString path = url.path();
@@ -444,28 +493,447 @@ bool CloudClient::isAllowedVerificationUrl(const QString &candidateUrl,
     return false;
 }
 
+CloudClient::EffectiveProfile CloudClient::resolveProfileForSettings(
+    const SettingsManager *settings,
+    const QString &apiUrlOverride,
+    const QString &portalUrlOverride,
+    const QString &bridgeUrlOverride,
+    bool hasCustomVerifier,
+    const EntitlementVerifier &customVerifier)
+{
+    EffectiveProfile profile;
+    const QString defaultApi = stripTrailingSlashes(QString::fromUtf8(BrandInfo::apiUrl));
+    const QString defaultPortal = stripTrailingSlashes(QString::fromUtf8(BrandInfo::portalUrl));
+    const QString defaultBridge = deriveBridgeUrlFromPortal(defaultPortal);
+
+    if (settings && settings->isEnterprisePolicyInvalid())
+    {
+        profile.policyInvalid = true;
+        profile.policyLocked = true;
+        return profile;
+    }
+
+    profile.mode = QStringLiteral("default");
+    profile.apiUrl = defaultApi;
+    profile.portalUrl = defaultPortal;
+    profile.verifier = EntitlementVerifier::fromEmbeddedDefaults();
+    QString keyringBoundApiUrl = defaultApi;
+    bool bridgeExplicitlyInvalid = false;
+
+    auto applySettingsConfig = [&](const SettingsManager::CloudServerConfig &cfg, bool isUserConfig) {
+        if (cfg.mode == QLatin1String("custom"))
+        {
+            profile.mode = QStringLiteral("custom");
+            profile.apiUrl = isAllowedApiBaseUrl(cfg.apiUrl) ? stripTrailingSlashes(cfg.apiUrl) : QString();
+            profile.portalUrl = isAllowedApiBaseUrl(cfg.portalUrl) ? stripTrailingSlashes(cfg.portalUrl) : QString();
+            if (!cfg.bridgeUrl.trimmed().isEmpty())
+            {
+                if (isAllowedBridgeUrl(cfg.bridgeUrl))
+                {
+                    profile.bridgeUrl = stripTrailingSlashes(cfg.bridgeUrl);
+                    bridgeExplicitlyInvalid = false;
+                }
+                else
+                {
+                    profile.bridgeUrl.clear();
+                    bridgeExplicitlyInvalid = true;
+                }
+            }
+            else
+            {
+                profile.bridgeUrl.clear();
+                bridgeExplicitlyInvalid = false;
+            }
+            bool ok = false;
+            EntitlementVerifier v = EntitlementVerifier::fromKeyRingString(cfg.entitlementPubkeys, &ok);
+            profile.verifier = (ok && v.keyCount() > 0) ? std::move(v) : EntitlementVerifier();
+            keyringBoundApiUrl = profile.apiUrl;
+            return;
+        }
+
+        // Default mode
+        profile.mode = QStringLiteral("default");
+        if (isUserConfig)
+        {
+            profile.apiUrl = defaultApi;
+            profile.portalUrl = defaultPortal;
+            profile.bridgeUrl.clear();
+            bridgeExplicitlyInvalid = false;
+            profile.verifier = EntitlementVerifier::fromEmbeddedDefaults();
+            keyringBoundApiUrl = defaultApi;
+            return;
+        }
+
+        // Policy "default" mode may carry partial overrides validated in SettingsManager.
+        if (!cfg.apiUrl.isEmpty())
+            profile.apiUrl = isAllowedApiBaseUrl(cfg.apiUrl) ? stripTrailingSlashes(cfg.apiUrl) : QString();
+        if (!cfg.portalUrl.isEmpty())
+            profile.portalUrl = isAllowedApiBaseUrl(cfg.portalUrl) ? stripTrailingSlashes(cfg.portalUrl) : QString();
+        if (!cfg.bridgeUrl.trimmed().isEmpty())
+        {
+            if (isAllowedBridgeUrl(cfg.bridgeUrl))
+            {
+                profile.bridgeUrl = stripTrailingSlashes(cfg.bridgeUrl);
+                bridgeExplicitlyInvalid = false;
+            }
+            else
+            {
+                profile.bridgeUrl.clear();
+                bridgeExplicitlyInvalid = true;
+            }
+        }
+        if (!cfg.entitlementPubkeys.trimmed().isEmpty())
+        {
+            bool ok = false;
+            EntitlementVerifier v = EntitlementVerifier::fromKeyRingString(cfg.entitlementPubkeys.trimmed(), &ok);
+            profile.verifier = (ok && v.keyCount() > 0) ? std::move(v) : EntitlementVerifier();
+            keyringBoundApiUrl = profile.apiUrl;
+        }
+        else if (!profile.apiUrl.isEmpty() && profile.apiUrl.compare(defaultApi, Qt::CaseInsensitive) != 0)
+        {
+            profile.verifier = EntitlementVerifier();
+            keyringBoundApiUrl = profile.apiUrl;
+        }
+    };
+
+    const bool cloudServerLocked = settings && settings->isCloudServerPolicyLocked();
+    bool attemptedEnvServerOverride = false;
+
+    // Tier 5: Unlocked policy.json organization defaults
+    if (settings && settings->hasPolicyCloudServer() && !cloudServerLocked)
+        applySettingsConfig(settings->policyCloudServerConfig(), false);
+
+    // Tier 4: User settings in ragoshell.json
+    if (!cloudServerLocked && settings && settings->hasUserCloudServerConfig())
+        applySettingsConfig(settings->userCloudServerConfig(), true);
+
+    // Tier 3: Process environment variables
+    if (!cloudServerLocked)
+    {
+        const QString envApi = stripTrailingSlashes(productEnv("API_URL"));
+        const QString envPortal = stripTrailingSlashes(productEnv("PORTAL_URL"));
+        const QString envBridge = stripTrailingSlashes(productEnv("BRIDGE_URL"));
+        const QString envRing = productEnv("ENTITLEMENT_PUBKEYS").trimmed();
+        const bool anyUrlEnv = !envApi.isEmpty() || !envPortal.isEmpty() || !envBridge.isEmpty();
+        if (anyUrlEnv)
+            attemptedEnvServerOverride = true;
+        const bool anyEnv = anyUrlEnv || !envRing.isEmpty();
+        if (anyEnv)
+            profile.envOverridden = true;
+
+        if (!envApi.isEmpty())
+            profile.apiUrl = isAllowedApiBaseUrl(envApi) ? envApi : QString();
+        const QString portalBeforeEnv = profile.portalUrl;
+        if (!envPortal.isEmpty())
+        {
+            profile.portalUrl = isAllowedApiBaseUrl(envPortal) ? envPortal : QString();
+            if (envBridge.isEmpty() && profile.portalUrl.compare(portalBeforeEnv, Qt::CaseInsensitive) != 0)
+            {
+                // Do not leak a lower-tier explicit bridgeUrl onto a different overridden portal.
+                profile.bridgeUrl.clear();
+                bridgeExplicitlyInvalid = false;
+            }
+        }
+        if (!envBridge.isEmpty())
+        {
+            if (isAllowedBridgeUrl(envBridge))
+            {
+                profile.bridgeUrl = envBridge;
+                bridgeExplicitlyInvalid = false;
+            }
+            else
+            {
+                profile.bridgeUrl.clear();
+                bridgeExplicitlyInvalid = true;
+            }
+        }
+
+        if (!envRing.isEmpty())
+        {
+            bool ok = false;
+            EntitlementVerifier parsed = EntitlementVerifier::fromKeyRingString(envRing, &ok);
+            profile.verifier = (ok && parsed.keyCount() > 0) ? std::move(parsed) : EntitlementVerifier();
+            keyringBoundApiUrl = profile.apiUrl;
+        }
+        else if (!envApi.isEmpty() && profile.apiUrl.compare(keyringBoundApiUrl, Qt::CaseInsensitive) != 0)
+        {
+            // Env moved API URL away from the bound key ring without supplying RAGOSHELL_ENTITLEMENT_PUBKEYS.
+            profile.verifier = (profile.apiUrl.compare(defaultApi, Qt::CaseInsensitive) == 0)
+                ? EntitlementVerifier::fromEmbeddedDefaults()
+                : EntitlementVerifier();
+            keyringBoundApiUrl = profile.apiUrl;
+        }
+    }
+
+    // Tier 2: Locked policy.json overrides both user settings and process env vars
+    if (cloudServerLocked)
+    {
+        profile.policyLocked = true;
+        profile.envOverridden = false;
+        if (settings->hasPolicyCloudServer())
+            applySettingsConfig(settings->policyCloudServerConfig(), false);
+    }
+
+    // Tier 1: In-process C++ test overrides
+    if (!apiUrlOverride.isEmpty())
+        profile.apiUrl = isAllowedApiBaseUrl(apiUrlOverride) ? stripTrailingSlashes(apiUrlOverride) : QString();
+    if (!portalUrlOverride.isEmpty())
+    {
+        const QString portalBeforeOverride = profile.portalUrl;
+        profile.portalUrl = isAllowedApiBaseUrl(portalUrlOverride) ? stripTrailingSlashes(portalUrlOverride) : QString();
+        if (bridgeUrlOverride.isEmpty() && profile.portalUrl.compare(portalBeforeOverride, Qt::CaseInsensitive) != 0)
+        {
+            profile.bridgeUrl.clear();
+            bridgeExplicitlyInvalid = false;
+        }
+    }
+    if (!bridgeUrlOverride.isEmpty())
+    {
+        if (isAllowedBridgeUrl(bridgeUrlOverride))
+        {
+            profile.bridgeUrl = stripTrailingSlashes(bridgeUrlOverride);
+            bridgeExplicitlyInvalid = false;
+        }
+        else
+        {
+            profile.bridgeUrl.clear();
+            bridgeExplicitlyInvalid = true;
+        }
+    }
+    if (hasCustomVerifier)
+        profile.verifier = customVerifier;
+
+    if (profile.bridgeUrl.isEmpty() && !bridgeExplicitlyInvalid && !profile.portalUrl.isEmpty())
+        profile.bridgeUrl = deriveBridgeUrlFromPortal(profile.portalUrl);
+
+    profile.customServerActive =
+        profile.mode == QLatin1String("custom")
+        || attemptedEnvServerOverride
+        || (!profile.apiUrl.isEmpty() && profile.apiUrl.compare(defaultApi, Qt::CaseInsensitive) != 0)
+        || (!profile.portalUrl.isEmpty() && profile.portalUrl.compare(defaultPortal, Qt::CaseInsensitive) != 0)
+        || (!profile.bridgeUrl.isEmpty() && profile.bridgeUrl.compare(defaultBridge, Qt::CaseInsensitive) != 0);
+
+    return profile;
+}
+
+CloudClient::EffectiveProfile CloudClient::resolveEffectiveProfile() const
+{
+    return resolveProfileForSettings(
+        m_settings, m_apiUrlOverride, m_portalUrlOverride, m_bridgeUrlOverride,
+        m_customVerifierSet, m_customVerifier);
+}
+
+QString CloudClient::effectiveServerMode() const
+{
+    return resolveEffectiveProfile().mode;
+}
+
 QString CloudClient::effectiveApiUrl() const
 {
-    if (!m_apiUrlOverride.isEmpty() && isAllowedApiBaseUrl(m_apiUrlOverride))
-        return stripTrailingSlashes(m_apiUrlOverride);
-
-    const QString envUrl = productEnv("API_URL").trimmed();
-    if (!envUrl.isEmpty() && isAllowedApiBaseUrl(envUrl))
-        return stripTrailingSlashes(envUrl);
-
-    return stripTrailingSlashes(QString::fromUtf8(BrandInfo::apiUrl));
+    return resolveEffectiveProfile().apiUrl;
 }
 
 QString CloudClient::effectivePortalUrl() const
 {
-    if (!m_portalUrlOverride.isEmpty() && isAllowedApiBaseUrl(m_portalUrlOverride))
-        return stripTrailingSlashes(m_portalUrlOverride);
+    return resolveEffectiveProfile().portalUrl;
+}
 
-    const QString envUrl = productEnv("PORTAL_URL").trimmed();
-    if (!envUrl.isEmpty() && isAllowedApiBaseUrl(envUrl))
-        return stripTrailingSlashes(envUrl);
+QString CloudClient::effectiveBridgeUrl() const
+{
+    return resolveEffectiveProfile().bridgeUrl;
+}
 
-    return stripTrailingSlashes(QString::fromUtf8(BrandInfo::portalUrl));
+bool CloudClient::isPolicyLocked() const
+{
+    return resolveEffectiveProfile().policyLocked;
+}
+
+bool CloudClient::isPolicyInvalid() const
+{
+    return m_settings && m_settings->isEnterprisePolicyInvalid();
+}
+
+bool CloudClient::isEnvOverridden() const
+{
+    return resolveEffectiveProfile().envOverridden;
+}
+
+bool CloudClient::isCustomServerActive() const
+{
+    return resolveEffectiveProfile().customServerActive;
+}
+
+bool CloudClient::hasCustomServerProfile(const SettingsManager *settings)
+{
+    return resolveProfileForSettings(
+        settings, QString(), QString(), QString(), false, EntitlementVerifier()).customServerActive;
+}
+
+QString CloudClient::computeProfileFingerprint() const
+{
+    const EffectiveProfile prof = resolveEffectiveProfile();
+    if (prof.policyInvalid)
+        return QStringLiteral("invalid");
+    const QByteArray payload = (prof.apiUrl + QLatin1Char('\n')
+                                + prof.portalUrl + QLatin1Char('\n')
+                                + prof.bridgeUrl + QLatin1Char('\n')
+                                + prof.verifier.canonicalKeyRingString())
+                                   .toUtf8();
+    return QString::fromLatin1(
+        QCryptographicHash::hash(payload, QCryptographicHash::Sha256).toHex().left(16));
+}
+
+QString CloudClient::defaultEmbeddedProfileFingerprint() const
+{
+    const QString defaultApi = stripTrailingSlashes(QString::fromUtf8(BrandInfo::apiUrl));
+    const QString defaultPortal = stripTrailingSlashes(QString::fromUtf8(BrandInfo::portalUrl));
+    const QString defaultBridge = deriveBridgeUrlFromPortal(defaultPortal);
+    const EntitlementVerifier defVerifier = EntitlementVerifier::fromEmbeddedDefaults();
+    const QByteArray payload = (defaultApi + QLatin1Char('\n')
+                                + defaultPortal + QLatin1Char('\n')
+                                + defaultBridge + QLatin1Char('\n')
+                                + defVerifier.canonicalKeyRingString())
+                                   .toUtf8();
+    return QString::fromLatin1(
+        QCryptographicHash::hash(payload, QCryptographicHash::Sha256).toHex().left(16));
+}
+
+bool CloudClient::hasTestOverrides() const noexcept
+{
+    return !m_apiUrlOverride.isEmpty()
+           || !m_portalUrlOverride.isEmpty()
+           || !m_bridgeUrlOverride.isEmpty()
+           || m_customVerifierSet;
+}
+
+bool CloudClient::hasStoredCloudSecrets() const
+{
+    if (!m_credentialStore || !m_credentialStore->isAvailable())
+        return false;
+    for (const char *slot : {ICloudCredentialStore::kRefreshTokenSlot,
+                             ICloudCredentialStore::kEntitlementJwtSlot,
+                             ICloudCredentialStore::kSyncMasterKeySlot})
+    {
+        QString val;
+        if (m_credentialStore->readSecret(QLatin1String(slot), &val) && !val.trimmed().isEmpty())
+        {
+            cleanseString(&val);
+            return true;
+        }
+        cleanseString(&val);
+    }
+    return false;
+}
+
+bool CloudClient::isNetworkBlockedByPolicyOrSettings(QString *codeOut, QString *messageOut) const
+{
+    if (isPolicyInvalid())
+    {
+        if (codeOut)
+            *codeOut = QStringLiteral("policy_invalid");
+        if (messageOut)
+            *messageOut = QStringLiteral("Enterprise policy file is invalid or unreadable; cloud features are blocked.");
+        return true;
+    }
+    if (m_settings && m_settings->disableHttpsFeatures())
+    {
+        if (codeOut)
+            *codeOut = QStringLiteral("https_disabled");
+        if (messageOut)
+            *messageOut = QStringLiteral("HTTPS cloud features are disabled by settings.");
+        return true;
+    }
+    return false;
+}
+
+void CloudClient::wipeLocalStateForServerSwitch(const QString &newFingerprint)
+{
+    clearPendingDeviceFlow(true);
+    if (m_refreshReply)
+    {
+        m_refreshReply->disconnect(this);
+        m_refreshReply->abort();
+        m_refreshReply->deleteLater();
+        m_refreshReply = nullptr;
+        m_refreshInFlight = false;
+    }
+    if (m_meReply)
+    {
+        m_meReply->disconnect(this);
+        m_meReply->abort();
+        m_meReply->deleteLater();
+        m_meReply = nullptr;
+    }
+    if (m_entitlementsReply)
+    {
+        m_entitlementsReply->disconnect(this);
+        m_entitlementsReply->abort();
+        m_entitlementsReply->deleteLater();
+        m_entitlementsReply = nullptr;
+    }
+    finishTokenWaiters(false, QString(), QStringLiteral("server_switched"));
+
+    cleanseString(&m_accessToken);
+    cleanseString(&m_volatileRefreshToken);
+    m_accessTokenExpiresAtSec = 0;
+
+    if (m_credentialStore && m_credentialStore->isAvailable())
+    {
+        m_credentialStore->removeSecret(QLatin1String(ICloudCredentialStore::kRefreshTokenSlot));
+        m_credentialStore->removeSecret(QLatin1String(ICloudCredentialStore::kEntitlementJwtSlot));
+        m_credentialStore->removeSecret(QLatin1String(ICloudCredentialStore::kSyncMasterKeySlot));
+    }
+
+    m_metadata.signedIn = false;
+    m_metadata.deviceId.clear();
+    m_metadata.userId.clear();
+    m_metadata.userEmail.clear();
+
+    m_authState = CloudAuthState::SignedOut;
+    m_entitlementState = EntitlementState::Invalid;
+    m_claims = EntitlementClaims{};
+    m_busy = false;
+    m_autoRefreshBackoffSec = 0;
+    m_autoRefreshNextAttemptAt = 0;
+    m_lastErrorCode.clear();
+    m_lastErrorMessage.clear();
+
+    reloadVerifierFromConfig();
+
+    if (m_settings)
+    {
+        m_settings->setSyncEnabled(false);
+        m_settings->setSyncKeyMode(QString());
+        const QString fpToStore = (newFingerprint == QLatin1String("invalid")) ? QString() : newFingerprint;
+        saveMetadataToSettings(&fpToStore);
+        QFile::remove(configDirectory() + QStringLiteral("sync-state.json"));
+    }
+
+    emit serverProfileSwitched();
+    emit stateChanged();
+}
+
+void CloudClient::applyServerProfileChange()
+{
+    const QString fp = computeProfileFingerprint();
+    const bool hasSync = m_settings && m_settings->syncEnabled();
+    if (m_metadata.signedIn || hasSync || hasStoredCloudSecrets())
+    {
+        wipeLocalStateForServerSwitch(fp);
+        return;
+    }
+    clearPendingDeviceFlow(true);
+    m_authState = CloudAuthState::SignedOut;
+    m_busy = false;
+    reloadVerifierFromConfig();
+    m_lastErrorCode.clear();
+    m_lastErrorMessage.clear();
+    if (m_settings)
+    {
+        const QString fpToStore = (fp == QLatin1String("invalid")) ? QString() : fp;
+        saveMetadataToSettings(&fpToStore);
+    }
+    emit stateChanged();
 }
 
 void CloudClient::setApiUrlOverride(const QString &apiUrl)
@@ -478,6 +946,11 @@ void CloudClient::setPortalUrlOverride(const QString &portalUrl)
     m_portalUrlOverride = stripTrailingSlashes(portalUrl);
 }
 
+void CloudClient::setBridgeUrlOverride(const QString &bridgeUrl)
+{
+    m_bridgeUrlOverride = stripTrailingSlashes(bridgeUrl);
+}
+
 void CloudClient::setPlatformOverride(const QString &platformId, const QString &arch, const QString &appVersion)
 {
     m_platformOverride = platformId.trimmed();
@@ -488,6 +961,7 @@ void CloudClient::setPlatformOverride(const QString &platformId, const QString &
 void CloudClient::setEntitlementVerifier(const EntitlementVerifier &verifier)
 {
     m_verifier = verifier;
+    m_customVerifier = verifier;
     m_customVerifierSet = true;
 }
 
@@ -509,23 +983,7 @@ void CloudClient::expireAccessTokenInMemoryForTest()
 
 void CloudClient::reloadVerifierFromConfig()
 {
-    if (m_customVerifierSet)
-        return;
-
-    const QString envRing = productEnv("ENTITLEMENT_PUBKEYS").trimmed();
-    if (!envRing.isEmpty())
-    {
-        bool ok = false;
-        QString err;
-        EntitlementVerifier parsed = EntitlementVerifier::fromKeyRingString(envRing, &ok, &err);
-        if (ok)
-        {
-            m_verifier = std::move(parsed);
-            return;
-        }
-    }
-
-    m_verifier = EntitlementVerifier::fromEmbeddedDefaults();
+    m_verifier = resolveEffectiveProfile().verifier;
 }
 
 void CloudClient::setDeviceName(const QString &name)
@@ -560,16 +1018,23 @@ void CloudClient::loadMetadataFromSettings()
     m_metadata.userEmail = m_settings->cacheData(QStringLiteral("cloudUserEmail")).toString().trimmed();
 }
 
-void CloudClient::saveMetadataToSettings()
+void CloudClient::saveMetadataToSettings(const QString *overrideFingerprint)
 {
     if (!m_settings)
         return;
     const bool persistSession = m_metadata.signedIn && keyStoreAvailable();
+    const bool hasSyncOrSecrets = persistSession
+                                  || (m_settings && m_settings->syncEnabled())
+                                  || hasStoredCloudSecrets();
     m_settings->addCacheData(QStringLiteral("cloudSignedIn"), persistSession);
     m_settings->addCacheData(QStringLiteral("cloudDeviceId"), persistSession ? m_metadata.deviceId : QString());
     m_settings->addCacheData(QStringLiteral("cloudDeviceName"), m_metadata.deviceName);
     m_settings->addCacheData(QStringLiteral("cloudUserId"), persistSession ? m_metadata.userId : QString());
     m_settings->addCacheData(QStringLiteral("cloudUserEmail"), persistSession ? m_metadata.userEmail : QString());
+    const QString fp = overrideFingerprint
+        ? *overrideFingerprint
+        : (hasSyncOrSecrets ? computeProfileFingerprint() : QString());
+    m_settings->addCacheData(QStringLiteral("cloudProfileFingerprint"), fp);
     m_settings->save();
 }
 
@@ -578,7 +1043,7 @@ void CloudClient::verifyAndApplyCachedEntitlementOffline()
     m_entitlementState = EntitlementState::Invalid;
     m_claims = EntitlementClaims{};
 
-    if (!m_metadata.signedIn || !m_credentialStore || !m_credentialStore->isAvailable())
+    if (!m_metadata.signedIn || !m_credentialStore || !m_credentialStore->isAvailable() || isPolicyInvalid())
         return;
 
     QString cachedJwt;
@@ -592,11 +1057,16 @@ void CloudClient::verifyAndApplyCachedEntitlementOffline()
     if (m_verifier.keyCount() == 0)
         return;
 
+    const QString apiBase = effectiveApiUrl();
+    if (!isAllowedApiBaseUrl(apiBase))
+        return;
+
     EntitlementVerifyOptions opts;
-    opts.expectedIssuer = effectiveApiUrl();
+    opts.expectedIssuer = apiBase;
     opts.expectedDeviceId = m_metadata.deviceId;
 
     const EntitlementVerifyResult res = m_verifier.verify(cachedJwt.trimmed(), nowUnixSec(), opts);
+    cleanseString(&cachedJwt);
     if (!res.isUsable())
         return;
 
@@ -612,7 +1082,7 @@ void CloudClient::verifyAndApplyCachedEntitlementOffline()
 
 bool CloudClient::hasActiveOnlineEntitlement() const
 {
-    if (m_settings && m_settings->disableHttpsFeatures())
+    if (isNetworkBlockedByPolicyOrSettings())
         return false;
     return m_entitlementState == EntitlementState::ValidOnline
            && m_claims.expiresAt > 0
@@ -638,6 +1108,49 @@ QString CloudClient::entitlementJwt() const
 void CloudClient::restoreOfflineSession()
 {
     loadMetadataFromSettings();
+    const QString savedFp = m_settings
+        ? m_settings->cacheData(QStringLiteral("cloudProfileFingerprint")).toString().trimmed()
+        : QString();
+    const QString currentFp = computeProfileFingerprint();
+    const bool hasSyncActive = m_settings && m_settings->syncEnabled();
+    const bool anyStoredState = m_settings && (m_metadata.signedIn || hasSyncActive || hasStoredCloudSecrets());
+
+    if (anyStoredState)
+    {
+        bool mismatch = false;
+        if (isPolicyInvalid())
+        {
+            mismatch = true;
+        }
+        else if (savedFp.isEmpty())
+        {
+            const bool bootstrapAllowed = hasTestOverrides()
+                                          || currentFp == defaultEmbeddedProfileFingerprint();
+            if (bootstrapAllowed)
+            {
+                if (m_metadata.signedIn)
+                {
+                    m_settings->addCacheData(QStringLiteral("cloudProfileFingerprint"), currentFp);
+                    m_settings->save();
+                }
+            }
+            else
+            {
+                mismatch = true;
+            }
+        }
+        else if (savedFp != currentFp)
+        {
+            mismatch = true;
+        }
+
+        if (mismatch)
+        {
+            wipeLocalStateForServerSwitch(currentFp);
+            return;
+        }
+    }
+
     if (!m_metadata.signedIn)
     {
         m_authState = CloudAuthState::SignedOut;
@@ -763,10 +1276,12 @@ void CloudClient::clearPendingDeviceFlow(bool cleanseCode)
 
 void CloudClient::startDeviceSignIn(const QString &customDeviceName)
 {
-    if (m_settings && m_settings->disableHttpsFeatures())
+    QString blockCode;
+    QString blockMessage;
+    if (isNetworkBlockedByPolicyOrSettings(&blockCode, &blockMessage))
     {
-        m_lastErrorCode = QStringLiteral("https_disabled");
-        m_lastErrorMessage = QStringLiteral("HTTPS cloud features are disabled by settings.");
+        m_lastErrorCode = blockCode;
+        m_lastErrorMessage = blockMessage;
         emit stateChanged();
         emit signInFailed(m_lastErrorCode, m_lastErrorMessage);
         return;
@@ -936,6 +1451,12 @@ void CloudClient::pollDeviceToken()
 {
     if (m_authState != CloudAuthState::AwaitingBrowserApproval || m_deviceCode.isEmpty())
         return;
+
+    if (isNetworkBlockedByPolicyOrSettings() || !isAllowedApiBaseUrl(effectiveApiUrl()))
+    {
+        cancelDeviceSignIn();
+        return;
+    }
 
     if (codeRemainingSeconds() <= 0)
     {
@@ -1109,9 +1630,16 @@ void CloudClient::withValidAccessToken(AccessTokenCallback callback)
     if (!callback)
         return;
 
-    if (m_settings && m_settings->disableHttpsFeatures())
+    QString blockCode;
+    if (isNetworkBlockedByPolicyOrSettings(&blockCode))
     {
-        callback(false, QString(), QStringLiteral("https_disabled"));
+        callback(false, QString(), blockCode);
+        return;
+    }
+
+    if (!isAllowedApiBaseUrl(effectiveApiUrl()))
+    {
+        callback(false, QString(), QStringLiteral("unsafe_api_url"));
         return;
     }
 
@@ -1314,8 +1842,23 @@ void CloudClient::handleSessionRevoked(const QString &reasonCode, const QString 
 
 void CloudClient::refreshAccountAndEntitlements()
 {
-    if (m_settings && m_settings->disableHttpsFeatures())
+    QString blockCode;
+    QString blockMessage;
+    if (isNetworkBlockedByPolicyOrSettings(&blockCode, &blockMessage))
+    {
+        m_lastErrorCode = blockCode;
+        m_lastErrorMessage = blockMessage;
+        emit stateChanged();
         return;
+    }
+
+    if (!isAllowedApiBaseUrl(effectiveApiUrl()))
+    {
+        m_lastErrorCode = QStringLiteral("unsafe_api_url");
+        m_lastErrorMessage = QStringLiteral("Configured cloud API URL is invalid or insecure.");
+        emit stateChanged();
+        return;
+    }
 
     if (!m_metadata.signedIn || m_authState != CloudAuthState::SignedIn)
         return;
@@ -1627,7 +2170,7 @@ void CloudClient::signOut()
     const QString apiBase = effectiveApiUrl();
     if ((!refreshTok.trimmed().isEmpty() || !accessTok.trimmed().isEmpty())
         && isAllowedApiBaseUrl(apiBase)
-        && (!m_settings || !m_settings->disableHttpsFeatures()))
+        && !isNetworkBlockedByPolicyOrSettings())
     {
         QNetworkRequest req = buildApiRequest(QStringLiteral("/v1/auth/logout"), true, kLogoutTimeoutMs);
         QByteArray payload("{}");

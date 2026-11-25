@@ -71,9 +71,19 @@ namespace RagoShell::UpdatePulse
     /// Effective POST endpoint URL (override -> $RAGOSHELL_UPDATE_URL -> default HTTPS service).
     QString endpointUrl(const QString &overrideUrl = QString());
 
-    /// Effective signed releases.json URL (override -> $RAGOSHELL_RELEASES_MANIFEST_URL -> loopback fallback -> BrandInfo::releasesManifestUrl).
+    /// Policy- and profile-aware POST endpoint URL resolution (docs/EnterpriseServerProfile.md §6 Step D).
+    /// Returns empty when suppressed (policy invalid, disabled by policy, or custom cloud server active without an updateUrl).
+    QString resolveActiveUpdateEndpoint(bool policyInvalid,
+                                        bool checkForUpdatesEnabled,
+                                        bool customCloudServerActive,
+                                        const QString &policyUpdateUrl,
+                                        bool policyLocked,
+                                        const QString &testOverrideUrl = QString());
+
+    /// Effective signed releases.json URL (override -> $RAGOSHELL_RELEASES_MANIFEST_URL [unless policyLocked] -> endpoint-origin /releases.json -> BrandInfo::releasesManifestUrl).
     QString releasesManifestUrl(const QString &overrideUrl = QString(),
-                                const QString &activeEndpointUrl = QString());
+                                const QString &activeEndpointUrl = QString(),
+                                bool policyLocked = false);
 
     /// Official fallback page when a platform-specific binary URL is omitted.
     QString defaultReleasesUrl();

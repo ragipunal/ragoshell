@@ -1,5 +1,7 @@
 #include "gtest/gtest.h"
 
+#include "ragoshell/core/BrandInfo.h"
+#include "ragoshell/core/cloud/CloudClient.h"
 #include "ragoshell/core/settings/SettingsManager.h"
 #include "ragoshell/core/utils/AiQueryAssistant.h"
 #include "ragoshell/utils/KeyStore.h"
@@ -13,6 +15,9 @@
 #include <QVariantMap>
 
 #include <memory>
+#include <openssl/crypto.h>
+#include <openssl/evp.h>
+#include <openssl/x509.h>
 
 namespace
 {
@@ -515,5 +520,213 @@ TEST(SettingsManager_AiKeyStore, LegacyAiKeysPreservedWhenUnavailableOrWriteFail
         const QByteArray bytes = checkFile.readAll();
         EXPECT_FALSE(bytes.contains("apiKeyEncrypted")) << p.toStdString();
         EXPECT_FALSE(bytes.contains("sk-keep-me")) << p.toStdString();
+    }
+}
+
+namespace
+{
+    struct ScopedPolicyPath
+    {
+        explicit ScopedPolicyPath(const QString &path)
+        {
+            RagoShell::SettingsManager::setPolicyFilePathForTest(path);
+        }
+        ~ScopedPolicyPath()
+        {
+            RagoShell::SettingsManager::clearPolicyFilePathForTest();
+        }
+    };
+
+    QString generateTestP256Ring(const QString &kid)
+    {
+        std::unique_ptr<EVP_PKEY, decltype(&EVP_PKEY_free)> pkey(
+            EVP_EC_gen("prime256v1"), &EVP_PKEY_free);
+        if (!pkey)
+            return {};
+        unsigned char *der = nullptr;
+        const int len = i2d_PUBKEY(pkey.get(), &der);
+        if (len <= 0 || !der)
+            return {};
+        const QByteArray b64 = QByteArray(reinterpret_cast<const char *>(der), len).toBase64();
+        OPENSSL_free(der);
+        return kid + QLatin1Char(':') + QString::fromLatin1(b64);
+    }
+
+    bool writeRawFile(const QString &path, const QByteArray &data)
+    {
+        QFile f(path);
+        if (!f.open(QIODevice::WriteOnly | QIODevice::Truncate))
+            return false;
+        const bool ok = f.write(data) == data.size();
+        f.close();
+        return ok;
+    }
+}
+
+TEST(SettingsManager_EnterpriseServer, UserCloudServerConfigRoundTripAndClear)
+{
+    ScopedConfigDir cfg;
+    ScopedPolicyPath noPolicy{QString()};
+    auto store = std::make_shared<FakeAiKeyStore>(true);
+    const QString ring = generateTestP256Ring(QStringLiteral("2026-11"));
+    ASSERT_FALSE(ring.isEmpty());
+
+    {
+        RagoShell::SettingsManager s(store);
+        EXPECT_FALSE(s.hasUserCloudServerConfig());
+        EXPECT_FALSE(s.hasEnterprisePolicy());
+        EXPECT_FALSE(s.isEnterprisePolicyInvalid());
+
+        RagoShell::SettingsManager::CloudServerConfig cs;
+        cs.mode = QStringLiteral("custom");
+        cs.apiUrl = QStringLiteral("https://api.corp.example/");
+        cs.portalUrl = QStringLiteral("https://app.corp.example/");
+        cs.bridgeUrl = QStringLiteral("wss://bridge.corp.example/ws/");
+        cs.entitlementPubkeys = ring;
+        s.setUserCloudServerConfig(cs);
+        ASSERT_TRUE(s.save());
+    }
+
+    {
+        RagoShell::SettingsManager reloaded(store);
+        ASSERT_TRUE(reloaded.hasUserCloudServerConfig());
+        const auto got = reloaded.userCloudServerConfig();
+        EXPECT_EQ(got.mode, QStringLiteral("custom"));
+        EXPECT_EQ(got.apiUrl, QStringLiteral("https://api.corp.example"));
+        EXPECT_EQ(got.portalUrl, QStringLiteral("https://app.corp.example"));
+        EXPECT_EQ(got.bridgeUrl, QStringLiteral("wss://bridge.corp.example/ws"));
+        EXPECT_EQ(got.entitlementPubkeys, ring);
+
+        reloaded.clearUserCloudServerConfig();
+        ASSERT_TRUE(reloaded.save());
+    }
+
+    RagoShell::SettingsManager cleared(store);
+    EXPECT_FALSE(cleared.hasUserCloudServerConfig());
+}
+
+TEST(SettingsManager_EnterpriseServer, ValidLockedAndUnlockedPoliciesAndLegacyCheckForUpdates)
+{
+    ScopedConfigDir cfg;
+    QTemporaryDir polDir;
+    ASSERT_TRUE(polDir.isValid());
+    const QString policyPath = polDir.filePath(QStringLiteral("policy.json"));
+    ScopedPolicyPath usePolicy(policyPath);
+    auto store = std::make_shared<FakeAiKeyStore>(true);
+    const QString ring = generateTestP256Ring(QStringLiteral("corp-1"));
+    ASSERT_FALSE(ring.isEmpty());
+
+    // 1. Locked policy loads even on first launch before ragoshell.json exists.
+    ASSERT_TRUE(writeRawFile(policyPath, QStringLiteral(
+        "{\n"
+        "  \"locked\": true,\n"
+        "  \"disableHttpsFeatures\": true,\n"
+        "  \"checkForUpdates\": false,\n"
+        "  \"updateUrl\": \"https://updates.corp.example/v1/release-check\",\n"
+        "  \"cloudServer\": {\n"
+        "    \"mode\": \"custom\",\n"
+        "    \"apiUrl\": \"https://api.corp.example\",\n"
+        "    \"portalUrl\": \"https://app.corp.example\",\n"
+        "    \"bridgeUrl\": \"wss://bridge.corp.example/ws\",\n"
+        "    \"entitlementPubkeys\": \"%1\"\n"
+        "  }\n"
+        "}\n").arg(ring).toUtf8()));
+
+    {
+        RagoShell::SettingsManager locked(store);
+        EXPECT_TRUE(locked.hasEnterprisePolicy());
+        EXPECT_TRUE(locked.isEnterprisePolicyLocked());
+        EXPECT_FALSE(locked.isEnterprisePolicyInvalid());
+        EXPECT_TRUE(locked.isCloudServerPolicyLocked());
+        EXPECT_TRUE(locked.isCheckForUpdatesLocked());
+        EXPECT_TRUE(locked.disableHttpsFeatures());
+        EXPECT_FALSE(locked.checkForUpdates());
+        EXPECT_EQ(locked.policyUpdateUrl(), QStringLiteral("https://updates.corp.example/v1/release-check"));
+
+        // Locked setters are ignored.
+        locked.setCheckForUpdates(true);
+        EXPECT_FALSE(locked.checkForUpdates());
+        RagoShell::SettingsManager::CloudServerConfig rogue;
+        rogue.mode = QStringLiteral("custom");
+        rogue.apiUrl = QStringLiteral("https://evil.example");
+        locked.setUserCloudServerConfig(rogue);
+        EXPECT_FALSE(locked.hasUserCloudServerConfig());
+    }
+
+    // 2. Unlocked policy: auto-saved legacy checkForUpdates=true must NOT override unlocked policy false,
+    //    whereas an explicit user setCheckForUpdates(true) DOES override unlocked policy false.
+    ASSERT_TRUE(writeRawFile(cfg.dir.filePath(QStringLiteral("ragoshell.json")),
+                             "{\n  \"version\": \"2.0\",\n  \"checkForUpdates\": true\n}\n"));
+    ASSERT_TRUE(writeRawFile(policyPath,
+                             "{\n  \"locked\": false,\n  \"checkForUpdates\": false\n}\n"));
+    {
+        RagoShell::SettingsManager unlocked(store);
+        EXPECT_TRUE(unlocked.hasEnterprisePolicy());
+        EXPECT_FALSE(unlocked.isEnterprisePolicyLocked());
+        EXPECT_FALSE(unlocked.isCheckForUpdatesLocked());
+        EXPECT_FALSE(unlocked.checkForUpdates());
+
+        unlocked.setCheckForUpdates(true);
+        ASSERT_TRUE(unlocked.save());
+    }
+    {
+        RagoShell::SettingsManager userWon(store);
+        EXPECT_TRUE(userWon.checkForUpdates());
+    }
+}
+
+TEST(SettingsManager_EnterpriseServer, InvalidPolicyFailsClosedWithoutFallback)
+{
+    ScopedConfigDir cfg;
+    QTemporaryDir polDir;
+    ASSERT_TRUE(polDir.isValid());
+    const QString policyPath = polDir.filePath(QStringLiteral("policy.json"));
+    ScopedPolicyPath usePolicy(policyPath);
+    auto store = std::make_shared<FakeAiKeyStore>(true);
+    const QString ring = generateTestP256Ring(QStringLiteral("corp-1"));
+    ASSERT_FALSE(ring.isEmpty());
+
+    const QList<QByteArray> invalidPayloads = {
+        QByteArrayLiteral("{ not valid json"),
+        QByteArrayLiteral("{\"locked\": \"false\"}"),
+        QByteArrayLiteral("{\"updateUrl\": \"http://insecure.corp.example/v1/release-check\"}"),
+        QStringLiteral("{\"cloudServer\":{\"mode\":\"custom\",\"apiUrl\":\"http://192.168.1.10\",\"portalUrl\":\"https://app.corp.example\",\"entitlementPubkeys\":\"%1\"}}").arg(ring).toUtf8(),
+        QStringLiteral("{\"cloudServer\":{\"mode\":\"custom\",\"apiUrl\":\"https://user:pw@api.corp.example\",\"portalUrl\":\"https://app.corp.example\",\"entitlementPubkeys\":\"%1\"}}").arg(ring).toUtf8(),
+        QStringLiteral("{\"cloudServer\":{\"mode\":\"custom\",\"apiUrl\":\"https://api.corp.example/v1\",\"portalUrl\":\"https://app.corp.example\",\"entitlementPubkeys\":\"%1\"}}").arg(ring).toUtf8(),
+        QByteArrayLiteral("{\"cloudServer\":{\"mode\":\"custom\",\"apiUrl\":\"https://api.corp.example\",\"portalUrl\":\"https://app.corp.example\",\"entitlementPubkeys\":\"\"}}"),
+        QByteArray(70 * 1024, 'x'),
+    };
+
+    for (const QByteArray &payload : invalidPayloads) {
+        ASSERT_TRUE(writeRawFile(policyPath, payload));
+        RagoShell::SettingsManager s(store);
+        EXPECT_TRUE(s.hasEnterprisePolicy());
+        EXPECT_TRUE(s.isEnterprisePolicyInvalid());
+        EXPECT_TRUE(s.isCloudServerPolicyLocked());
+        EXPECT_TRUE(s.isCheckForUpdatesLocked());
+        EXPECT_FALSE(s.checkForUpdates());
+        EXPECT_TRUE(s.policyUpdateUrl().isEmpty());
+    }
+
+    // Non-regular path (directory) must also fail closed.
+    ASSERT_TRUE(QFile::remove(policyPath));
+    ASSERT_TRUE(QDir().mkpath(policyPath));
+    {
+        RagoShell::SettingsManager dirPolicy(store);
+        EXPECT_TRUE(dirPolicy.hasEnterprisePolicy());
+        EXPECT_TRUE(dirPolicy.isEnterprisePolicyInvalid());
+    }
+    ASSERT_TRUE(QDir().rmdir(policyPath));
+
+    // Symlink to valid policy file must be rejected if OS permits symlink creation.
+    const QString realTarget = polDir.filePath(QStringLiteral("real_policy.json"));
+    ASSERT_TRUE(writeRawFile(realTarget, QStringLiteral(
+        "{\"locked\":true,\"cloudServer\":{\"mode\":\"custom\",\"apiUrl\":\"https://api.corp.example\",\"portalUrl\":\"https://app.corp.example\",\"entitlementPubkeys\":\"%1\"}}")
+                                             .arg(ring).toUtf8()));
+    if (QFile::link(realTarget, policyPath)) {
+        RagoShell::SettingsManager linkPolicy(store);
+        EXPECT_TRUE(linkPolicy.hasEnterprisePolicy());
+        EXPECT_TRUE(linkPolicy.isEnterprisePolicyInvalid());
+        QFile::remove(policyPath);
     }
 }

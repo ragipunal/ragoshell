@@ -720,12 +720,20 @@
         <translation>Demo (tarayıcı içinde)</translation>
     </message>
     <message>
+        <source>Cloud Bridge (%1)</source>
+        <translation>Bulut Köprüsü (%1)</translation>
+    </message>
+    <message>
         <source>Local Agent (localhost)</source>
         <translation>Yerel Aracı (localhost)</translation>
     </message>
     <message>
         <source>Custom Gateway (ws://…)</source>
         <translation>Özel Ağ Geçidi (ws://…)</translation>
+    </message>
+    <message>
+        <source>Cloud Bridge (%1) — sign-in required</source>
+        <translation>Bulut Köprüsü (%1) — oturum açmak gerekir</translation>
     </message>
     <message>
         <source>AI tools cannot use a connection through an SSH tunnel.</source>
@@ -3055,6 +3063,66 @@
         <translation>İptal</translation>
     </message>
     <message>
+        <source>Cloud server</source>
+        <translation>Bulut sunucusu</translation>
+    </message>
+    <message>
+        <source>Managed by organization</source>
+        <translation>Kuruluş tarafından yönetiliyor</translation>
+    </message>
+    <message>
+        <source>Change Server…</source>
+        <translation>Sunucuyu Değiştir…</translation>
+    </message>
+    <message>
+        <source>Overridden for this process by environment variables.</source>
+        <translation>Bu işlem için ortam değişkenleriyle geçersiz kılındı.</translation>
+    </message>
+    <message>
+        <source>The enterprise policy file is invalid or unreadable. Cloud features and update checks are disabled.</source>
+        <translation>Kurumsal ilke dosyası geçersiz veya okunamıyor. Bulut özellikleri ve güncelleme denetimleri devre dışı bırakıldı.</translation>
+    </message>
+    <message>
+        <source>Server mode</source>
+        <translation>Sunucu modu</translation>
+    </message>
+    <message>
+        <source>%1 Cloud (default)</source>
+        <translation>%1 Cloud (varsayılan)</translation>
+    </message>
+    <message>
+        <source>Custom server</source>
+        <translation>Özel sunucu</translation>
+    </message>
+    <message>
+        <source>API URL</source>
+        <translation>API URL</translation>
+    </message>
+    <message>
+        <source>Portal URL</source>
+        <translation>Portal URL</translation>
+    </message>
+    <message>
+        <source>Bridge URL (optional)</source>
+        <translation>Köprü URL (isteğe bağlı)</translation>
+    </message>
+    <message>
+        <source>ES256 public keys</source>
+        <translation>ES256 açık anahtarları</translation>
+    </message>
+    <message>
+        <source>Format: &lt;kid&gt;:&lt;base64-spki&gt;;... Requires https:// and wss:// (http:// and ws:// are allowed only on localhost).</source>
+        <translation>Biçim: &lt;kid&gt;:&lt;base64-spki&gt;;... https:// ve wss:// gerektirir (http:// ve ws:// yalnızca localhost üzerinde izin verilir).</translation>
+    </message>
+    <message>
+        <source>Apply Server</source>
+        <translation>Sunucuyu Uygula</translation>
+    </message>
+    <message>
+        <source>Reset to Default</source>
+        <translation>Varsayılana Sıfırla</translation>
+    </message>
+    <message>
         <source>Account</source>
         <translation>Hesap</translation>
     </message>
@@ -3173,6 +3241,14 @@
     <message>
         <source>All encrypted collections stored on the server will be deleted permanently. Local settings stay on this device.</source>
         <translation>Sunucuda saklanan tüm şifreli veri koleksiyonları kalıcı olarak silinecek. Yerel ayarlar bu cihazda kalır.</translation>
+    </message>
+    <message>
+        <source>Switch Cloud Server</source>
+        <translation>Bulut Sunucusunu Değiştir</translation>
+    </message>
+    <message>
+        <source>Switching the cloud server will sign out of your current session and clear local sync state. Saved local MongoDB connections, scripts, and query history stay on this device.</source>
+        <translation>Bulut sunucusunu değiştirmek mevcut oturumunuzu kapatır ve yerel eşitleme durumunu temizler. Kayıtlı yerel MongoDB bağlantıları, betikler ve sorgu geçmişi bu cihazda kalır.</translation>
     </message>
     <message>
         <source>Refreshing…</source>
@@ -3538,6 +3614,18 @@
     <message>
         <source>Automatically check for updates on startup</source>
         <translation>Başlangıçta güncellemeleri otomatik olarak denetle</translation>
+    </message>
+    <message>
+        <source>Managed by organization policy.</source>
+        <translation>Kuruluş ilkesi tarafından yönetiliyor.</translation>
+    </message>
+    <message>
+        <source>Disabled while HTTPS network features are off.</source>
+        <translation>HTTPS ağ özellikleri kapalıyken devre dışıdır.</translation>
+    </message>
+    <message>
+        <source>Suppressed while a custom cloud server is active unless an internal update URL is configured.</source>
+        <translation>Dahili bir güncelleme adresi yapılandırılmadığı sürece özel bir bulut sunucusu etkinken bastırılır.</translation>
     </message>
     <message>
         <source>Share anonymous usage statistics with update checks</source>
@@ -4021,6 +4109,14 @@
         <translation>%1 tarihine kadar doğrulandı</translation>
     </message>
     <message>
+        <source>Cloud features are blocked because the enterprise policy file is invalid.</source>
+        <translation>Kurumsal ilke dosyası geçersiz olduğu için bulut özellikleri engellendi.</translation>
+    </message>
+    <message>
+        <source>Cloud features are disabled in configuration.</source>
+        <translation>Bulut özellikleri yapılandırmada devre dışı bırakıldı.</translation>
+    </message>
+    <message>
         <source>Sign-in request was declined in the browser.</source>
         <translation>Oturum açma isteği tarayıcıda reddedildi.</translation>
     </message>
@@ -4084,6 +4180,42 @@
         <source>Never</source>
         <translation>Hiçbir zaman</translation>
     </message>
+    <message>
+        <source>Blocked by invalid organization policy</source>
+        <translation>Geçersiz kuruluş ilkesi nedeniyle engellendi</translation>
+    </message>
+    <message>
+        <source>%1 Cloud</source>
+        <translation>%1 Cloud</translation>
+    </message>
+    <message>
+        <source>Cloud server settings are managed by organization policy.</source>
+        <translation>Bulut sunucusu ayarları kuruluş ilkesi tarafından yönetiliyor.</translation>
+    </message>
+    <message>
+        <source>Enter a valid https:// API origin (http:// is allowed only on localhost).</source>
+        <translation>Geçerli bir https:// API kökü girin (http:// yalnızca localhost üzerinde izin verilir).</translation>
+    </message>
+    <message>
+        <source>Enter a valid https:// Portal origin (http:// is allowed only on localhost).</source>
+        <translation>Geçerli bir https:// Portal kökü girin (http:// yalnızca localhost üzerinde izin verilir).</translation>
+    </message>
+    <message>
+        <source>Enter a valid wss:// Bridge URL (ws:// is allowed only on localhost), or leave empty.</source>
+        <translation>Geçerli bir wss:// Köprü URL&apos;si girin (ws:// yalnızca localhost üzerinde izin verilir) ya da boş bırakın.</translation>
+    </message>
+    <message>
+        <source>Enter one or more valid ES256 public keys (%1).</source>
+        <translation>Bir veya daha fazla geçerli ES256 açık anahtarı girin (%1).</translation>
+    </message>
+    <message>
+        <source>Cloud settings are unavailable.</source>
+        <translation>Bulut ayarları kullanılamıyor.</translation>
+    </message>
+    <message>
+        <source>Cloud server settings are locked by organization policy.</source>
+        <translation>Bulut sunucusu ayarları kuruluş ilkesi tarafından kilitlendi.</translation>
+    </message>
 </context>
 <context>
     <name>RagoShell::PipelineBuilder</name>
@@ -4119,6 +4251,14 @@
     <message>
         <source>Connecting to %1...</source>
         <translation>%1 sunucusuna bağlanılıyor...</translation>
+    </message>
+    <message>
+        <source>Cloud service URL failed security validation.</source>
+        <translation>Bulut hizmeti adresi güvenlik doğrulamasından geçemedi.</translation>
+    </message>
+    <message>
+        <source>Sign in to your cloud account to use the cloud gateway.</source>
+        <translation>Bulut ağ geçidini kullanmak için bulut hesabınızla oturum açın.</translation>
     </message>
     <message>
         <source>Disconnected</source>
@@ -4685,6 +4825,14 @@ Hata:
     <message>
         <source>HTTPS network features are disabled in configuration.</source>
         <translation>HTTPS ağ özellikleri yapılandırmada devre dışı bırakılmış.</translation>
+    </message>
+    <message>
+        <source>Update checks are disabled by organization policy.</source>
+        <translation>Güncelleme denetimleri kuruluş ilkesi tarafından devre dışı bırakıldı.</translation>
+    </message>
+    <message>
+        <source>Update checks are disabled while a custom cloud server is configured.</source>
+        <translation>Özel bir bulut sunucusu yapılandırılmışken güncelleme denetimleri devre dışıdır.</translation>
     </message>
     <message>
         <source>No internet connection available.</source>

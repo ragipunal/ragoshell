@@ -292,10 +292,20 @@ namespace RagoShell
     }
     void SettingsBridge::setCheckForUpdates(bool on)
     {
+        if (_settings->isCheckForUpdatesLocked())
+            return;
         if (_settings->checkForUpdates() == on)
             return;
         _settings->setCheckForUpdates(on);
         emit updateSettingsChanged();
+    }
+    bool SettingsBridge::checkForUpdatesLocked() const
+    {
+        return _settings->isCheckForUpdatesLocked();
+    }
+    bool SettingsBridge::disableHttpsFeatures() const
+    {
+        return _settings->disableHttpsFeatures();
     }
 
     bool SettingsBridge::shareAnonymousUsage() const

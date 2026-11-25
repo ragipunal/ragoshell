@@ -173,8 +173,9 @@ namespace RagoShell
         }
         QSet<QString> const& dbVersionsConnected() const { return _dbVersionsConnected; }
 
-        void setCheckForUpdates(bool checkForUpdates) { _checkForUpdates = checkForUpdates; }
-        bool checkForUpdates() const { return _checkForUpdates; }
+        void setCheckForUpdates(bool checkForUpdates);
+        bool checkForUpdates() const;
+        bool isCheckForUpdatesLocked() const;
 
         /// Documents per page; never more than kMaxBatchSize, so one page cannot exhaust memory.
         static constexpr int kMaxBatchSize = 1000;
@@ -275,11 +276,44 @@ namespace RagoShell
         QString syncKeyMode() const { return _syncKeyMode; }
         void setSyncKeyMode(const QString &mode) { _syncKeyMode = mode; }
 
-        // Designed to be set only by human users
-        bool disableHttpsFeatures() const { return _disableHttpsFeatures; }
+        /// Enterprise / self-hosted cloud server configuration (docs/EnterpriseServerProfile.md).
+        struct CloudServerConfig
+        {
+            QString mode = QStringLiteral("default"); ///< "default" | "custom"
+            QString apiUrl;
+            QString portalUrl;
+            QString bridgeUrl;
+            QString entitlementPubkeys;
+        };
+
+        static QString defaultSystemPolicyFilePath();
+        static void setPolicyFilePathForTest(const QString &path);
+        static void clearPolicyFilePathForTest();
+
+        bool hasEnterprisePolicy() const { return _hasEnterprisePolicy; }
+        bool isEnterprisePolicyLocked() const { return _hasEnterprisePolicy && _policyLocked; }
+        bool isEnterprisePolicyInvalid() const { return _hasEnterprisePolicy && _policyInvalid; }
+        bool isCloudServerPolicyLocked() const { return _hasEnterprisePolicy && (_policyInvalid || (_policyLocked && _policyHasCloudServer)); }
+        bool hasPolicyCloudServer() const { return _hasEnterprisePolicy && !_policyInvalid && _policyHasCloudServer; }
+        CloudServerConfig policyCloudServerConfig() const { return _policyCloudServer; }
+        bool hasPolicyCheckForUpdates() const { return _hasEnterprisePolicy && !_policyInvalid && _policyHasCheckForUpdates; }
+        bool policyCheckForUpdates() const { return _policyCheckForUpdates; }
+        bool hasPolicyDisableHttpsFeatures() const { return _hasEnterprisePolicy && !_policyInvalid && _policyHasDisableHttpsFeatures; }
+        bool isDisableHttpsFeaturesLocked() const { return _hasEnterprisePolicy && (_policyInvalid || (_policyLocked && _policyHasDisableHttpsFeatures)); }
+        bool policyDisableHttpsFeatures() const { return _policyDisableHttpsFeatures; }
+        QString policyUpdateUrl() const { return (_hasEnterprisePolicy && !_policyInvalid) ? _policyUpdateUrl : QString(); }
+
+        bool hasUserCloudServerConfig() const { return _userHasCloudServerConfig; }
+        CloudServerConfig userCloudServerConfig() const { return _userCloudServer; }
+        void setUserCloudServerConfig(const CloudServerConfig &config);
+        void clearUserCloudServerConfig();
+
+        // Designed to be set only by human users (or locked enterprise policy.json)
+        bool disableHttpsFeatures() const;
         bool debugMode() const { return _debugMode; }
 
     private:
+        void loadEnterprisePolicy();
 
         /**
          * Load settings from the map. Existing settings will be overwritten.
@@ -311,11 +345,13 @@ namespace RagoShell
         bool _disableConnectionShortcuts;
         bool _programExitedNormally = true;
         bool _disableHttpsFeatures = false;
+        bool _userHasDisableHttpsFeatures = false;
         bool _debugMode = false;
         QSet<QString> _acceptedEulaVersions;
         QSet<QString> _dbVersionsConnected;
         int _batchSize;
         bool _checkForUpdates = true;
+        bool _userHasCheckForUpdates = false;
         QString _uiTheme = "System";
         QString _uiDensity = "Automatic";
         QString _uiLanguage = "system";
@@ -350,6 +386,20 @@ namespace RagoShell
         QStringList _syncCollections;
         bool _syncIncludePasswords = false;
         QString _syncKeyMode;
+
+        bool _userHasCloudServerConfig = false;
+        CloudServerConfig _userCloudServer;
+
+        bool _hasEnterprisePolicy = false;
+        bool _policyLocked = false;
+        bool _policyInvalid = false;
+        bool _policyHasCloudServer = false;
+        CloudServerConfig _policyCloudServer;
+        bool _policyHasDisableHttpsFeatures = false;
+        bool _policyDisableHttpsFeatures = false;
+        bool _policyHasCheckForUpdates = false;
+        bool _policyCheckForUpdates = true;
+        QString _policyUpdateUrl;
 
         /**
         * @brief This is an anonymous string taken from QUuid that is generated when RagoShell 

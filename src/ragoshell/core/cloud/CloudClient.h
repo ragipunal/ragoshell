@@ -160,15 +160,26 @@ namespace RagoShell
         QString lastErrorMessage() const { return m_lastErrorMessage; }
         bool keyStoreAvailable() const;
 
-        // Configuration & overrides (for tests and env vars)
+        // Configuration, enterprise server profile, & overrides (policy, env vars, and tests)
+        QString effectiveServerMode() const;
         QString effectiveApiUrl() const;
         QString effectivePortalUrl() const;
+        QString effectiveBridgeUrl() const;
+        bool isPolicyLocked() const;
+        bool isPolicyInvalid() const;
+        bool isEnvOverridden() const;
+        bool isCustomServerActive() const;
+        QString computeProfileFingerprint() const;
+        static bool hasCustomServerProfile(const SettingsManager *settings);
+
         void setApiUrlOverride(const QString &apiUrl);
         void setPortalUrlOverride(const QString &portalUrl);
+        void setBridgeUrlOverride(const QString &bridgeUrl);
         void setPlatformOverride(const QString &platformId, const QString &arch, const QString &appVersion);
         void setEntitlementVerifier(const EntitlementVerifier &verifier);
         void setClockForTest(ClockFn clockSecondsFn);
         void setMinPollIntervalMsForTest(int minIntervalMs, int slowDownStepMs = 5000);
+        void applyServerProfileChange();
 
         // User-initiated actions
         void startDeviceSignIn(const QString &customDeviceName = QString());
@@ -196,6 +207,8 @@ namespace RagoShell
 
         // Security URL validators
         static bool isAllowedApiBaseUrl(const QString &urlText);
+        static bool isAllowedBridgeUrl(const QString &urlText);
+        static QString deriveBridgeUrlFromPortal(const QString &portalBaseUrl);
         static bool isAllowedVerificationUrl(const QString &candidateUrl,
                                              const QString &effectiveApiBaseUrl,
                                              const QString &effectivePortalBaseUrl);
@@ -211,6 +224,7 @@ namespace RagoShell
         void sessionRevoked(const QString &reasonCode);
         void signedOut();
         void logoutRequestFinished(bool networkSucceeded);
+        void serverProfileSwitched();
 
     private:
         struct ApiErrorInfo
@@ -219,10 +233,36 @@ namespace RagoShell
             QString message;
         };
 
+        struct EffectiveProfile
+        {
+            QString mode = QStringLiteral("default");
+            QString apiUrl;
+            QString portalUrl;
+            QString bridgeUrl;
+            EntitlementVerifier verifier;
+            bool policyLocked = false;
+            bool policyInvalid = false;
+            bool envOverridden = false;
+            bool customServerActive = false;
+        };
+
         qint64 nowUnixSec() const;
         void reloadVerifierFromConfig();
+        EffectiveProfile resolveEffectiveProfile() const;
+        static EffectiveProfile resolveProfileForSettings(
+            const SettingsManager *settings,
+            const QString &apiUrlOverride,
+            const QString &portalUrlOverride,
+            const QString &bridgeUrlOverride,
+            bool hasCustomVerifier,
+            const EntitlementVerifier &customVerifier);
+        QString defaultEmbeddedProfileFingerprint() const;
+        bool hasTestOverrides() const noexcept;
+        bool hasStoredCloudSecrets() const;
+        bool isNetworkBlockedByPolicyOrSettings(QString *codeOut = nullptr, QString *messageOut = nullptr) const;
+        void wipeLocalStateForServerSwitch(const QString &newFingerprint);
         void loadMetadataFromSettings();
-        void saveMetadataToSettings();
+        void saveMetadataToSettings(const QString *overrideFingerprint = nullptr);
         void verifyAndApplyCachedEntitlementOffline();
 
         void pollDeviceToken();
@@ -249,10 +289,12 @@ namespace RagoShell
 
         EntitlementVerifier m_verifier;
         bool m_customVerifierSet = false;
+        EntitlementVerifier m_customVerifier;
         ClockFn m_clockSecFn;
 
         QString m_apiUrlOverride;
         QString m_portalUrlOverride;
+        QString m_bridgeUrlOverride;
         QString m_platformOverride;
         QString m_archOverride;
         QString m_appVersionOverride;

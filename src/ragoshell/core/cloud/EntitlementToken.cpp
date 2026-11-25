@@ -558,6 +558,15 @@ namespace RagoShell
 
     EntitlementVerifier EntitlementVerifier::fromKeyRingString(const QString &ringSpec, bool *okOut, QString *errorOut)
     {
+        if (ringSpec.size() > kMaxKeyRingStringChars)
+        {
+            if (okOut)
+                *okOut = false;
+            if (errorOut)
+                *errorOut = QStringLiteral("keyring_too_large");
+            return EntitlementVerifier();
+        }
+
         EntitlementVerifier verifier;
         const QStringList entries = ringSpec.split(QLatin1Char(';'));
         for (const QString &rawEntry : entries)
@@ -565,6 +574,15 @@ namespace RagoShell
             const QString trimmed = rawEntry.trimmed();
             if (trimmed.isEmpty())
                 continue;
+
+            if (verifier.keyCount() >= kMaxKeyRingKeys)
+            {
+                if (okOut)
+                    *okOut = false;
+                if (errorOut)
+                    *errorOut = QStringLiteral("too_many_keys");
+                return EntitlementVerifier();
+            }
 
             const int colonIdx = trimmed.indexOf(QLatin1Char(':'));
             if (colonIdx <= 0 || colonIdx >= trimmed.size() - 1)
@@ -693,6 +711,50 @@ namespace RagoShell
         QStringList ids = m_keys.keys();
         ids.sort();
         return ids;
+    }
+
+    bool EntitlementVerifier::isValidCustomKeyRing(const QString &ringSpec, QString *errorOut)
+    {
+        bool ok = false;
+        QString err;
+        const EntitlementVerifier v = fromKeyRingString(ringSpec, &ok, &err);
+        if (!ok)
+        {
+            if (errorOut)
+                *errorOut = err;
+            return false;
+        }
+        if (v.keyCount() <= 0)
+        {
+            if (errorOut)
+                *errorOut = QStringLiteral("empty_keyring");
+            return false;
+        }
+        if (errorOut)
+            errorOut->clear();
+        return true;
+    }
+
+    QString EntitlementVerifier::canonicalKeyRingString() const
+    {
+        const OpenSslErrorScope errGuard;
+        QStringList parts;
+        const QStringList ids = keyIds();
+        parts.reserve(ids.size());
+        for (const QString &kid : ids)
+        {
+            const auto &pkey = m_keys.value(kid);
+            if (!pkey)
+                continue;
+            unsigned char *der = nullptr;
+            const int len = i2d_PUBKEY(pkey.get(), &der);
+            std::unique_ptr<unsigned char, OpenSslFreeDeleter> guard(der);
+            if (len <= 0 || !der)
+                continue;
+            const QByteArray derBytes(reinterpret_cast<const char *>(der), len);
+            parts.append(kid + QLatin1Char(':') + QString::fromLatin1(derBytes.toBase64()));
+        }
+        return parts.join(QLatin1Char(';'));
     }
 
     EntitlementVerifyResult EntitlementVerifier::verify(

@@ -222,8 +222,15 @@ namespace RagoShell::UpdatePulse
         const QString trimmed = urlText.trimmed();
         if (trimmed.isEmpty() || trimmed.size() > 1024)
             return false;
+        for (const QChar ch : trimmed) {
+            if (ch.unicode() < 0x20 || ch == QLatin1Char('\\'))
+                return false;
+        }
         const QUrl url(trimmed, QUrl::StrictMode);
-        if (!url.isValid() || !url.userInfo().isEmpty() || url.host().isEmpty())
+        if (!url.isValid() || !url.userInfo().isEmpty()
+            || url.authority(QUrl::FullyEncoded).contains(QLatin1Char('@'))
+            || url.hasQuery() || url.hasFragment()
+            || url.host().isEmpty())
             return false;
         const QString scheme = url.scheme().toLower();
         if (scheme == QLatin1String("https"))
@@ -247,11 +254,49 @@ namespace RagoShell::UpdatePulse
         return QString::fromUtf8(BrandInfo::apiUrl) + QStringLiteral("/v1/release-check");
     }
 
-    QString releasesManifestUrl(const QString &overrideUrl, const QString &activeEndpointUrl)
+    QString resolveActiveUpdateEndpoint(bool policyInvalid,
+                                        bool checkForUpdatesEnabled,
+                                        bool customCloudServerActive,
+                                        const QString &policyUpdateUrl,
+                                        bool policyLocked,
+                                        const QString &testOverrideUrl)
     {
-        const QString candidate = !overrideUrl.trimmed().isEmpty()
-            ? overrideUrl.trimmed()
-            : productEnv("RELEASES_MANIFEST_URL").trimmed();
+        const QString overrideTrimmed = testOverrideUrl.trimmed();
+        if (!overrideTrimmed.isEmpty())
+            return isSafeEndpointUrl(overrideTrimmed) ? overrideTrimmed : QString();
+
+        if (policyInvalid || !checkForUpdatesEnabled)
+            return QString();
+
+        const QString policyUrl = policyUpdateUrl.trimmed();
+        if (policyLocked) {
+            if (!policyUrl.isEmpty())
+                return isSafeEndpointUrl(policyUrl) ? policyUrl : QString();
+            if (customCloudServerActive)
+                return QString();
+            return QString::fromUtf8(BrandInfo::apiUrl) + QStringLiteral("/v1/release-check");
+        }
+
+        const QString envUrl = productEnv("UPDATE_URL").trimmed();
+        if (!envUrl.isEmpty())
+            return isSafeEndpointUrl(envUrl) ? envUrl : QString();
+
+        if (!policyUrl.isEmpty())
+            return isSafeEndpointUrl(policyUrl) ? policyUrl : QString();
+
+        if (customCloudServerActive)
+            return QString();
+
+        return QString::fromUtf8(BrandInfo::apiUrl) + QStringLiteral("/v1/release-check");
+    }
+
+    QString releasesManifestUrl(const QString &overrideUrl,
+                                const QString &activeEndpointUrl,
+                                bool policyLocked)
+    {
+        QString candidate = overrideUrl.trimmed();
+        if (candidate.isEmpty() && !policyLocked)
+            candidate = productEnv("RELEASES_MANIFEST_URL").trimmed();
         if (!candidate.isEmpty() && isSafeEndpointUrl(candidate))
             return candidate;
 
@@ -260,7 +305,10 @@ namespace RagoShell::UpdatePulse
             if (ep.path().endsWith(QLatin1String(".json"), Qt::CaseInsensitive))
                 return activeEndpointUrl.trimmed();
             const QString host = ep.host().toLower();
-            if (host == QLatin1String("127.0.0.1")
+            const QString defaultApiHost =
+                QUrl(QString::fromUtf8(BrandInfo::apiUrl), QUrl::StrictMode).host().toLower();
+            if (host != defaultApiHost
+                || host == QLatin1String("127.0.0.1")
                 || host == QLatin1String("localhost")
                 || host == QLatin1String("::1")) {
                 QUrl localManifest = ep;

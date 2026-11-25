@@ -1,6 +1,7 @@
 #include "ragoshell/core/mongodb/MongoWorker.h"
 #include "ragoshell/core/mongodb/MongoUriUtils.h"
 #include "ragoshell/core/BrandInfo.h"
+#include "ragoshell/core/cloud/CloudClient.h"
 #include "ragoshell/core/transport/GatewayProtocol.h"
 #include "ragoshell/core/transport/IMongoTransport.h"
 #include "ragoshell/core/transport/InMemoryDemoTransport.h"
@@ -296,8 +297,8 @@ namespace RagoShell
                         ? QStringLiteral("ws://127.0.0.1:%1")
                               .arg(GatewayProtocol::kDefaultAgentPort)
                         : kind == "hosted"
-                            ? QStringLiteral("wss://app.%1/ws")
-                                  .arg(QString::fromUtf8(BrandInfo::domain))
+                            ? CloudClient::deriveBridgeUrlFromPortal(
+                                  QString::fromUtf8(BrandInfo::portalUrl))
                             : QString::fromStdString(kind);
                 // Cleartext ws:// would carry the Mongo URI and pairing token
                 // readable on the wire — only loopback is allowed; remote

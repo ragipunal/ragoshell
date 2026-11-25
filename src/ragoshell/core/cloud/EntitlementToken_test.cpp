@@ -395,3 +395,49 @@ TEST(EntitlementTokenTest, RejectsAlgorithmTypeAudienceSignatureAndKeyTampering)
     // Thread-local OpenSSL error queue must remain completely clean after all failure paths.
     EXPECT_EQ(ERR_peek_error(), 0UL);
 }
+
+TEST(EntitlementTokenTest, KeyRingEnforcesBoundsAndProducesOrderIndependentCanonicalString)
+{
+    EvpPkeyPtr keyA = generateEcKeyByCurveName("prime256v1");
+    EvpPkeyPtr keyB = generateEcKeyByCurveName("prime256v1");
+    const QString entryA = formatRingEntry(QStringLiteral("2026-a"), keyA.get());
+    const QString entryB = formatRingEntry(QStringLiteral("2026-b"), keyB.get());
+
+    // Empty ring is rejected by isValidCustomKeyRing().
+    QString err;
+    EXPECT_FALSE(EntitlementVerifier::isValidCustomKeyRing(QString(), &err));
+    EXPECT_EQ(err, QStringLiteral("empty_keyring"));
+    EXPECT_FALSE(EntitlementVerifier::isValidCustomKeyRing(QStringLiteral("  ;  "), &err));
+    EXPECT_EQ(err, QStringLiteral("empty_keyring"));
+
+    // Canonical representation ignores whitespace and key order.
+    bool ok = false;
+    const EntitlementVerifier v1 = EntitlementVerifier::fromKeyRingString(
+        QStringLiteral(" %1 ; %2 ").arg(entryB, entryA), &ok, &err);
+    ASSERT_TRUE(ok) << err.toStdString();
+    const EntitlementVerifier v2 = EntitlementVerifier::fromKeyRingString(
+        QStringLiteral("%1;%2").arg(entryA, entryB), &ok, &err);
+    ASSERT_TRUE(ok) << err.toStdString();
+    EXPECT_EQ(v1.canonicalKeyRingString(), v2.canonicalKeyRingString());
+    EXPECT_EQ(v1.canonicalKeyRingString(), QStringLiteral("%1;%2").arg(entryA, entryB));
+
+    // > 16 keys rejected.
+    QStringList seventeen;
+    for (int i = 0; i < 17; ++i) {
+        seventeen.append(formatRingEntry(QStringLiteral("kid-%1").arg(i, 2, 10, QLatin1Char('0')),
+                                         keyA.get()));
+    }
+    ok = true;
+    const EntitlementVerifier tooMany = EntitlementVerifier::fromKeyRingString(
+        seventeen.join(QLatin1Char(';')), &ok, &err);
+    EXPECT_FALSE(ok);
+    EXPECT_EQ(err, QStringLiteral("too_many_keys"));
+    EXPECT_EQ(tooMany.keyCount(), 0);
+
+    // > 8192 chars rejected.
+    const QString huge(EntitlementVerifier::kMaxKeyRingStringChars + 1, QLatin1Char('x'));
+    ok = true;
+    EntitlementVerifier::fromKeyRingString(huge, &ok, &err);
+    EXPECT_FALSE(ok);
+    EXPECT_EQ(err, QStringLiteral("keyring_too_large"));
+}

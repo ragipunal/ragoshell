@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QString>
 #include <QTimer>
+#include <QVariantMap>
 #include <QtQml/qqmlregistration.h>
 
 #include "ragoshell/core/cloud/CloudClient.h"
@@ -60,6 +61,24 @@ namespace RagoShell
 
         Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY stateChanged FINAL)
 
+        // Enterprise / self-hosted cloud server profile (docs/EnterpriseServerProfile.md §6 Step E)
+        Q_PROPERTY(QString serverMode READ serverMode NOTIFY stateChanged FINAL)
+        Q_PROPERTY(bool customServerActive READ customServerActive NOTIFY stateChanged FINAL)
+        Q_PROPERTY(QString activeServerSummary READ activeServerSummary NOTIFY stateChanged FINAL)
+        Q_PROPERTY(QString activeApiHost READ activeApiHost NOTIFY stateChanged FINAL)
+        Q_PROPERTY(QString configuredServerMode READ configuredServerMode NOTIFY stateChanged FINAL)
+        Q_PROPERTY(QString configuredApiUrl READ configuredApiUrl NOTIFY stateChanged FINAL)
+        Q_PROPERTY(QString configuredPortalUrl READ configuredPortalUrl NOTIFY stateChanged FINAL)
+        Q_PROPERTY(QString configuredBridgeUrl READ configuredBridgeUrl NOTIFY stateChanged FINAL)
+        Q_PROPERTY(QString configuredEntitlementPubkeys READ configuredEntitlementPubkeys NOTIFY stateChanged FINAL)
+        Q_PROPERTY(QString effectiveApiUrl READ effectiveApiUrl NOTIFY stateChanged FINAL)
+        Q_PROPERTY(QString effectivePortalUrl READ effectivePortalUrl NOTIFY stateChanged FINAL)
+        Q_PROPERTY(QString effectiveBridgeUrl READ effectiveBridgeUrl NOTIFY stateChanged FINAL)
+        Q_PROPERTY(bool policyLocked READ policyLocked NOTIFY stateChanged FINAL)
+        Q_PROPERTY(bool policyInvalid READ policyInvalid NOTIFY stateChanged FINAL)
+        Q_PROPERTY(bool envOverridden READ envOverridden NOTIFY stateChanged FINAL)
+        Q_PROPERTY(bool updateChecksSuppressedByServer READ updateChecksSuppressedByServer NOTIFY stateChanged FINAL)
+
     public:
         CloudService(SettingsManager *settings,
                      PlatformInfo *platform,
@@ -108,6 +127,36 @@ namespace RagoShell
         QString validitySummary() const;
 
         QString errorMessage() const;
+
+        QString serverMode() const;
+        bool customServerActive() const;
+        QString activeServerSummary() const;
+        QString activeApiHost() const;
+        QString configuredServerMode() const;
+        QString configuredApiUrl() const;
+        QString configuredPortalUrl() const;
+        QString configuredBridgeUrl() const;
+        QString configuredEntitlementPubkeys() const;
+        QString effectiveApiUrl() const;
+        QString effectivePortalUrl() const;
+        QString effectiveBridgeUrl() const;
+        bool policyLocked() const;
+        bool policyInvalid() const;
+        bool envOverridden() const;
+        bool updateChecksSuppressedByServer() const;
+
+        Q_INVOKABLE QString deriveBridgeUrlPreview(const QString &portalUrl) const;
+        Q_INVOKABLE QVariantMap validateServerProfile(const QString &mode,
+                                                      const QString &apiUrl,
+                                                      const QString &portalUrl,
+                                                      const QString &bridgeUrl,
+                                                      const QString &pubkeys) const;
+        Q_INVOKABLE QString applyServerProfile(const QString &mode,
+                                               const QString &apiUrl,
+                                               const QString &portalUrl,
+                                               const QString &bridgeUrl,
+                                               const QString &pubkeys);
+        Q_INVOKABLE QString resetServerProfileToDefault();
 
         Q_INVOKABLE void startSignIn(const QString &customDeviceName = QString());
         Q_INVOKABLE void cancelSignIn();

@@ -721,12 +721,20 @@
         <translation>Демо (браузерде)</translation>
     </message>
     <message>
+        <source>Cloud Bridge (%1)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Local Agent (localhost)</source>
         <translation>Жергілікті агент (localhost)</translation>
     </message>
     <message>
         <source>Custom Gateway (ws://…)</source>
         <translation>Реттелетін шлюз (ws://…)</translation>
+    </message>
+    <message>
+        <source>Cloud Bridge (%1) — sign-in required</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>AI tools cannot use a connection through an SSH tunnel.</source>
@@ -3060,6 +3068,66 @@
         <translation>Бас тарту</translation>
     </message>
     <message>
+        <source>Cloud server</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Managed by organization</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Change Server…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Overridden for this process by environment variables.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The enterprise policy file is invalid or unreadable. Cloud features and update checks are disabled.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Server mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1 Cloud (default)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Custom server</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>API URL</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Portal URL</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Bridge URL (optional)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>ES256 public keys</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Format: &lt;kid&gt;:&lt;base64-spki&gt;;... Requires https:// and wss:// (http:// and ws:// are allowed only on localhost).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Apply Server</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Reset to Default</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Account</source>
         <translation>Есептік жазба</translation>
     </message>
@@ -3178,6 +3246,14 @@
     <message>
         <source>All encrypted collections stored on the server will be deleted permanently. Local settings stay on this device.</source>
         <translation>Серверде сақталған барлық шифрланған деректер жиыны біржола жойылады. Жергілікті баптаулар осы құрылғыда қалады.</translation>
+    </message>
+    <message>
+        <source>Switch Cloud Server</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Switching the cloud server will sign out of your current session and clear local sync state. Saved local MongoDB connections, scripts, and query history stay on this device.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Refreshing…</source>
@@ -3543,6 +3619,18 @@
     <message>
         <source>Automatically check for updates on startup</source>
         <translation>Іске қосылғанда жаңартуларды автоматты түрде тексеру</translation>
+    </message>
+    <message>
+        <source>Managed by organization policy.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Disabled while HTTPS network features are off.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Suppressed while a custom cloud server is active unless an internal update URL is configured.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Share anonymous usage statistics with update checks</source>
@@ -4027,6 +4115,14 @@
         <translation>%1 дейін расталған</translation>
     </message>
     <message>
+        <source>Cloud features are blocked because the enterprise policy file is invalid.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cloud features are disabled in configuration.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Sign-in request was declined in the browser.</source>
         <translation>Кіру сұрауы браузерде қабылданбады.</translation>
     </message>
@@ -4090,6 +4186,42 @@
         <source>Never</source>
         <translation>Ешқашан</translation>
     </message>
+    <message>
+        <source>Blocked by invalid organization policy</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1 Cloud</source>
+        <translation type="unfinished">%1 Cloud</translation>
+    </message>
+    <message>
+        <source>Cloud server settings are managed by organization policy.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enter a valid https:// API origin (http:// is allowed only on localhost).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enter a valid https:// Portal origin (http:// is allowed only on localhost).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enter a valid wss:// Bridge URL (ws:// is allowed only on localhost), or leave empty.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enter one or more valid ES256 public keys (%1).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cloud settings are unavailable.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cloud server settings are locked by organization policy.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>RagoShell::PipelineBuilder</name>
@@ -4126,6 +4258,14 @@
     <message>
         <source>Connecting to %1...</source>
         <translation>%1 серверіне қосылуда...</translation>
+    </message>
+    <message>
+        <source>Cloud service URL failed security validation.</source>
+        <translation type="unfinished">Бұлт қызметінің сілтемесі қауіпсіздік тексеруінен өтпеді.</translation>
+    </message>
+    <message>
+        <source>Sign in to your cloud account to use the cloud gateway.</source>
+        <translation type="unfinished">Бұлт шлюзін пайдалану үшін бұлт тіркелгіңізге кіріңіз.</translation>
     </message>
     <message>
         <source>Disconnected</source>
@@ -4697,6 +4837,14 @@ Error:
     <message>
         <source>HTTPS network features are disabled in configuration.</source>
         <translation>HTTPS желілік мүмкіндіктері баптауларда өшірілген.</translation>
+    </message>
+    <message>
+        <source>Update checks are disabled by organization policy.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Update checks are disabled while a custom cloud server is configured.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>No internet connection available.</source>

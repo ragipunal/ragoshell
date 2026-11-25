@@ -32,7 +32,10 @@ RagoDialog {
         var kinds = ["memory"], labels = [qsTr("Demo (in-browser)")]
         var hosted = typeof CloudService !== "undefined" && CloudService.hostedBridgeEnabled
         if (hosted) {
-            kinds.push("hosted"); labels.push(qsTr("%1 Cloud").arg(Brand.productName))
+            kinds.push("hosted")
+            labels.push(CloudService.customServerActive
+                ? qsTr("Cloud Bridge (%1)").arg(CloudService.activeApiHost)
+                : qsTr("%1 Cloud").arg(Brand.productName))
         }
         kinds.push("agent");  labels.push(qsTr("Local Agent (localhost)"))
         kinds.push("custom"); labels.push(qsTr("Custom Gateway (ws://…)"))
@@ -46,8 +49,13 @@ RagoDialog {
         if (channelKinds.indexOf(chan) >= 0)
             return
         channelKinds = channelKinds.concat([chan])
-        channelLabels = channelLabels.concat([chan === "hosted"
-            ? qsTr("%1 Cloud — sign-in required").arg(Brand.productName) : chan])
+        var offlineLabel = chan
+        if (chan === "hosted") {
+            offlineLabel = (typeof CloudService !== "undefined" && CloudService.customServerActive)
+                ? qsTr("Cloud Bridge (%1) — sign-in required").arg(CloudService.activeApiHost)
+                : qsTr("%1 Cloud — sign-in required").arg(Brand.productName)
+        }
+        channelLabels = channelLabels.concat([offlineLabel])
     }
 
     Component.onCompleted: rebuildChannels()

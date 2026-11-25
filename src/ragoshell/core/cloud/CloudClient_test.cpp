@@ -3,6 +3,7 @@
 #include "ragoshell/core/BrandInfo.h"
 #include "ragoshell/core/cloud/CloudClient.h"
 #include "ragoshell/core/cloud/EntitlementToken.h"
+#include "ragoshell/core/settings/ConnectionSettings.h"
 #include "ragoshell/core/settings/SettingsManager.h"
 
 #include <QCoreApplication>
@@ -1118,4 +1119,532 @@ TEST(CloudClientTest, EntitlementJwtDropsAtExpWithoutTimerAndSignOutResetsBackof
         qputenv("RAGOSHELL_CONFIG_DIR", prevCfg);
     else
         qunsetenv("RAGOSHELL_CONFIG_DIR");
+}
+
+namespace
+{
+class EnterpriseProfileEnvGuard
+{
+public:
+    EnterpriseProfileEnvGuard(const QString &configDir)
+    {
+        for (const char *name : kVars)
+        {
+            const bool isSet = qEnvironmentVariableIsSet(name);
+            m_saved.push_back({name, isSet, isSet ? qgetenv(name) : QByteArray()});
+            qunsetenv(name);
+        }
+        SettingsManager::clearPolicyFilePathForTest();
+        if (!configDir.isEmpty())
+            qputenv("RAGOSHELL_CONFIG_DIR", configDir.toUtf8());
+    }
+
+    ~EnterpriseProfileEnvGuard()
+    {
+        SettingsManager::clearPolicyFilePathForTest();
+        for (const SavedVar &v : m_saved)
+        {
+            if (v.isSet)
+                qputenv(v.name, v.value);
+            else
+                qunsetenv(v.name);
+        }
+    }
+
+private:
+    struct SavedVar
+    {
+        const char *name;
+        bool isSet;
+        QByteArray value;
+    };
+
+    static constexpr const char *kVars[] = {
+        "RAGOSHELL_CONFIG_DIR",
+        "RAGOSHELL_API_URL",
+        "RAGOSHELL_PORTAL_URL",
+        "RAGOSHELL_BRIDGE_URL",
+        "RAGOSHELL_ENTITLEMENT_PUBKEYS",
+    };
+
+    std::vector<SavedVar> m_saved;
+};
+
+QString keyRingEntry(const QString &kid, EVP_PKEY *key)
+{
+    return QStringLiteral("%1:%2").arg(kid, QString::fromLatin1(exportSpkiDer(key).toBase64()));
+}
+
+bool writeTextFile(const QString &path, const QByteArray &content)
+{
+    QFile f(path);
+    if (!f.open(QIODevice::WriteOnly | QIODevice::Truncate))
+        return false;
+    return f.write(content) == content.size();
+}
+} // namespace
+
+TEST(CloudClientTest, EnterpriseServerProfileSixTierPrecedenceAndFailClosed)
+{
+    // Portal -> bridge derivation and transport URL validation
+    EXPECT_EQ(CloudClient::deriveBridgeUrlFromPortal(QStringLiteral("https://app.corp.example/")),
+              QStringLiteral("wss://app.corp.example/ws"));
+    EXPECT_EQ(CloudClient::deriveBridgeUrlFromPortal(QStringLiteral("https://portal.corp.internal:8443")),
+              QStringLiteral("wss://portal.corp.internal:8443/ws"));
+    EXPECT_EQ(CloudClient::deriveBridgeUrlFromPortal(QStringLiteral("http://127.0.0.1:8080")),
+              QStringLiteral("ws://127.0.0.1:8080/ws"));
+
+    EXPECT_TRUE(CloudClient::isAllowedBridgeUrl(QStringLiteral("wss://bridge.corp.example/ws")));
+    EXPECT_TRUE(CloudClient::isAllowedBridgeUrl(QStringLiteral("ws://127.0.0.1:8080/ws")));
+    EXPECT_FALSE(CloudClient::isAllowedBridgeUrl(QStringLiteral("ws://bridge.corp.example/ws")));
+    EXPECT_FALSE(CloudClient::isAllowedBridgeUrl(QStringLiteral("https://bridge.corp.example/ws")));
+    EXPECT_FALSE(CloudClient::isAllowedBridgeUrl(QStringLiteral("wss://user:pw@bridge.corp.example/ws")));
+    EXPECT_FALSE(CloudClient::isAllowedApiBaseUrl(QStringLiteral("https://api.corp.example/v1")));
+
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE(tmpDir.isValid());
+    EnterpriseProfileEnvGuard envGuard(tmpDir.path());
+
+    const auto keyPolicyUnlocked = makeP256Key();
+    const auto keyUser = makeP256Key();
+    const auto keyEnv = makeP256Key();
+    const auto keyPolicyLocked = makeP256Key();
+    ASSERT_TRUE(keyPolicyUnlocked && keyUser && keyEnv && keyPolicyLocked);
+
+    const QString ringPolicyUnlocked = keyRingEntry(QStringLiteral("k-unlocked"), keyPolicyUnlocked.get());
+    const QString ringUser = keyRingEntry(QStringLiteral("k-user"), keyUser.get());
+    const QString ringEnv = keyRingEntry(QStringLiteral("k-env"), keyEnv.get());
+    const QString ringPolicyLocked = keyRingEntry(QStringLiteral("k-locked"), keyPolicyLocked.get());
+
+    const QString policyPath = tmpDir.filePath(QStringLiteral("policy.json"));
+    const QJsonObject unlockedPolicy{
+        {QStringLiteral("locked"), false},
+        {QStringLiteral("cloudServer"),
+         QJsonObject{
+             {QStringLiteral("mode"), QStringLiteral("custom")},
+             {QStringLiteral("apiUrl"), QStringLiteral("https://api.unlocked.example")},
+             {QStringLiteral("portalUrl"), QStringLiteral("https://app.unlocked.example")},
+             {QStringLiteral("entitlementPubkeys"), ringPolicyUnlocked},
+         }},
+    };
+    ASSERT_TRUE(writeTextFile(policyPath, QJsonDocument(unlockedPolicy).toJson(QJsonDocument::Compact)));
+    SettingsManager::setPolicyFilePathForTest(policyPath);
+
+    SettingsManager settings;
+    ASSERT_TRUE(settings.load());
+    auto creds = std::make_shared<InMemoryCloudCredentialStore>();
+    CloudClient client(creds, &settings);
+    const qint64 now = 1700000100;
+    const qint64 issued = 1700000000;
+    client.setClockForTest([now]() { return now; });
+
+    const QString userId = QStringLiteral("11111111-1111-4111-8111-111111111111");
+    const QString deviceId = QStringLiteral("22222222-2222-4222-8222-222222222222");
+    auto seedSessionForCurrentTier = [&](EVP_PKEY *signingKey, const QString &kid, const QString &issuer) {
+        settings.addCacheData(QStringLiteral("cloudSignedIn"), true);
+        settings.addCacheData(QStringLiteral("cloudDeviceId"), deviceId);
+        settings.addCacheData(QStringLiteral("cloudUserId"), userId);
+        settings.addCacheData(QStringLiteral("cloudProfileFingerprint"), client.computeProfileFingerprint());
+        creds->writeSecret(QLatin1String(ICloudCredentialStore::kRefreshTokenSlot), QStringLiteral("RefreshToken_1"));
+        creds->writeSecret(QLatin1String(ICloudCredentialStore::kEntitlementJwtSlot),
+                           signEntitlementJwt(signingKey, kid, issuer, userId, deviceId, issued));
+        client.restoreOfflineSession();
+    };
+
+    // Tier 5: Unlocked policy provides defaults
+    EXPECT_TRUE(client.isCustomServerActive());
+    EXPECT_FALSE(client.isPolicyLocked());
+    EXPECT_EQ(client.effectiveServerMode(), QStringLiteral("custom"));
+    EXPECT_EQ(client.effectiveApiUrl(), QStringLiteral("https://api.unlocked.example"));
+    EXPECT_EQ(client.effectivePortalUrl(), QStringLiteral("https://app.unlocked.example"));
+    EXPECT_EQ(client.effectiveBridgeUrl(), QStringLiteral("wss://app.unlocked.example/ws"));
+    seedSessionForCurrentTier(keyPolicyUnlocked.get(), QStringLiteral("k-unlocked"),
+                              QStringLiteral("https://api.unlocked.example"));
+    EXPECT_EQ(client.entitlementState(), EntitlementState::ValidOnline);
+
+    // Tier 4: User saved custom profile overrides unlocked policy
+    SettingsManager::CloudServerConfig userCfg;
+    userCfg.mode = QStringLiteral("custom");
+    userCfg.apiUrl = QStringLiteral("https://api.user.example");
+    userCfg.portalUrl = QStringLiteral("https://app.user.example");
+    userCfg.bridgeUrl = QStringLiteral("wss://bridge.user.example/ws");
+    userCfg.entitlementPubkeys = ringUser;
+    settings.setUserCloudServerConfig(userCfg);
+    client.applyServerProfileChange();
+    EXPECT_EQ(client.effectiveApiUrl(), QStringLiteral("https://api.user.example"));
+    EXPECT_EQ(client.effectiveBridgeUrl(), QStringLiteral("wss://bridge.user.example/ws"));
+    EXPECT_FALSE(client.isEnvOverridden());
+
+    // Wrong key (unlocked policy key) fails under Tier 4; user key succeeds
+    seedSessionForCurrentTier(keyPolicyUnlocked.get(), QStringLiteral("k-unlocked"),
+                              QStringLiteral("https://api.user.example"));
+    EXPECT_FALSE(client.hasActiveOnlineEntitlement());
+    seedSessionForCurrentTier(keyUser.get(), QStringLiteral("k-user"), QStringLiteral("https://api.user.example"));
+    EXPECT_EQ(client.entitlementState(), EntitlementState::ValidOnline);
+
+    // Tier 3: Process env override beats Tier 4 AND drops Tier 4 keyring when URL moves (0 keys fail-closed)
+    qputenv("RAGOSHELL_API_URL", "https://api.env.example");
+    qputenv("RAGOSHELL_PORTAL_URL", "https://app.env.example");
+    EXPECT_TRUE(client.isEnvOverridden());
+    EXPECT_EQ(client.effectiveApiUrl(), QStringLiteral("https://api.env.example"));
+    EXPECT_EQ(client.effectiveBridgeUrl(), QStringLiteral("wss://app.env.example/ws"));
+    seedSessionForCurrentTier(keyUser.get(), QStringLiteral("k-user"), QStringLiteral("https://api.env.example"));
+    EXPECT_FALSE(client.hasActiveOnlineEntitlement());
+
+    qputenv("RAGOSHELL_ENTITLEMENT_PUBKEYS", ringEnv.toUtf8());
+    seedSessionForCurrentTier(keyEnv.get(), QStringLiteral("k-env"), QStringLiteral("https://api.env.example"));
+    EXPECT_EQ(client.entitlementState(), EntitlementState::ValidOnline);
+
+    // Tier 2: Locked policy.json overrides both Tier 3 env vars and Tier 4 user settings
+    const QJsonObject lockedPolicy{
+        {QStringLiteral("locked"), true},
+        {QStringLiteral("cloudServer"),
+         QJsonObject{
+             {QStringLiteral("mode"), QStringLiteral("custom")},
+             {QStringLiteral("apiUrl"), QStringLiteral("https://api.locked.example")},
+             {QStringLiteral("portalUrl"), QStringLiteral("https://app.locked.example")},
+             {QStringLiteral("bridgeUrl"), QStringLiteral("wss://gw.locked.example/ws")},
+             {QStringLiteral("entitlementPubkeys"), ringPolicyLocked},
+         }},
+    };
+    ASSERT_TRUE(writeTextFile(policyPath, QJsonDocument(lockedPolicy).toJson(QJsonDocument::Compact)));
+    ASSERT_TRUE(settings.load());
+    EXPECT_TRUE(client.isPolicyLocked());
+    EXPECT_FALSE(client.isPolicyInvalid());
+    EXPECT_FALSE(client.isEnvOverridden());
+    EXPECT_EQ(client.effectiveApiUrl(), QStringLiteral("https://api.locked.example"));
+    EXPECT_EQ(client.effectivePortalUrl(), QStringLiteral("https://app.locked.example"));
+    EXPECT_EQ(client.effectiveBridgeUrl(), QStringLiteral("wss://gw.locked.example/ws"));
+    seedSessionForCurrentTier(keyEnv.get(), QStringLiteral("k-env"), QStringLiteral("https://api.locked.example"));
+    EXPECT_FALSE(client.hasActiveOnlineEntitlement());
+    seedSessionForCurrentTier(keyPolicyLocked.get(), QStringLiteral("k-locked"),
+                              QStringLiteral("https://api.locked.example"));
+    EXPECT_EQ(client.entitlementState(), EntitlementState::ValidOnline);
+}
+
+TEST(CloudClientTest, InvalidPolicyBlocksAllCloudCallsEvenWithValidTokens)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE(tmpDir.isValid());
+    EnterpriseProfileEnvGuard envGuard(tmpDir.path());
+
+    FakeCloudServer server([](const RecordedRequest &) { return FakeHttpResponse{200, "{}"}; });
+
+    const QString policyPath = tmpDir.filePath(QStringLiteral("policy.json"));
+    ASSERT_TRUE(writeTextFile(policyPath, "{ not valid json"));
+    SettingsManager::setPolicyFilePathForTest(policyPath);
+
+    SettingsManager settings;
+    settings.load();
+    ASSERT_TRUE(settings.isEnterprisePolicyInvalid());
+
+    const auto key = makeP256Key();
+    ASSERT_TRUE(key);
+    EntitlementVerifier verifier;
+    QString err;
+    ASSERT_TRUE(verifier.addPublicKeySpkiDer(QStringLiteral("k1"), exportSpkiDer(key.get()), &err)) << err.toStdString();
+
+    const QString userId = QStringLiteral("11111111-1111-4111-8111-111111111111");
+    const QString deviceId = QStringLiteral("22222222-2222-4222-8222-222222222222");
+    const qint64 now = 1700000100;
+    const qint64 issued = 1700000000;
+
+    settings.addCacheData(QStringLiteral("cloudSignedIn"), true);
+    settings.addCacheData(QStringLiteral("cloudDeviceId"), deviceId);
+    settings.addCacheData(QStringLiteral("cloudUserId"), userId);
+    auto creds = std::make_shared<InMemoryCloudCredentialStore>();
+    creds->writeSecret(QLatin1String(ICloudCredentialStore::kRefreshTokenSlot), QStringLiteral("Refresh_InvalidPolicy"));
+    creds->writeSecret(QLatin1String(ICloudCredentialStore::kEntitlementJwtSlot),
+                       signEntitlementJwt(key.get(), QStringLiteral("k1"), server.baseUrl(), userId, deviceId, issued));
+
+    CloudClient client(creds, &settings);
+    client.setApiUrlOverride(server.baseUrl());
+    client.setEntitlementVerifier(verifier);
+    client.setClockForTest([now]() { return now; });
+
+    EXPECT_TRUE(client.isPolicyInvalid());
+    EXPECT_TRUE(client.isPolicyLocked());
+    EXPECT_NE(client.effectiveApiUrl(), QString::fromUtf8(BrandInfo::apiUrl));
+
+    // Invalid policy fails closed on restoreOfflineSession and wipes cached credentials cleanly offline
+    client.restoreOfflineSession();
+    EXPECT_FALSE(client.isSignedIn());
+    EXPECT_FALSE(client.hasActiveOnlineEntitlement());
+    EXPECT_TRUE(client.entitlementJwt().isEmpty());
+    EXPECT_FALSE(creds->contains(QLatin1String(ICloudCredentialStore::kRefreshTokenSlot)));
+    EXPECT_FALSE(creds->contains(QLatin1String(ICloudCredentialStore::kEntitlementJwtSlot)));
+    EXPECT_EQ(server.totalRequests(), 0);
+
+    client.startDeviceSignIn();
+    EXPECT_EQ(client.lastErrorCode(), QStringLiteral("policy_invalid"));
+    EXPECT_EQ(server.totalRequests(), 0);
+
+    client.refreshAccountAndEntitlements();
+    EXPECT_EQ(client.lastErrorCode(), QStringLiteral("policy_invalid"));
+    EXPECT_EQ(server.totalRequests(), 0);
+
+    client.checkEntitlementRefresh();
+    EXPECT_EQ(server.totalRequests(), 0);
+
+    bool cbCalled = false;
+    bool cbOk = true;
+    QString cbErr;
+    client.withValidAccessToken([&](bool ok, const QString &, const QString &code) {
+        cbCalled = true;
+        cbOk = ok;
+        cbErr = code;
+    });
+    EXPECT_TRUE(cbCalled);
+    EXPECT_FALSE(cbOk);
+    EXPECT_EQ(cbErr, QStringLiteral("policy_invalid"));
+    EXPECT_EQ(server.totalRequests(), 0);
+}
+
+TEST(CloudClientTest, ServerProfileSwitchWipesCredentialsDeviceIdAndSyncOffline)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE(tmpDir.isValid());
+    EnterpriseProfileEnvGuard envGuard(tmpDir.path());
+
+    FakeCloudServer server([](const RecordedRequest &) { return FakeHttpResponse{200, "{}"}; });
+
+    const auto keyA = makeP256Key();
+    const auto keyB = makeP256Key();
+    ASSERT_TRUE(keyA && keyB);
+
+    SettingsManager settings;
+    auto *localConn = new ConnectionSettings(false);
+    localConn->setConnectionName("Enterprise Local Mongo");
+    localConn->setServerHost("127.0.0.1");
+    localConn->setServerPort(27017);
+    settings.addConnection(localConn);
+
+    SettingsManager::CloudServerConfig cfgA;
+    cfgA.mode = QStringLiteral("custom");
+    cfgA.apiUrl = QStringLiteral("https://api.alpha.example");
+    cfgA.portalUrl = QStringLiteral("https://app.alpha.example");
+    cfgA.entitlementPubkeys = keyRingEntry(QStringLiteral("kA"), keyA.get());
+    settings.setUserCloudServerConfig(cfgA);
+    settings.setSyncEnabled(true);
+    settings.setSyncKeyMode(QStringLiteral("passphrase"));
+
+    auto creds = std::make_shared<InMemoryCloudCredentialStore>();
+    CloudClient client(creds, &settings);
+    const qint64 now = 1700000100;
+    const qint64 issued = 1700000000;
+    client.setClockForTest([now]() { return now; });
+
+    const QString userId = QStringLiteral("11111111-1111-4111-8111-111111111111");
+    const QString deviceId = QStringLiteral("33333333-3333-4333-8333-333333333333");
+    const QString fpA = client.computeProfileFingerprint();
+
+    settings.addCacheData(QStringLiteral("cloudSignedIn"), true);
+    settings.addCacheData(QStringLiteral("cloudDeviceId"), deviceId);
+    settings.addCacheData(QStringLiteral("cloudUserId"), userId);
+    settings.addCacheData(QStringLiteral("cloudUserEmail"), QStringLiteral("alice@alpha.example"));
+    settings.addCacheData(QStringLiteral("cloudProfileFingerprint"), fpA);
+    settings.save();
+
+    creds->writeSecret(QLatin1String(ICloudCredentialStore::kRefreshTokenSlot), QStringLiteral("Refresh_Alpha"));
+    creds->writeSecret(QLatin1String(ICloudCredentialStore::kEntitlementJwtSlot),
+                       signEntitlementJwt(keyA.get(), QStringLiteral("kA"), cfgA.apiUrl, userId, deviceId, issued));
+    creds->writeSecret(QLatin1String(ICloudCredentialStore::kSyncMasterKeySlot), QStringLiteral("Base64SyncKey_Alpha"));
+
+    const QString syncStatePath = tmpDir.filePath(QStringLiteral("sync-state.json"));
+    ASSERT_TRUE(writeTextFile(syncStatePath, R"({"etag":"v1","entries":{}})"));
+    ASSERT_TRUE(QFile::exists(syncStatePath));
+
+    client.restoreOfflineSession();
+    ASSERT_TRUE(client.isSignedIn());
+    ASSERT_EQ(client.entitlementState(), EntitlementState::ValidOnline);
+    ASSERT_EQ(client.deviceId(), deviceId);
+
+    // Switch to Server B cleanly offline via profile fingerprint mismatch in restoreOfflineSession()
+    SettingsManager::CloudServerConfig cfgB;
+    cfgB.mode = QStringLiteral("custom");
+    cfgB.apiUrl = QStringLiteral("https://api.beta.example");
+    cfgB.portalUrl = QStringLiteral("https://app.beta.example");
+    cfgB.entitlementPubkeys = keyRingEntry(QStringLiteral("kB"), keyB.get());
+    settings.setUserCloudServerConfig(cfgB);
+
+    int switchSignalCount = 0;
+    QObject::connect(&client, &CloudClient::serverProfileSwitched, &client, [&switchSignalCount]() {
+        ++switchSignalCount;
+    });
+
+    // Attach unreachable fake URL? No: profile fingerprint check must wipe purely locally with 0 HTTP requests.
+    client.restoreOfflineSession();
+
+    EXPECT_EQ(server.totalRequests(), 0);
+    EXPECT_EQ(switchSignalCount, 1);
+    EXPECT_FALSE(client.isSignedIn());
+    EXPECT_TRUE(client.deviceId().isEmpty());
+    EXPECT_TRUE(client.userId().isEmpty());
+    EXPECT_TRUE(client.entitlementJwt().isEmpty());
+    EXPECT_FALSE(client.hasActiveOnlineEntitlement());
+
+    EXPECT_FALSE(creds->contains(QLatin1String(ICloudCredentialStore::kRefreshTokenSlot)));
+    EXPECT_FALSE(creds->contains(QLatin1String(ICloudCredentialStore::kEntitlementJwtSlot)));
+    EXPECT_FALSE(creds->contains(QLatin1String(ICloudCredentialStore::kSyncMasterKeySlot)));
+
+    EXPECT_FALSE(settings.cacheData(QStringLiteral("cloudSignedIn")).toBool());
+    EXPECT_TRUE(settings.cacheData(QStringLiteral("cloudDeviceId")).toString().isEmpty());
+    EXPECT_TRUE(settings.cacheData(QStringLiteral("cloudUserId")).toString().isEmpty());
+    EXPECT_EQ(settings.cacheData(QStringLiteral("cloudProfileFingerprint")).toString(),
+              client.computeProfileFingerprint());
+
+    EXPECT_FALSE(settings.syncEnabled());
+    EXPECT_TRUE(settings.syncKeyMode().isEmpty());
+    EXPECT_FALSE(QFile::exists(syncStatePath));
+
+    // Local MongoDB connections remain untouched across cloud server switch
+    ASSERT_EQ(settings.connections().size(), 1u);
+    EXPECT_EQ(settings.connections().front()->connectionName(), std::string("Enterprise Local Mongo"));
+
+    // Interactive applyServerProfileChange() also wipes secrets, deviceId, and sync state atomically offline
+    settings.addCacheData(QStringLiteral("cloudSignedIn"), true);
+    settings.addCacheData(QStringLiteral("cloudDeviceId"), QStringLiteral("44444444-4444-4444-8444-444444444444"));
+    creds->writeSecret(QLatin1String(ICloudCredentialStore::kRefreshTokenSlot), QStringLiteral("Refresh_Beta"));
+    creds->writeSecret(QLatin1String(ICloudCredentialStore::kSyncMasterKeySlot), QStringLiteral("Base64SyncKey_Beta"));
+    settings.setSyncEnabled(true);
+    ASSERT_TRUE(writeTextFile(syncStatePath, R"({"etag":"v2"})"));
+
+    SettingsManager::CloudServerConfig defaultCfg;
+    defaultCfg.mode = QStringLiteral("default");
+    settings.setUserCloudServerConfig(defaultCfg);
+    client.applyServerProfileChange();
+
+    EXPECT_EQ(switchSignalCount, 2);
+    EXPECT_FALSE(client.isSignedIn());
+    EXPECT_TRUE(client.deviceId().isEmpty());
+    EXPECT_FALSE(creds->contains(QLatin1String(ICloudCredentialStore::kRefreshTokenSlot)));
+    EXPECT_FALSE(creds->contains(QLatin1String(ICloudCredentialStore::kSyncMasterKeySlot)));
+    EXPECT_FALSE(settings.syncEnabled());
+    EXPECT_FALSE(QFile::exists(syncStatePath));
+    EXPECT_EQ(settings.connections().size(), 1u);
+}
+
+TEST(CloudClientTest, PendingDeviceFlowCancelsOnServerSwitchAndSignOutPreservesSameServerSync)
+{
+    // Empty authority userinfo ("@") must be rejected in URL validators.
+    EXPECT_FALSE(CloudClient::isAllowedApiBaseUrl(QStringLiteral("https://@api.corp.example")));
+    EXPECT_FALSE(CloudClient::isAllowedBridgeUrl(QStringLiteral("wss://@bridge.corp.example/ws")));
+
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE(tmpDir.isValid());
+    EnterpriseProfileEnvGuard envGuard(tmpDir.path());
+
+    // Invalid RAGOSHELL_API_URL still marks customServerActive so UpdateService suppresses SaaS pings.
+    qputenv("RAGOSHELL_API_URL", "http://api.corp.internal");
+    {
+        CloudClient invalidEnvClient(std::make_shared<InMemoryCloudCredentialStore>());
+        EXPECT_TRUE(invalidEnvClient.isCustomServerActive());
+        EXPECT_TRUE(invalidEnvClient.effectiveApiUrl().isEmpty());
+    }
+    qunsetenv("RAGOSHELL_API_URL");
+
+    QString serverAUrl;
+    int serverATokenPolls = 0;
+    FakeCloudServer serverA([&](const RecordedRequest &req) {
+        if (req.path == QLatin1String("/v1/auth/device/code"))
+        {
+            const QJsonObject resp{
+                {QStringLiteral("device_code"), QStringLiteral("DevSecret_ServerA")},
+                {QStringLiteral("user_code"), QStringLiteral("ABCD-2345")},
+                {QStringLiteral("verification_uri"), serverAUrl + QStringLiteral("/device")},
+                {QStringLiteral("expires_in"), 600},
+                {QStringLiteral("interval"), 1},
+            };
+            return FakeHttpResponse{200, QJsonDocument(resp).toJson(QJsonDocument::Compact)};
+        }
+        if (req.path == QLatin1String("/v1/auth/device/token"))
+            ++serverATokenPolls;
+        return FakeHttpResponse{400, R"({"error":{"code":"authorization_pending","message":"pending"}})"};
+    });
+    serverAUrl = serverA.baseUrl();
+
+    int serverBRequests = 0;
+    FakeCloudServer serverB([&](const RecordedRequest &) {
+        ++serverBRequests;
+        return FakeHttpResponse{500, "{}"};
+    });
+
+    const auto keyA = makeP256Key();
+    const auto keyB = makeP256Key();
+    ASSERT_TRUE(keyA && keyB);
+
+    SettingsManager settings;
+    SettingsManager::CloudServerConfig cfgA;
+    cfgA.mode = QStringLiteral("custom");
+    cfgA.apiUrl = serverAUrl;
+    cfgA.portalUrl = serverAUrl;
+    cfgA.entitlementPubkeys = keyRingEntry(QStringLiteral("kA"), keyA.get());
+    settings.setUserCloudServerConfig(cfgA);
+    settings.save();
+
+    auto creds = std::make_shared<InMemoryCloudCredentialStore>();
+    CloudClient client(creds, &settings);
+    client.setMinPollIntervalMsForTest(20, 40);
+
+    client.startDeviceSignIn(QStringLiteral("Workstation"));
+    ASSERT_TRUE(waitUntil([&]() { return client.authState() == CloudAuthState::AwaitingBrowserApproval; }));
+    EXPECT_EQ(client.userCode(), QStringLiteral("ABCD-2345"));
+
+    // Switch to Server B while device authorization is pending: must cancel flow cleanly with 0 leaks to B.
+    SettingsManager::CloudServerConfig cfgB;
+    cfgB.mode = QStringLiteral("custom");
+    cfgB.apiUrl = serverB.baseUrl();
+    cfgB.portalUrl = serverB.baseUrl();
+    cfgB.entitlementPubkeys = keyRingEntry(QStringLiteral("kB"), keyB.get());
+    settings.setUserCloudServerConfig(cfgB);
+    settings.save();
+    client.applyServerProfileChange();
+
+    EXPECT_EQ(client.authState(), CloudAuthState::SignedOut);
+    EXPECT_FALSE(client.isBusy());
+    EXPECT_TRUE(client.userCode().isEmpty());
+    waitUntil([]() { return false; }, 120);
+    EXPECT_EQ(serverBRequests, 0);
+
+    // Custom server signOut() preserves cloudProfileFingerprint while sync/key remains,
+    // so next launch on the SAME custom server keeps syncEnabled + kSyncMasterKeySlot intact.
+    settings.setUserCloudServerConfig(cfgA);
+    client.applyServerProfileChange();
+
+    const QString userId = QStringLiteral("11111111-1111-4111-8111-111111111111");
+    const QString deviceId = QStringLiteral("55555555-5555-4555-8555-555555555555");
+    const qint64 issued = 1700000000;
+    settings.addCacheData(QStringLiteral("cloudSignedIn"), true);
+    settings.addCacheData(QStringLiteral("cloudDeviceId"), deviceId);
+    settings.addCacheData(QStringLiteral("cloudUserId"), userId);
+    settings.addCacheData(QStringLiteral("cloudProfileFingerprint"), client.computeProfileFingerprint());
+    settings.setSyncEnabled(true);
+    settings.setSyncKeyMode(QStringLiteral("passphrase"));
+    settings.save();
+    creds->writeSecret(QLatin1String(ICloudCredentialStore::kRefreshTokenSlot), QStringLiteral("Refresh_A"));
+    creds->writeSecret(QLatin1String(ICloudCredentialStore::kEntitlementJwtSlot),
+                       signEntitlementJwt(keyA.get(), QStringLiteral("kA"), cfgA.apiUrl, userId, deviceId, issued));
+    creds->writeSecret(QLatin1String(ICloudCredentialStore::kSyncMasterKeySlot), QStringLiteral("SyncKey_A"));
+
+    client.setClockForTest([issued]() { return issued + 60; });
+    client.restoreOfflineSession();
+    ASSERT_TRUE(client.isSignedIn());
+
+    client.signOut();
+    ASSERT_TRUE(waitUntil([&]() { return !client.isBusy(); }));
+    EXPECT_FALSE(client.isSignedIn());
+    EXPECT_TRUE(settings.syncEnabled());
+    EXPECT_TRUE(creds->contains(QLatin1String(ICloudCredentialStore::kSyncMasterKeySlot)));
+    EXPECT_EQ(settings.cacheData(QStringLiteral("cloudProfileFingerprint")).toString(),
+              client.computeProfileFingerprint());
+
+    client.restoreOfflineSession();
+    EXPECT_TRUE(settings.syncEnabled());
+    EXPECT_TRUE(creds->contains(QLatin1String(ICloudCredentialStore::kSyncMasterKeySlot)));
+
+    // Switching to Server B while signed out with sync enabled STILL detects mismatch and wipes vault key.
+    settings.setUserCloudServerConfig(cfgB);
+    client.restoreOfflineSession();
+    EXPECT_FALSE(settings.syncEnabled());
+    EXPECT_FALSE(creds->contains(QLatin1String(ICloudCredentialStore::kSyncMasterKeySlot)));
 }

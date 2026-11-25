@@ -212,8 +212,8 @@ target_include_directories(rago-core
         ${CMAKE_BINARY_DIR}/src)
 
 if(WIN32)
-    # Credential Manager (KeyStore_win.cpp)
-    target_link_libraries(rago-core PUBLIC advapi32)
+    # Credential Manager (KeyStore_win.cpp) and Known Folders for enterprise policy.json
+    target_link_libraries(rago-core PUBLIC advapi32 shell32 ole32)
 endif()
 
 if(APPLE)

@@ -4,6 +4,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
+#include "ragoshell/core/BrandInfo.h"
 #include "ragoshell/core/utils/UpdatePulse.h"
 
 #include <openssl/evp.h>
@@ -307,4 +308,72 @@ TEST(UpdatePulseTest, VerifiesSignedManifestAndBlocksTamperedOrUnsignedMandatory
     EXPECT_FALSE(rejected.ok);
     EXPECT_FALSE(rejected.updateAvailable);
     EXPECT_FALSE(rejected.mandatory);
+}
+
+TEST(UpdatePulseTest, IsolatesCustomServerUpdatesAndEnforcesLockedPolicy)
+{
+    const QByteArray savedUpd = qgetenv("RAGOSHELL_UPDATE_URL");
+    const bool hadUpd = qEnvironmentVariableIsSet("RAGOSHELL_UPDATE_URL");
+    const QByteArray savedMan = qgetenv("RAGOSHELL_RELEASES_MANIFEST_URL");
+    const bool hadMan = qEnvironmentVariableIsSet("RAGOSHELL_RELEASES_MANIFEST_URL");
+    qunsetenv("RAGOSHELL_UPDATE_URL");
+    qunsetenv("RAGOSHELL_RELEASES_MANIFEST_URL");
+
+    auto restoreEnv = [&]() {
+        if (hadUpd)
+            qputenv("RAGOSHELL_UPDATE_URL", savedUpd);
+        else
+            qunsetenv("RAGOSHELL_UPDATE_URL");
+        if (hadMan)
+            qputenv("RAGOSHELL_RELEASES_MANIFEST_URL", savedMan);
+        else
+            qunsetenv("RAGOSHELL_RELEASES_MANIFEST_URL");
+    };
+
+    // Custom server active without policy/env updateUrl suppresses default SaaS release-check.
+    EXPECT_TRUE(resolveActiveUpdateEndpoint(false, true, true, QString(), false).isEmpty());
+
+    // Invalid policy suppresses all update checks regardless of flags or env vars.
+    qputenv("RAGOSHELL_UPDATE_URL", "https://updates.env.example/v1/release-check");
+    EXPECT_TRUE(resolveActiveUpdateEndpoint(true, true, false,
+                                            QStringLiteral("https://updates.corp.example/v1/release-check"),
+                                            true).isEmpty());
+
+    // Unlocked policy yields to explicit RAGOSHELL_UPDATE_URL.
+    EXPECT_EQ(resolveActiveUpdateEndpoint(false, true, true,
+                                          QStringLiteral("https://updates.corp.example/v1/release-check"),
+                                          false),
+              QStringLiteral("https://updates.env.example/v1/release-check"));
+
+    // Locked policy ignores RAGOSHELL_UPDATE_URL both when policyUrl is set AND when empty!
+    EXPECT_EQ(resolveActiveUpdateEndpoint(false, true, true,
+                                          QStringLiteral("https://updates.corp.example/v1/release-check"),
+                                          true),
+              QStringLiteral("https://updates.corp.example/v1/release-check"));
+    EXPECT_TRUE(resolveActiveUpdateEndpoint(false, true, true, QString(), true).isEmpty());
+
+    // Custom HTTPS update endpoint derives its own /releases.json rather than BrandInfo::releasesManifestUrl.
+    EXPECT_EQ(releasesManifestUrl(QString(), QStringLiteral("https://updates.corp.example:8443/v1/release-check"), true),
+              QStringLiteral("https://updates.corp.example:8443/releases.json"));
+
+    // Locked policy also ignores RAGOSHELL_RELEASES_MANIFEST_URL.
+    qputenv("RAGOSHELL_RELEASES_MANIFEST_URL", "https://evil.example/releases.json");
+    EXPECT_EQ(releasesManifestUrl(QString(), QStringLiteral("https://updates.corp.example/v1/release-check"), true),
+              QStringLiteral("https://updates.corp.example/releases.json"));
+    // Unlocked policy allows RAGOSHELL_RELEASES_MANIFEST_URL.
+    EXPECT_EQ(releasesManifestUrl(QString(), QStringLiteral("https://updates.corp.example/v1/release-check"), false),
+              QStringLiteral("https://evil.example/releases.json"));
+
+    // Default SaaS API endpoint keeps BrandInfo::releasesManifestUrl.
+    qunsetenv("RAGOSHELL_RELEASES_MANIFEST_URL");
+    const QString defaultUpdateEp = QString::fromUtf8(RagoShell::BrandInfo::apiUrl) + QStringLiteral("/v1/release-check");
+    const QString defaultManifest = QString::fromUtf8(RagoShell::BrandInfo::releasesManifestUrl);
+    EXPECT_EQ(releasesManifestUrl(QString(), defaultUpdateEp, false), defaultManifest);
+
+    // Endpoint URL validation rejects '@' authority confusion and query/fragment strings.
+    EXPECT_FALSE(isSafeEndpointUrl(QStringLiteral("https://@updates.corp.example/v1/release-check")));
+    EXPECT_FALSE(isSafeEndpointUrl(QStringLiteral("https://updates.corp.example/releases.json?v=1")));
+    EXPECT_FALSE(isSafeEndpointUrl(QStringLiteral("https://updates.corp.example/releases.json#frag")));
+
+    restoreEnv();
 }
