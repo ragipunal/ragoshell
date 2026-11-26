@@ -15,6 +15,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates git curl unzip zip tar pkg-config \
         build-essential ninja-build cmake python3 python3-pip \
         autoconf automake autoconf-archive libtool bison flex \
+        libgl1-mesa-dev libegl1-mesa-dev libxkbcommon-dev \
+        libfontconfig1-dev libfreetype-dev libdbus-1-dev libglib2.0-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # QAbstractHttpServer::addWebSocketUpgradeVerifier needs Qt >= 6.8; Ubuntu
@@ -23,8 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # never track a mutable HEAD in a release image.
 RUN pip3 install --no-cache-dir --break-system-packages "aqtinstall==3.3.0" \
  && aqt install-qt linux desktop 6.12.0 linux_gcc_64 --outputdir /opt/qt \
-        --archives qtbase qtdeclarative qthttpserver qtwebsockets qt5compat \
-        --modules qthttpserver qtwebsockets qtdeclarative qt5compat
+        --modules qthttpserver qtwebsockets qt5compat
 
 # vcpkg builds mongo-cxx-driver / openssl / argon2 / libssh2 (static,
 # x64-linux). Pinned to the commit the dev tree builds against.
@@ -52,27 +53,20 @@ RUN cmake -B build/gateway -G Ninja \
  && cmake --build build/gateway --target ragoshell-web-gateway \
  && strip /src/build/gateway/src/ragoshell-app/ragoshell-web-gateway
 
-# ---------- runtime ----------
-FROM ubuntu:24.04
+# ---------- runtime (hosted: Mod B API-backed relay without WASM static assets) ----------
+FROM ubuntu:24.04 AS hosted
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3 ca-certificates \
+        libgl1 libegl1 libopengl0 libxkbcommon0 libfontconfig1 libfreetype6 libglib2.0-0 libdbus-1-3 libgssapi-krb5-2 ca-certificates bash \
     && rm -rf /var/lib/apt/lists/* \
-    && useradd --system --uid 10001 --create-home ragoshell
+    && useradd --system --uid 10001 --create-home ragoshell \
+    && mkdir -p /srv/web \
+    && chmod 0755 /srv/web
 
 COPY --from=builder /opt/qt/6.12.0/gcc_64/lib /opt/qt/6.12.0/gcc_64/lib
 COPY --from=builder /opt/qt/6.12.0/gcc_64/plugins /opt/qt/6.12.0/gcc_64/plugins
 COPY --from=builder /src/build/gateway/src/ragoshell-app/ragoshell-web-gateway \
      /usr/local/bin/ragoshell-web-gateway
-
-# Static WASM bundle produced by the local wasm-single build (renamed to
-# index.html so / serves the app shell directly).
-COPY build/wasm-single/src/ragoshell-app/ragoshell.html   /srv/web/index.html
-COPY build/wasm-single/src/ragoshell-app/ragoshell.js     /srv/web/ragoshell.js
-COPY build/wasm-single/src/ragoshell-app/ragoshell.wasm   /srv/web/ragoshell.wasm
-COPY build/wasm-single/src/ragoshell-app/ragoshell.wasm.br /srv/web/ragoshell.wasm.br
-COPY build/wasm-single/src/ragoshell-app/qtloader.js      /srv/web/qtloader.js
-COPY build/wasm-single/src/ragoshell-app/qtlogo.svg       /srv/web/qtlogo.svg
 
 ENV LD_LIBRARY_PATH=/opt/qt/6.12.0/gcc_64/lib \
     QT_QPA_PLATFORM=offscreen \
@@ -82,3 +76,16 @@ ENV LD_LIBRARY_PATH=/opt/qt/6.12.0/gcc_64/lib \
 USER ragoshell
 EXPOSE 8080
 ENTRYPOINT ["/usr/local/bin/ragoshell-web-gateway"]
+
+# ---------- runtime (web: default self-hosted bundle with WASM static assets) ----------
+FROM hosted AS web
+USER root
+# Static WASM bundle produced by the local wasm-single build (renamed to
+# index.html so / serves the app shell directly).
+COPY build/wasm-single/src/ragoshell-app/ragoshell.html   /srv/web/index.html
+COPY build/wasm-single/src/ragoshell-app/ragoshell.js     /srv/web/ragoshell.js
+COPY build/wasm-single/src/ragoshell-app/ragoshell.wasm   /srv/web/ragoshell.wasm
+COPY build/wasm-single/src/ragoshell-app/ragoshell.wasm.br /srv/web/ragoshell.wasm.br
+COPY build/wasm-single/src/ragoshell-app/qtloader.js      /srv/web/qtloader.js
+COPY build/wasm-single/src/ragoshell-app/qtlogo.svg       /srv/web/qtlogo.svg
+USER ragoshell
