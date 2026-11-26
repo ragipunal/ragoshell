@@ -24,6 +24,7 @@ import {
   generateReleaseManifest,
   normalizeAndValidateVersion,
   readBrandDefaults,
+  readDefaultCmakeVersion,
   validateAllowedHttpsUrl,
   verifyReleaseDirectory,
 } from './generate-releases-json.mjs';
@@ -332,12 +333,21 @@ function testNegativeManifestAndFilesystemGuards(brand, tmpRoot) {
   assert.equal(rcManifest.manifest.latestVersion, '2.1.0-rc.1');
 
   // 3c. Strict release tag verifier matches SemVer 2.0.0, CMakeLists.txt PROJECT_VERSION, and CHANGELOG
-  const stableTagInfo = verifyReleaseTag({ repoRoot, tag: 'v2.1.0' });
+  const currentCmakeVer = readDefaultCmakeVersion(repoRoot).replace(/-.*$/, '');
+  const stableTagInfo = verifyReleaseTag({ repoRoot, tag: `v${currentCmakeVer}` });
   assert.equal(stableTagInfo.isPrerelease, false);
-  const rcTagInfo = verifyReleaseTag({ repoRoot, tag: 'v2.1.0-rc.1' });
+  const rcTagInfo = verifyReleaseTag({ repoRoot, tag: `v${currentCmakeVer}-rc.1` });
   assert.equal(rcTagInfo.isPrerelease, true);
-  assert.equal(rcTagInfo.changelogVersion, '2.1.0');
-  for (const badTag of ['', '2.1.0', 'v2.1', 'v2.2.0', 'v2.1.0-rc.01', 'v2.1.0-foo.1', 'widgets-final']) {
+  assert.equal(rcTagInfo.changelogVersion, currentCmakeVer);
+  for (const badTag of [
+    '',
+    currentCmakeVer,
+    'v2.1',
+    'v99.0.0',
+    `v${currentCmakeVer}-rc.01`,
+    `v${currentCmakeVer}-foo.1`,
+    'widgets-final',
+  ]) {
     assert.throws(
       () => verifyReleaseTag({ repoRoot, tag: badTag }),
       /required|Invalid release tag|does not match/,

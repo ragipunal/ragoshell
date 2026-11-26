@@ -1,7 +1,7 @@
 RagoShell changelog
 ===================
 
-RagoShell 2.1.1
+RagoShell 2.1.2
 ---------------
 - Cloud & Sync UX simplification and top-bar sync menu: dedicated Cloud & Sync dialog, status-aware Sync button and
   quick menu in the top bar, Cloud & Sync and Sync Now commands in the Command Palette, explicit two-mode passphrase
@@ -9,6 +9,11 @@ RagoShell 2.1.1
 - Fix multi-document selection in Tree and Table result views: restore Shift+Click range selection, Ctrl+Click toggle,
   and Ctrl+Shift+Click additive range selection, preserve multi-selection on right-click for batch deletion, and add
   Ctrl+A (Select All), Up/Down + Shift+Up/Down keyboard range navigation, and multi-document JSON array copy
+- Release CI: read the active CMake project version dynamically in `ci/test-release-pipeline.mjs` tag verification checks
+
+RagoShell 2.1.1
+---------------
+- Superseded by 2.1.2 (CI tag preflight test update)
 
 RagoShell 2.1.0
 ---------------
