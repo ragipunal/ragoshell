@@ -1,6 +1,6 @@
 {
   "name": "ragoshell",
-  "version-string": "2.1.0",
+  "version-string": "2.1.1",
   "builtin-baseline": "4f973280dd95e3902b3410933fb2ce108bb29d1d",
   "dependencies": [
     "argon2",
