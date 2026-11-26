@@ -316,6 +316,10 @@
         <translation>恢复未保存的脚本…</translation>
     </message>
     <message>
+        <source>Cloud &amp; Sync…</source>
+        <translation>云端与同步…</translation>
+    </message>
+    <message>
         <source>Preferences…</source>
         <translation>偏好设置…</translation>
     </message>
@@ -438,6 +442,10 @@
         <translation>服务器监视器</translation>
     </message>
     <message>
+        <source>Sync Now</source>
+        <translation>立即同步</translation>
+    </message>
+    <message>
         <source>Keyboard Shortcuts</source>
         <translation>键盘快捷键</translation>
     </message>
@@ -481,6 +489,14 @@
         <source>No unsaved scripts</source>
         <translation>没有未保存的脚本</translation>
     </message>
+    <message>
+        <source>Set up encrypted sync first</source>
+        <translation>请先设置加密同步</translation>
+    </message>
+    <message>
+        <source>Sign in to your cloud account first</source>
+        <translation>请先登录您的云账户</translation>
+    </message>
 </context>
 <context>
     <name>AppBar</name>
@@ -501,6 +517,50 @@
         <translation>监视器</translation>
     </message>
     <message>
+        <source>Syncing…</source>
+        <translation>正在同步…</translation>
+    </message>
+    <message>
+        <source>Sync</source>
+        <translation>同步</translation>
+    </message>
+    <message>
+        <source>Set Up Sync</source>
+        <translation>设置同步</translation>
+    </message>
+    <message>
+        <source>Cloud &amp; Sync</source>
+        <translation>云端与同步</translation>
+    </message>
+    <message>
+        <source>Set Up Sync…</source>
+        <translation>设置同步…</translation>
+    </message>
+    <message>
+        <source>Complete Sign-In…</source>
+        <translation>完成登录…</translation>
+    </message>
+    <message>
+        <source>Set Up Encrypted Sync…</source>
+        <translation>设置加密同步…</translation>
+    </message>
+    <message>
+        <source>Sync Now</source>
+        <translation>立即同步</translation>
+    </message>
+    <message>
+        <source>Sync needs attention</source>
+        <translation>同步需要处理</translation>
+    </message>
+    <message>
+        <source>Last synced: %1</source>
+        <translation>上次同步：%1</translation>
+    </message>
+    <message>
+        <source>Cloud &amp; Sync…</source>
+        <translation>云端与同步…</translation>
+    </message>
+    <message>
         <source>Theme</source>
         <translation>主题</translation>
     </message>
@@ -519,6 +579,17 @@
     <message>
         <source>More</source>
         <translation>更多</translation>
+    </message>
+</context>
+<context>
+    <name>CloudSyncDialog</name>
+    <message>
+        <source>Cloud &amp; Sync</source>
+        <translation>云端与同步</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>关闭</translation>
     </message>
 </context>
 <context>
@@ -3123,28 +3194,20 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Account</source>
-        <translation>账户</translation>
-    </message>
-    <message>
-        <source>Registered device</source>
-        <translation>已注册设备</translation>
-    </message>
-    <message>
-        <source>Encrypted sync</source>
-        <translation>加密同步</translation>
-    </message>
-    <message>
-        <source>On · %1</source>
-        <translation>开启 · %1</translation>
-    </message>
-    <message>
         <source>Off</source>
         <translation type="unfinished">关闭</translation>
     </message>
     <message>
         <source>ENCRYPTED SYNC</source>
         <translation>加密同步</translation>
+    </message>
+    <message>
+        <source>Device: %1</source>
+        <translation>设备：%1</translation>
+    </message>
+    <message>
+        <source>Last synced: %1</source>
+        <translation>上次同步：%1</translation>
     </message>
     <message>
         <source>Sync data leaves this device only as client-encrypted ciphertext. The server never sees your passphrase, keys, or plain settings.</source>
@@ -3183,16 +3246,52 @@
         <translation>设置加密同步…</translation>
     </message>
     <message>
+        <source>Advanced</source>
+        <translation>高级</translation>
+    </message>
+    <message>
+        <source>New Sync Passphrase</source>
+        <translation>新建同步口令</translation>
+    </message>
+    <message>
+        <source>Use Existing Passphrase</source>
+        <translation>使用已有口令</translation>
+    </message>
+    <message>
+        <source>Enter the sync passphrase you already created on another device.</source>
+        <translation>输入您已在其他设备上创建的同步口令。</translation>
+    </message>
+    <message>
+        <source>Choose a passphrase (at least 8 characters) to encrypt your sync data. Enter this same passphrase on your other devices.</source>
+        <translation>设置至少 8 个字符的口令以加密同步数据，并在您的其他设备上输入相同口令。</translation>
+    </message>
+    <message>
+        <source>Hide Passphrase</source>
+        <translation>隐藏口令</translation>
+    </message>
+    <message>
+        <source>Show Passphrase</source>
+        <translation>显示口令</translation>
+    </message>
+    <message>
+        <source>Encrypts backups with a key stored only on this device. Other devices will not be able to read them.</source>
+        <translation>使用仅保存在此设备上的密钥加密备份，其他设备无法读取。</translation>
+    </message>
+    <message>
+        <source>Connect &amp; Sync</source>
+        <translation>连接并同步</translation>
+    </message>
+    <message>
+        <source>Start Encrypted Sync</source>
+        <translation>开启加密同步</translation>
+    </message>
+    <message>
         <source>Disable Sync</source>
         <translation>停用同步</translation>
     </message>
     <message>
         <source>Delete Remote Data…</source>
         <translation>删除远程数据…</translation>
-    </message>
-    <message>
-        <source>This device already has a sync vault (join with existing passphrase)</source>
-        <translation>此设备已有同步保管库（使用现有口令加入）</translation>
     </message>
     <message>
         <source>Existing sync passphrase</source>
@@ -3221,14 +3320,6 @@
     <message>
         <source>Setup failed: %1</source>
         <translation>设置失败：%1</translation>
-    </message>
-    <message>
-        <source>Join Vault</source>
-        <translation>加入保管库</translation>
-    </message>
-    <message>
-        <source>Create Vault</source>
-        <translation>创建保管库</translation>
     </message>
     <message>
         <source>Use Device Key Instead</source>
@@ -4179,6 +4270,42 @@
     <message>
         <source>Never</source>
         <translation>从未</translation>
+    </message>
+    <message>
+        <source>Could not reach the sync server. Changes will sync when you are back online.</source>
+        <translation>无法连接同步服务器，恢复联网后将自动同步更改。</translation>
+    </message>
+    <message>
+        <source>Could not read the sync encryption key from the OS keychain.</source>
+        <translation>无法从系统钥匙串读取同步加密密钥。</translation>
+    </message>
+    <message>
+        <source>Local sync metadata is incomplete. Disable sync on this device and reconnect with your passphrase.</source>
+        <translation>本地同步元数据不完整，请在此设备上停用同步后使用口令重新连接。</translation>
+    </message>
+    <message>
+        <source>Encrypted sync is not enabled for this account.</source>
+        <translation>此账户未启用加密同步。</translation>
+    </message>
+    <message>
+        <source>Another device updated sync data at the same time. Please sync again.</source>
+        <translation>另一台设备同时更新了同步数据，请重新同步。</translation>
+    </message>
+    <message>
+        <source>Sync data exceeds the maximum allowed size.</source>
+        <translation>同步数据超出允许的最大大小。</translation>
+    </message>
+    <message>
+        <source>Daily sync write limit reached. Try again later.</source>
+        <translation>已达到每日同步写入上限，请稍后再试。</translation>
+    </message>
+    <message>
+        <source>Account sync collection limit reached.</source>
+        <translation>已达到账户同步集合数量上限。</translation>
+    </message>
+    <message>
+        <source>Sync error: %1</source>
+        <translation>同步错误：%1</translation>
     </message>
     <message>
         <source>Blocked by invalid organization policy</source>
@@ -5955,7 +6082,7 @@ Error:
     </message>
     <message>
         <source>Close</source>
-        <translation type="unfinished">关闭</translation>
+        <translation>关闭</translation>
     </message>
     <message>
         <source>Auth DB: %1</source>

@@ -316,6 +316,10 @@
         <translation>استعادة السكربتات غير المحفوظة…</translation>
     </message>
     <message>
+        <source>Cloud &amp; Sync…</source>
+        <translation>السحابة والمزامنة…</translation>
+    </message>
+    <message>
         <source>Preferences…</source>
         <translation>التفضيلات…</translation>
     </message>
@@ -443,6 +447,10 @@
         <translation>مراقب الخادم</translation>
     </message>
     <message>
+        <source>Sync Now</source>
+        <translation>مزامنة الآن</translation>
+    </message>
+    <message>
         <source>Keyboard Shortcuts</source>
         <translation>اختصارات لوحة المفاتيح</translation>
     </message>
@@ -486,6 +494,14 @@
         <source>No unsaved scripts</source>
         <translation>لا توجد سكربتات غير محفوظة</translation>
     </message>
+    <message>
+        <source>Set up encrypted sync first</source>
+        <translation>قم بإعداد المزامنة المشفرة أولاً</translation>
+    </message>
+    <message>
+        <source>Sign in to your cloud account first</source>
+        <translation>سجّل الدخول إلى حسابك السحابي أولاً</translation>
+    </message>
 </context>
 <context>
     <name>AppBar</name>
@@ -506,6 +522,50 @@
         <translation>المراقب</translation>
     </message>
     <message>
+        <source>Syncing…</source>
+        <translation>جارٍ المزامنة…</translation>
+    </message>
+    <message>
+        <source>Sync</source>
+        <translation>مزامنة</translation>
+    </message>
+    <message>
+        <source>Set Up Sync</source>
+        <translation>إعداد المزامنة</translation>
+    </message>
+    <message>
+        <source>Cloud &amp; Sync</source>
+        <translation>السحابة والمزامنة</translation>
+    </message>
+    <message>
+        <source>Set Up Sync…</source>
+        <translation>إعداد المزامنة…</translation>
+    </message>
+    <message>
+        <source>Complete Sign-In…</source>
+        <translation>إكمال تسجيل الدخول…</translation>
+    </message>
+    <message>
+        <source>Set Up Encrypted Sync…</source>
+        <translation>إعداد المزامنة المشفرة…</translation>
+    </message>
+    <message>
+        <source>Sync Now</source>
+        <translation>مزامنة الآن</translation>
+    </message>
+    <message>
+        <source>Sync needs attention</source>
+        <translation>المزامنة تتطلب الانتباه</translation>
+    </message>
+    <message>
+        <source>Last synced: %1</source>
+        <translation>آخر مزامنة: %1</translation>
+    </message>
+    <message>
+        <source>Cloud &amp; Sync…</source>
+        <translation>السحابة والمزامنة…</translation>
+    </message>
+    <message>
         <source>Theme</source>
         <translation>السمة</translation>
     </message>
@@ -524,6 +584,17 @@
     <message>
         <source>More</source>
         <translation>المزيد</translation>
+    </message>
+</context>
+<context>
+    <name>CloudSyncDialog</name>
+    <message>
+        <source>Cloud &amp; Sync</source>
+        <translation>السحابة والمزامنة</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>إغلاق</translation>
     </message>
 </context>
 <context>
@@ -3153,28 +3224,20 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Account</source>
-        <translation>الحساب</translation>
-    </message>
-    <message>
-        <source>Registered device</source>
-        <translation>الجهاز المسجّل</translation>
-    </message>
-    <message>
-        <source>Encrypted sync</source>
-        <translation>المزامنة المشفرة</translation>
-    </message>
-    <message>
-        <source>On · %1</source>
-        <translation>مفعّل · %1</translation>
-    </message>
-    <message>
         <source>Off</source>
         <translation type="unfinished">متوقف</translation>
     </message>
     <message>
         <source>ENCRYPTED SYNC</source>
         <translation>المزامنة المشفرة</translation>
+    </message>
+    <message>
+        <source>Device: %1</source>
+        <translation>الجهاز: %1</translation>
+    </message>
+    <message>
+        <source>Last synced: %1</source>
+        <translation>آخر مزامنة: %1</translation>
     </message>
     <message>
         <source>Sync data leaves this device only as client-encrypted ciphertext. The server never sees your passphrase, keys, or plain settings.</source>
@@ -3213,16 +3276,52 @@
         <translation>إعداد المزامنة المشفرة…</translation>
     </message>
     <message>
+        <source>Advanced</source>
+        <translation>متقدم</translation>
+    </message>
+    <message>
+        <source>New Sync Passphrase</source>
+        <translation>عبارة مرور مزامنة جديدة</translation>
+    </message>
+    <message>
+        <source>Use Existing Passphrase</source>
+        <translation>استخدام عبارة مرور موجودة</translation>
+    </message>
+    <message>
+        <source>Enter the sync passphrase you already created on another device.</source>
+        <translation>أدخل عبارة مرور المزامنة التي أنشأتها مسبقاً على جهاز آخر.</translation>
+    </message>
+    <message>
+        <source>Choose a passphrase (at least 8 characters) to encrypt your sync data. Enter this same passphrase on your other devices.</source>
+        <translation>اختر عبارة مرور (8 أحرف على الأقل) لتشفير بيانات المزامنة. أدخل نفس العبارة على أجهزتك الأخرى.</translation>
+    </message>
+    <message>
+        <source>Hide Passphrase</source>
+        <translation>إخفاء عبارة المرور</translation>
+    </message>
+    <message>
+        <source>Show Passphrase</source>
+        <translation>إظهار عبارة المرور</translation>
+    </message>
+    <message>
+        <source>Encrypts backups with a key stored only on this device. Other devices will not be able to read them.</source>
+        <translation>يشفّر النسخ الاحتياطية بمفتاح محفوظ على هذا الجهاز فقط. لن تتمكن الأجهزة الأخرى من قراءتها.</translation>
+    </message>
+    <message>
+        <source>Connect &amp; Sync</source>
+        <translation>اتصال ومزامنة</translation>
+    </message>
+    <message>
+        <source>Start Encrypted Sync</source>
+        <translation>بدء المزامنة المشفرة</translation>
+    </message>
+    <message>
         <source>Disable Sync</source>
         <translation>تعطيل المزامنة</translation>
     </message>
     <message>
         <source>Delete Remote Data…</source>
         <translation>حذف البيانات البعيدة…</translation>
-    </message>
-    <message>
-        <source>This device already has a sync vault (join with existing passphrase)</source>
-        <translation>يمتلك هذا الجهاز خزنة مزامنة بالفعل (الانضمام باستخدام عبارة المرور الحالية)</translation>
     </message>
     <message>
         <source>Existing sync passphrase</source>
@@ -3251,14 +3350,6 @@
     <message>
         <source>Setup failed: %1</source>
         <translation>فشل الإعداد: %1</translation>
-    </message>
-    <message>
-        <source>Join Vault</source>
-        <translation>الانضمام إلى الخزنة</translation>
-    </message>
-    <message>
-        <source>Create Vault</source>
-        <translation>إنشاء خزنة</translation>
     </message>
     <message>
         <source>Use Device Key Instead</source>
@@ -4214,6 +4305,42 @@
     <message>
         <source>Never</source>
         <translation>أبدًا</translation>
+    </message>
+    <message>
+        <source>Could not reach the sync server. Changes will sync when you are back online.</source>
+        <translation>تعذّر الوصول إلى خادم المزامنة. ستتم مزامنة التغييرات عند عودة الاتصال.</translation>
+    </message>
+    <message>
+        <source>Could not read the sync encryption key from the OS keychain.</source>
+        <translation>تعذّرت قراءة مفتاح تشفير المزامنة من سلسلة مفاتيح النظام.</translation>
+    </message>
+    <message>
+        <source>Local sync metadata is incomplete. Disable sync on this device and reconnect with your passphrase.</source>
+        <translation>بيانات المزامنة المحلية غير مكتملة. أوقف المزامنة على هذا الجهاز وأعد الاتصال بعبارة المرور.</translation>
+    </message>
+    <message>
+        <source>Encrypted sync is not enabled for this account.</source>
+        <translation>المزامنة المشفرة غير مفعّلة لهذا الحساب.</translation>
+    </message>
+    <message>
+        <source>Another device updated sync data at the same time. Please sync again.</source>
+        <translation>قام جهاز آخر بتحديث بيانات المزامنة في الوقت نفسه. يرجى المزامنة مرة أخرى.</translation>
+    </message>
+    <message>
+        <source>Sync data exceeds the maximum allowed size.</source>
+        <translation>تتجاوز بيانات المزامنة الحد الأقصى المسموح به للحجم.</translation>
+    </message>
+    <message>
+        <source>Daily sync write limit reached. Try again later.</source>
+        <translation>تم بلوغ الحد اليومي لعمليات كتابة المزامنة. حاول لاحقاً.</translation>
+    </message>
+    <message>
+        <source>Account sync collection limit reached.</source>
+        <translation>تم بلوغ حد مجموعات المزامنة للحساب.</translation>
+    </message>
+    <message>
+        <source>Sync error: %1</source>
+        <translation>خطأ في المزامنة: %1</translation>
     </message>
     <message>
         <source>Blocked by invalid organization policy</source>
@@ -6075,7 +6202,7 @@ Error:
     </message>
     <message>
         <source>Close</source>
-        <translation type="unfinished">إغلاق</translation>
+        <translation>إغلاق</translation>
     </message>
     <message>
         <source>Auth DB: %1</source>

@@ -238,6 +238,8 @@ RagoDialog {
         _loading = false
         if (revealSection === "mcp" && mcpSection.visible)
             Qt.callLater(function() { prefsScroll.contentItem.contentY = Math.max(0, mcpSection.y - 8) })
+        else if (revealSection === "account" && accountSection.visible)
+            Qt.callLater(function() { prefsScroll.contentItem.contentY = Math.max(0, accountSection.y - 8) })
         revealSection = ""
     }
 

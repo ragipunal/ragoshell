@@ -316,6 +316,10 @@
         <translation>Saxlanmamış skriptləri bərpa et…</translation>
     </message>
     <message>
+        <source>Cloud &amp; Sync…</source>
+        <translation>Bulud və Sinxronizasiya…</translation>
+    </message>
+    <message>
         <source>Preferences…</source>
         <translation>Tənzimləmələr…</translation>
     </message>
@@ -439,6 +443,10 @@
         <translation>Server monitoru</translation>
     </message>
     <message>
+        <source>Sync Now</source>
+        <translation>İndi sinxronizasiya et</translation>
+    </message>
+    <message>
         <source>Keyboard Shortcuts</source>
         <translation>Klaviatura qısayolları</translation>
     </message>
@@ -482,6 +490,14 @@
         <source>No unsaved scripts</source>
         <translation>Saxlanmamış skript yoxdur</translation>
     </message>
+    <message>
+        <source>Set up encrypted sync first</source>
+        <translation>Əvvəlcə şifrəli sinxronizasiyanı qurun</translation>
+    </message>
+    <message>
+        <source>Sign in to your cloud account first</source>
+        <translation>Əvvəlcə bulud hesabınıza daxil olun</translation>
+    </message>
 </context>
 <context>
     <name>AppBar</name>
@@ -502,6 +518,50 @@
         <translation>Monitor</translation>
     </message>
     <message>
+        <source>Syncing…</source>
+        <translation>Sinxronizasiya edilir…</translation>
+    </message>
+    <message>
+        <source>Sync</source>
+        <translation>Sinxronla</translation>
+    </message>
+    <message>
+        <source>Set Up Sync</source>
+        <translation>Sinxronizasiyanı Qur</translation>
+    </message>
+    <message>
+        <source>Cloud &amp; Sync</source>
+        <translation>Bulud və Sinxronizasiya</translation>
+    </message>
+    <message>
+        <source>Set Up Sync…</source>
+        <translation>Sinxronizasiyanı Qur…</translation>
+    </message>
+    <message>
+        <source>Complete Sign-In…</source>
+        <translation>Girişi Tamamla…</translation>
+    </message>
+    <message>
+        <source>Set Up Encrypted Sync…</source>
+        <translation>Şifrəli sinxronizasiyanı qur…</translation>
+    </message>
+    <message>
+        <source>Sync Now</source>
+        <translation>İndi sinxronizasiya et</translation>
+    </message>
+    <message>
+        <source>Sync needs attention</source>
+        <translation>Sinxronizasiya diqqət tələb edir</translation>
+    </message>
+    <message>
+        <source>Last synced: %1</source>
+        <translation>Son sinxronizasiya: %1</translation>
+    </message>
+    <message>
+        <source>Cloud &amp; Sync…</source>
+        <translation>Bulud və Sinxronizasiya…</translation>
+    </message>
+    <message>
         <source>Theme</source>
         <translation>Tema</translation>
     </message>
@@ -520,6 +580,17 @@
     <message>
         <source>More</source>
         <translation>Daha çox</translation>
+    </message>
+</context>
+<context>
+    <name>CloudSyncDialog</name>
+    <message>
+        <source>Cloud &amp; Sync</source>
+        <translation>Bulud və Sinxronizasiya</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Bağla</translation>
     </message>
 </context>
 <context>
@@ -3129,28 +3200,20 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Account</source>
-        <translation>Hesab</translation>
-    </message>
-    <message>
-        <source>Registered device</source>
-        <translation>Qeydiyyatlı cihaz</translation>
-    </message>
-    <message>
-        <source>Encrypted sync</source>
-        <translation>Şifrəli sinxronizasiya</translation>
-    </message>
-    <message>
-        <source>On · %1</source>
-        <translation>Aktivdir · %1</translation>
-    </message>
-    <message>
         <source>Off</source>
         <translation type="unfinished">Söndürülüb</translation>
     </message>
     <message>
         <source>ENCRYPTED SYNC</source>
         <translation>ŞİFRƏLİ SİNXRONİZASİYA</translation>
+    </message>
+    <message>
+        <source>Device: %1</source>
+        <translation>Cihaz: %1</translation>
+    </message>
+    <message>
+        <source>Last synced: %1</source>
+        <translation>Son sinxronizasiya: %1</translation>
     </message>
     <message>
         <source>Sync data leaves this device only as client-encrypted ciphertext. The server never sees your passphrase, keys, or plain settings.</source>
@@ -3189,16 +3252,52 @@
         <translation>Şifrəli sinxronizasiyanı qur…</translation>
     </message>
     <message>
+        <source>Advanced</source>
+        <translation>Qabaqcıl</translation>
+    </message>
+    <message>
+        <source>New Sync Passphrase</source>
+        <translation>Yeni Sinxronizasiya Parolu</translation>
+    </message>
+    <message>
+        <source>Use Existing Passphrase</source>
+        <translation>Mövcud Paroldan İstifadə Et</translation>
+    </message>
+    <message>
+        <source>Enter the sync passphrase you already created on another device.</source>
+        <translation>Başqa bir cihazda artıq yaratdığınız sinxronizasiya parolunu daxil edin.</translation>
+    </message>
+    <message>
+        <source>Choose a passphrase (at least 8 characters) to encrypt your sync data. Enter this same passphrase on your other devices.</source>
+        <translation>Sinxronizasiya məlumatlarınızı şifrələmək üçün ən azı 8 simvoldan ibarət parol seçin. Digər cihazlarınızda da eyni parolu daxil edin.</translation>
+    </message>
+    <message>
+        <source>Hide Passphrase</source>
+        <translation>Parolu Gizlət</translation>
+    </message>
+    <message>
+        <source>Show Passphrase</source>
+        <translation>Parolu Göstər</translation>
+    </message>
+    <message>
+        <source>Encrypts backups with a key stored only on this device. Other devices will not be able to read them.</source>
+        <translation>Ehtiyat nüsxələri yalnız bu cihazda saxlanılan açarla şifrələyir. Digər cihazlar onları oxuya bilməyəcək.</translation>
+    </message>
+    <message>
+        <source>Connect &amp; Sync</source>
+        <translation>Qoşul və Sinxronla</translation>
+    </message>
+    <message>
+        <source>Start Encrypted Sync</source>
+        <translation>Şifrəli Sinxronizasiyanı Başlat</translation>
+    </message>
+    <message>
         <source>Disable Sync</source>
         <translation>Sinxronizasiyanı söndür</translation>
     </message>
     <message>
         <source>Delete Remote Data…</source>
         <translation>Uzaq məlumatları sil…</translation>
-    </message>
-    <message>
-        <source>This device already has a sync vault (join with existing passphrase)</source>
-        <translation>Bu cihazda artıq sinxronizasiya anbarı var (mövcud keçid ifadəsi ilə qoşul)</translation>
     </message>
     <message>
         <source>Existing sync passphrase</source>
@@ -3227,14 +3326,6 @@
     <message>
         <source>Setup failed: %1</source>
         <translation>Quraşdırma alınmadı: %1</translation>
-    </message>
-    <message>
-        <source>Join Vault</source>
-        <translation>Anbara qoşul</translation>
-    </message>
-    <message>
-        <source>Create Vault</source>
-        <translation>Anbar yarat</translation>
     </message>
     <message>
         <source>Use Device Key Instead</source>
@@ -4186,6 +4277,42 @@
     <message>
         <source>Never</source>
         <translation>Heç vaxt</translation>
+    </message>
+    <message>
+        <source>Could not reach the sync server. Changes will sync when you are back online.</source>
+        <translation>Sinxronizasiya serverinə qoşulmaq mümkün olmadı. Onlayn olduqda dəyişikliklər sinxronlanacaq.</translation>
+    </message>
+    <message>
+        <source>Could not read the sync encryption key from the OS keychain.</source>
+        <translation>Sinxronizasiya şifrələmə açarı əməliyyat sisteminin açar zəncirindən oxuna bilmədi.</translation>
+    </message>
+    <message>
+        <source>Local sync metadata is incomplete. Disable sync on this device and reconnect with your passphrase.</source>
+        <translation>Yerli sinxronizasiya metaməlumatları natamamdır. Bu cihazda sinxronizasiyanı söndürüb parolunuzla yenidən qoşulun.</translation>
+    </message>
+    <message>
+        <source>Encrypted sync is not enabled for this account.</source>
+        <translation>Bu hesab üçün şifrəli sinxronizasiya aktiv deyil.</translation>
+    </message>
+    <message>
+        <source>Another device updated sync data at the same time. Please sync again.</source>
+        <translation>Başqa bir cihaz eyni vaxtda sinxronizasiya məlumatlarını yenilədi. Yenidən sinxronlayın.</translation>
+    </message>
+    <message>
+        <source>Sync data exceeds the maximum allowed size.</source>
+        <translation>Sinxronizasiya məlumatları icazə verilən maksimum ölçünü aşır.</translation>
+    </message>
+    <message>
+        <source>Daily sync write limit reached. Try again later.</source>
+        <translation>Gündəlik sinxronizasiya yazma limitinə çatıldı. Daha sonra yenidən cəhd edin.</translation>
+    </message>
+    <message>
+        <source>Account sync collection limit reached.</source>
+        <translation>Hesabın sinxronizasiya kolleksiyası limitinə çatıldı.</translation>
+    </message>
+    <message>
+        <source>Sync error: %1</source>
+        <translation>Sinxronizasiya xətası: %1</translation>
     </message>
     <message>
         <source>Blocked by invalid organization policy</source>
@@ -5979,7 +6106,7 @@ Xəta:
     </message>
     <message>
         <source>Close</source>
-        <translation type="unfinished">Bağla</translation>
+        <translation>Bağla</translation>
     </message>
     <message>
         <source>Auth DB: %1</source>

@@ -316,6 +316,10 @@
         <translation>Восстановить несохранённые скрипты…</translation>
     </message>
     <message>
+        <source>Cloud &amp; Sync…</source>
+        <translation>Облако и синхронизация…</translation>
+    </message>
+    <message>
         <source>Preferences…</source>
         <translation>Настройки…</translation>
     </message>
@@ -440,6 +444,10 @@
         <translation>Монитор сервера</translation>
     </message>
     <message>
+        <source>Sync Now</source>
+        <translation>Синхронизировать</translation>
+    </message>
+    <message>
         <source>Keyboard Shortcuts</source>
         <translation>Сочетания клавиш</translation>
     </message>
@@ -483,6 +491,14 @@
         <source>No unsaved scripts</source>
         <translation>Нет несохранённых скриптов</translation>
     </message>
+    <message>
+        <source>Set up encrypted sync first</source>
+        <translation>Сначала настройте зашифрованную синхронизацию</translation>
+    </message>
+    <message>
+        <source>Sign in to your cloud account first</source>
+        <translation>Сначала войдите в облачный аккаунт</translation>
+    </message>
 </context>
 <context>
     <name>AppBar</name>
@@ -503,6 +519,50 @@
         <translation>Монитор</translation>
     </message>
     <message>
+        <source>Syncing…</source>
+        <translation>Синхронизация…</translation>
+    </message>
+    <message>
+        <source>Sync</source>
+        <translation>Синхр.</translation>
+    </message>
+    <message>
+        <source>Set Up Sync</source>
+        <translation>Настроить синхр.</translation>
+    </message>
+    <message>
+        <source>Cloud &amp; Sync</source>
+        <translation>Облако и синхронизация</translation>
+    </message>
+    <message>
+        <source>Set Up Sync…</source>
+        <translation>Настроить синхронизацию…</translation>
+    </message>
+    <message>
+        <source>Complete Sign-In…</source>
+        <translation>Завершить вход…</translation>
+    </message>
+    <message>
+        <source>Set Up Encrypted Sync…</source>
+        <translation>Настроить зашифрованную синхронизацию…</translation>
+    </message>
+    <message>
+        <source>Sync Now</source>
+        <translation>Синхронизировать</translation>
+    </message>
+    <message>
+        <source>Sync needs attention</source>
+        <translation>Синхронизация требует внимания</translation>
+    </message>
+    <message>
+        <source>Last synced: %1</source>
+        <translation>Последняя синхронизация: %1</translation>
+    </message>
+    <message>
+        <source>Cloud &amp; Sync…</source>
+        <translation>Облако и синхронизация…</translation>
+    </message>
+    <message>
         <source>Theme</source>
         <translation>Тема</translation>
     </message>
@@ -521,6 +581,17 @@
     <message>
         <source>More</source>
         <translation>Ещё</translation>
+    </message>
+</context>
+<context>
+    <name>CloudSyncDialog</name>
+    <message>
+        <source>Cloud &amp; Sync</source>
+        <translation>Облако и синхронизация</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Закрыть</translation>
     </message>
 </context>
 <context>
@@ -3135,28 +3206,20 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Account</source>
-        <translation>Аккаунт</translation>
-    </message>
-    <message>
-        <source>Registered device</source>
-        <translation>Зарегистрированное устройство</translation>
-    </message>
-    <message>
-        <source>Encrypted sync</source>
-        <translation>Зашифрованная синхронизация</translation>
-    </message>
-    <message>
-        <source>On · %1</source>
-        <translation>Включено · %1</translation>
-    </message>
-    <message>
         <source>Off</source>
         <translation type="unfinished">Выключено</translation>
     </message>
     <message>
         <source>ENCRYPTED SYNC</source>
         <translation>ЗАШИФРОВАННАЯ СИНХРОНИЗАЦИЯ</translation>
+    </message>
+    <message>
+        <source>Device: %1</source>
+        <translation>Устройство: %1</translation>
+    </message>
+    <message>
+        <source>Last synced: %1</source>
+        <translation>Последняя синхронизация: %1</translation>
     </message>
     <message>
         <source>Sync data leaves this device only as client-encrypted ciphertext. The server never sees your passphrase, keys, or plain settings.</source>
@@ -3195,16 +3258,52 @@
         <translation>Настроить зашифрованную синхронизацию…</translation>
     </message>
     <message>
+        <source>Advanced</source>
+        <translation>Дополнительно</translation>
+    </message>
+    <message>
+        <source>New Sync Passphrase</source>
+        <translation>Новая парольная фраза</translation>
+    </message>
+    <message>
+        <source>Use Existing Passphrase</source>
+        <translation>Использовать существующую фразу</translation>
+    </message>
+    <message>
+        <source>Enter the sync passphrase you already created on another device.</source>
+        <translation>Введите парольную фразу синхронизации, созданную на другом устройстве.</translation>
+    </message>
+    <message>
+        <source>Choose a passphrase (at least 8 characters) to encrypt your sync data. Enter this same passphrase on your other devices.</source>
+        <translation>Придумайте парольную фразу (не менее 8 символов) для шифрования данных. Введите её же на остальных устройствах.</translation>
+    </message>
+    <message>
+        <source>Hide Passphrase</source>
+        <translation>Скрыть фразу</translation>
+    </message>
+    <message>
+        <source>Show Passphrase</source>
+        <translation>Показать фразу</translation>
+    </message>
+    <message>
+        <source>Encrypts backups with a key stored only on this device. Other devices will not be able to read them.</source>
+        <translation>Шифрует резервные копии ключом, хранящимся только на этом устройстве. Другие устройства не смогут их прочитать.</translation>
+    </message>
+    <message>
+        <source>Connect &amp; Sync</source>
+        <translation>Подключить и синхронизировать</translation>
+    </message>
+    <message>
+        <source>Start Encrypted Sync</source>
+        <translation>Включить зашифрованную синхронизацию</translation>
+    </message>
+    <message>
         <source>Disable Sync</source>
         <translation>Отключить синхронизацию</translation>
     </message>
     <message>
         <source>Delete Remote Data…</source>
         <translation>Удалить удалённые данные…</translation>
-    </message>
-    <message>
-        <source>This device already has a sync vault (join with existing passphrase)</source>
-        <translation>На этом устройстве уже есть хранилище синхронизации (подключиться с существующей парольной фразой)</translation>
     </message>
     <message>
         <source>Existing sync passphrase</source>
@@ -3233,14 +3332,6 @@
     <message>
         <source>Setup failed: %1</source>
         <translation>Ошибка настройки: %1</translation>
-    </message>
-    <message>
-        <source>Join Vault</source>
-        <translation>Подключиться к хранилищу</translation>
-    </message>
-    <message>
-        <source>Create Vault</source>
-        <translation>Создать хранилище</translation>
     </message>
     <message>
         <source>Use Device Key Instead</source>
@@ -4193,6 +4284,42 @@
     <message>
         <source>Never</source>
         <translation>Никогда</translation>
+    </message>
+    <message>
+        <source>Could not reach the sync server. Changes will sync when you are back online.</source>
+        <translation>Не удалось связаться с сервером синхронизации. Изменения синхронизируются при восстановлении сети.</translation>
+    </message>
+    <message>
+        <source>Could not read the sync encryption key from the OS keychain.</source>
+        <translation>Не удалось прочитать ключ шифрования синхронизации из системного хранилища ключей.</translation>
+    </message>
+    <message>
+        <source>Local sync metadata is incomplete. Disable sync on this device and reconnect with your passphrase.</source>
+        <translation>Локальные метаданные синхронизации неполны. Отключите синхронизацию на этом устройстве и подключитесь заново с парольной фразой.</translation>
+    </message>
+    <message>
+        <source>Encrypted sync is not enabled for this account.</source>
+        <translation>Зашифрованная синхронизация не включена для этого аккаунта.</translation>
+    </message>
+    <message>
+        <source>Another device updated sync data at the same time. Please sync again.</source>
+        <translation>Другое устройство одновременно обновило данные. Выполните синхронизацию ещё раз.</translation>
+    </message>
+    <message>
+        <source>Sync data exceeds the maximum allowed size.</source>
+        <translation>Данные синхронизации превышают максимально допустимый размер.</translation>
+    </message>
+    <message>
+        <source>Daily sync write limit reached. Try again later.</source>
+        <translation>Достигнут дневной лимит записи синхронизации. Повторите попытку позже.</translation>
+    </message>
+    <message>
+        <source>Account sync collection limit reached.</source>
+        <translation>Достигнут лимит синхронизируемых коллекций аккаунта.</translation>
+    </message>
+    <message>
+        <source>Sync error: %1</source>
+        <translation>Ошибка синхронизации: %1</translation>
     </message>
     <message>
         <source>Blocked by invalid organization policy</source>
@@ -6003,7 +6130,7 @@ Error:
     </message>
     <message>
         <source>Close</source>
-        <translation type="unfinished">Закрыть</translation>
+        <translation>Закрыть</translation>
     </message>
     <message>
         <source>Auth DB: %1</source>

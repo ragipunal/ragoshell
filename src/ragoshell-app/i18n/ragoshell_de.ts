@@ -316,6 +316,10 @@
         <translation>Nicht gespeicherte Skripte wiederherstellen…</translation>
     </message>
     <message>
+        <source>Cloud &amp; Sync…</source>
+        <translation>Cloud &amp; Synchronisierung…</translation>
+    </message>
+    <message>
         <source>Preferences…</source>
         <translation>Einstellungen…</translation>
     </message>
@@ -439,6 +443,10 @@
         <translation>Servermonitor</translation>
     </message>
     <message>
+        <source>Sync Now</source>
+        <translation>Jetzt synchronisieren</translation>
+    </message>
+    <message>
         <source>Keyboard Shortcuts</source>
         <translation>Tastenkürzel</translation>
     </message>
@@ -482,6 +490,14 @@
         <source>No unsaved scripts</source>
         <translation>Keine ungespeicherten Skripte</translation>
     </message>
+    <message>
+        <source>Set up encrypted sync first</source>
+        <translation>Richten Sie zuerst die verschlüsselte Synchronisierung ein</translation>
+    </message>
+    <message>
+        <source>Sign in to your cloud account first</source>
+        <translation>Melden Sie sich zuerst bei Ihrem Cloud-Konto an</translation>
+    </message>
 </context>
 <context>
     <name>AppBar</name>
@@ -502,6 +518,50 @@
         <translation>Monitor</translation>
     </message>
     <message>
+        <source>Syncing…</source>
+        <translation>Wird synchronisiert…</translation>
+    </message>
+    <message>
+        <source>Sync</source>
+        <translation>Sync</translation>
+    </message>
+    <message>
+        <source>Set Up Sync</source>
+        <translation>Sync einrichten</translation>
+    </message>
+    <message>
+        <source>Cloud &amp; Sync</source>
+        <translation>Cloud &amp; Synchronisierung</translation>
+    </message>
+    <message>
+        <source>Set Up Sync…</source>
+        <translation>Synchronisierung einrichten…</translation>
+    </message>
+    <message>
+        <source>Complete Sign-In…</source>
+        <translation>Anmeldung abschließen…</translation>
+    </message>
+    <message>
+        <source>Set Up Encrypted Sync…</source>
+        <translation>Verschlüsselte Synchronisierung einrichten…</translation>
+    </message>
+    <message>
+        <source>Sync Now</source>
+        <translation>Jetzt synchronisieren</translation>
+    </message>
+    <message>
+        <source>Sync needs attention</source>
+        <translation>Synchronisierung erfordert Aufmerksamkeit</translation>
+    </message>
+    <message>
+        <source>Last synced: %1</source>
+        <translation>Zuletzt synchronisiert: %1</translation>
+    </message>
+    <message>
+        <source>Cloud &amp; Sync…</source>
+        <translation>Cloud &amp; Synchronisierung…</translation>
+    </message>
+    <message>
         <source>Theme</source>
         <translation>Design</translation>
     </message>
@@ -520,6 +580,17 @@
     <message>
         <source>More</source>
         <translation>Mehr</translation>
+    </message>
+</context>
+<context>
+    <name>CloudSyncDialog</name>
+    <message>
+        <source>Cloud &amp; Sync</source>
+        <translation>Cloud &amp; Synchronisierung</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Schließen</translation>
     </message>
 </context>
 <context>
@@ -3129,28 +3200,20 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Account</source>
-        <translation>Konto</translation>
-    </message>
-    <message>
-        <source>Registered device</source>
-        <translation>Registriertes Gerät</translation>
-    </message>
-    <message>
-        <source>Encrypted sync</source>
-        <translation>Verschlüsselte Synchronisierung</translation>
-    </message>
-    <message>
-        <source>On · %1</source>
-        <translation>Ein · %1</translation>
-    </message>
-    <message>
         <source>Off</source>
         <translation type="unfinished">Aus</translation>
     </message>
     <message>
         <source>ENCRYPTED SYNC</source>
         <translation>VERSCHLÜSSELTE SYNCHRONISIERUNG</translation>
+    </message>
+    <message>
+        <source>Device: %1</source>
+        <translation>Gerät: %1</translation>
+    </message>
+    <message>
+        <source>Last synced: %1</source>
+        <translation>Zuletzt synchronisiert: %1</translation>
     </message>
     <message>
         <source>Sync data leaves this device only as client-encrypted ciphertext. The server never sees your passphrase, keys, or plain settings.</source>
@@ -3189,16 +3252,52 @@
         <translation>Verschlüsselte Synchronisierung einrichten…</translation>
     </message>
     <message>
+        <source>Advanced</source>
+        <translation>Erweitert</translation>
+    </message>
+    <message>
+        <source>New Sync Passphrase</source>
+        <translation>Neue Sync-Passphrase</translation>
+    </message>
+    <message>
+        <source>Use Existing Passphrase</source>
+        <translation>Vorhandene Passphrase verwenden</translation>
+    </message>
+    <message>
+        <source>Enter the sync passphrase you already created on another device.</source>
+        <translation>Geben Sie die Sync-Passphrase ein, die Sie bereits auf einem anderen Gerät erstellt haben.</translation>
+    </message>
+    <message>
+        <source>Choose a passphrase (at least 8 characters) to encrypt your sync data. Enter this same passphrase on your other devices.</source>
+        <translation>Wählen Sie eine Passphrase (mindestens 8 Zeichen), um Ihre Synchronisierungsdaten zu verschlüsseln. Geben Sie dieselbe Passphrase auf Ihren anderen Geräten ein.</translation>
+    </message>
+    <message>
+        <source>Hide Passphrase</source>
+        <translation>Passphrase verbergen</translation>
+    </message>
+    <message>
+        <source>Show Passphrase</source>
+        <translation>Passphrase anzeigen</translation>
+    </message>
+    <message>
+        <source>Encrypts backups with a key stored only on this device. Other devices will not be able to read them.</source>
+        <translation>Verschlüsselt Sicherungen mit einem nur auf diesem Gerät gespeicherten Schlüssel. Andere Geräte können sie nicht lesen.</translation>
+    </message>
+    <message>
+        <source>Connect &amp; Sync</source>
+        <translation>Verbinden &amp; synchronisieren</translation>
+    </message>
+    <message>
+        <source>Start Encrypted Sync</source>
+        <translation>Verschlüsselte Synchronisierung starten</translation>
+    </message>
+    <message>
         <source>Disable Sync</source>
         <translation>Synchronisierung deaktivieren</translation>
     </message>
     <message>
         <source>Delete Remote Data…</source>
         <translation>Remote-Daten löschen…</translation>
-    </message>
-    <message>
-        <source>This device already has a sync vault (join with existing passphrase)</source>
-        <translation>Dieses Gerät hat bereits einen Synchronisierungstresor (mit vorhandener Passphrase beitreten)</translation>
     </message>
     <message>
         <source>Existing sync passphrase</source>
@@ -3227,14 +3326,6 @@
     <message>
         <source>Setup failed: %1</source>
         <translation>Einrichtung fehlgeschlagen: %1</translation>
-    </message>
-    <message>
-        <source>Join Vault</source>
-        <translation>Tresor beitreten</translation>
-    </message>
-    <message>
-        <source>Create Vault</source>
-        <translation>Tresor erstellen</translation>
     </message>
     <message>
         <source>Use Device Key Instead</source>
@@ -4186,6 +4277,42 @@
     <message>
         <source>Never</source>
         <translation>Nie</translation>
+    </message>
+    <message>
+        <source>Could not reach the sync server. Changes will sync when you are back online.</source>
+        <translation>Sync-Server nicht erreichbar. Änderungen werden synchronisiert, sobald Sie wieder online sind.</translation>
+    </message>
+    <message>
+        <source>Could not read the sync encryption key from the OS keychain.</source>
+        <translation>Der Sync-Verschlüsselungsschlüssel konnte nicht aus dem System-Schlüsselbund gelesen werden.</translation>
+    </message>
+    <message>
+        <source>Local sync metadata is incomplete. Disable sync on this device and reconnect with your passphrase.</source>
+        <translation>Lokale Sync-Metadaten sind unvollständig. Deaktivieren Sie die Synchronisierung auf diesem Gerät und verbinden Sie sich erneut mit Ihrer Passphrase.</translation>
+    </message>
+    <message>
+        <source>Encrypted sync is not enabled for this account.</source>
+        <translation>Verschlüsselte Synchronisierung ist für dieses Konto nicht aktiviert.</translation>
+    </message>
+    <message>
+        <source>Another device updated sync data at the same time. Please sync again.</source>
+        <translation>Ein anderes Gerät hat die Synchronisierungsdaten gleichzeitig aktualisiert. Bitte erneut synchronisieren.</translation>
+    </message>
+    <message>
+        <source>Sync data exceeds the maximum allowed size.</source>
+        <translation>Die Synchronisierungsdaten überschreiten die maximal zulässige Größe.</translation>
+    </message>
+    <message>
+        <source>Daily sync write limit reached. Try again later.</source>
+        <translation>Tägliches Schreiblimit für die Synchronisierung erreicht. Versuchen Sie es später erneut.</translation>
+    </message>
+    <message>
+        <source>Account sync collection limit reached.</source>
+        <translation>Sammlungslimit für die Kontosynchronisierung erreicht.</translation>
+    </message>
+    <message>
+        <source>Sync error: %1</source>
+        <translation>Synchronisierungsfehler: %1</translation>
     </message>
     <message>
         <source>Blocked by invalid organization policy</source>
@@ -5979,7 +6106,7 @@ Fehler:
     </message>
     <message>
         <source>Close</source>
-        <translation type="unfinished">Schließen</translation>
+        <translation>Schließen</translation>
     </message>
     <message>
         <source>Auth DB: %1</source>

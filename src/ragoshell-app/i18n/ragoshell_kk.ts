@@ -316,6 +316,10 @@
         <translation>Сақталмаған скрипттерді қалпына келтіру…</translation>
     </message>
     <message>
+        <source>Cloud &amp; Sync…</source>
+        <translation>Бұлт және синхрондау…</translation>
+    </message>
+    <message>
         <source>Preferences…</source>
         <translation>Параметрлер…</translation>
     </message>
@@ -439,6 +443,10 @@
         <translation>Сервер мониторы</translation>
     </message>
     <message>
+        <source>Sync Now</source>
+        <translation>Қазір синхрондау</translation>
+    </message>
+    <message>
         <source>Keyboard Shortcuts</source>
         <translation>Тіркесімдер</translation>
     </message>
@@ -482,6 +490,14 @@
         <source>No unsaved scripts</source>
         <translation>Сақталмаған скрипттер жоқ</translation>
     </message>
+    <message>
+        <source>Set up encrypted sync first</source>
+        <translation>Алдымен шифрланған синхрондауды баптаңыз</translation>
+    </message>
+    <message>
+        <source>Sign in to your cloud account first</source>
+        <translation>Алдымен бұлттық тіркелгіңізге кіріңіз</translation>
+    </message>
 </context>
 <context>
     <name>AppBar</name>
@@ -502,6 +518,50 @@
         <translation>Монитор</translation>
     </message>
     <message>
+        <source>Syncing…</source>
+        <translation>Синхрондалуда…</translation>
+    </message>
+    <message>
+        <source>Sync</source>
+        <translation>Синхрондау</translation>
+    </message>
+    <message>
+        <source>Set Up Sync</source>
+        <translation>Синхрондауды баптау</translation>
+    </message>
+    <message>
+        <source>Cloud &amp; Sync</source>
+        <translation>Бұлт және синхрондау</translation>
+    </message>
+    <message>
+        <source>Set Up Sync…</source>
+        <translation>Синхрондауды баптау…</translation>
+    </message>
+    <message>
+        <source>Complete Sign-In…</source>
+        <translation>Кіруді аяқтау…</translation>
+    </message>
+    <message>
+        <source>Set Up Encrypted Sync…</source>
+        <translation>Шифрланған синхрондауды баптау…</translation>
+    </message>
+    <message>
+        <source>Sync Now</source>
+        <translation>Қазір синхрондау</translation>
+    </message>
+    <message>
+        <source>Sync needs attention</source>
+        <translation>Синхрондау назар аударуды қажет етеді</translation>
+    </message>
+    <message>
+        <source>Last synced: %1</source>
+        <translation>Соңғы синхрондау: %1</translation>
+    </message>
+    <message>
+        <source>Cloud &amp; Sync…</source>
+        <translation>Бұлт және синхрондау…</translation>
+    </message>
+    <message>
         <source>Theme</source>
         <translation>Тақырып</translation>
     </message>
@@ -520,6 +580,17 @@
     <message>
         <source>More</source>
         <translation>Көбірек</translation>
+    </message>
+</context>
+<context>
+    <name>CloudSyncDialog</name>
+    <message>
+        <source>Cloud &amp; Sync</source>
+        <translation>Бұлт және синхрондау</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Жабу</translation>
     </message>
 </context>
 <context>
@@ -3128,28 +3199,20 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Account</source>
-        <translation>Есептік жазба</translation>
-    </message>
-    <message>
-        <source>Registered device</source>
-        <translation>Тіркелген құрылғы</translation>
-    </message>
-    <message>
-        <source>Encrypted sync</source>
-        <translation>Шифрланған синхрондау</translation>
-    </message>
-    <message>
-        <source>On · %1</source>
-        <translation>Қосулы · %1</translation>
-    </message>
-    <message>
         <source>Off</source>
         <translation type="unfinished">Өшірулі</translation>
     </message>
     <message>
         <source>ENCRYPTED SYNC</source>
         <translation>ШИФРЛАНҒАН СИНХРОНДАУ</translation>
+    </message>
+    <message>
+        <source>Device: %1</source>
+        <translation>Құрылғы: %1</translation>
+    </message>
+    <message>
+        <source>Last synced: %1</source>
+        <translation>Соңғы синхрондау: %1</translation>
     </message>
     <message>
         <source>Sync data leaves this device only as client-encrypted ciphertext. The server never sees your passphrase, keys, or plain settings.</source>
@@ -3188,16 +3251,52 @@
         <translation>Шифрланған синхрондауды баптау…</translation>
     </message>
     <message>
+        <source>Advanced</source>
+        <translation>Қосымша</translation>
+    </message>
+    <message>
+        <source>New Sync Passphrase</source>
+        <translation>Жаңа синхрондау құпиясөзі</translation>
+    </message>
+    <message>
+        <source>Use Existing Passphrase</source>
+        <translation>Бар құпиясөзді пайдалану</translation>
+    </message>
+    <message>
+        <source>Enter the sync passphrase you already created on another device.</source>
+        <translation>Басқа құрылғыда бұрын жасалған синхрондау құпиясөзін енгізіңіз.</translation>
+    </message>
+    <message>
+        <source>Choose a passphrase (at least 8 characters) to encrypt your sync data. Enter this same passphrase on your other devices.</source>
+        <translation>Синхрондау деректерін шифрлау үшін кемінде 8 таңбадан тұратын құпиясөз таңдаңыз. Басқа құрылғыларыңызда да осы құпиясөзді енгізіңіз.</translation>
+    </message>
+    <message>
+        <source>Hide Passphrase</source>
+        <translation>Құпиясөзді жасыру</translation>
+    </message>
+    <message>
+        <source>Show Passphrase</source>
+        <translation>Құпиясөзді көрсету</translation>
+    </message>
+    <message>
+        <source>Encrypts backups with a key stored only on this device. Other devices will not be able to read them.</source>
+        <translation>Сақтық көшірмелерді тек осы құрылғыда сақталатын кілтпен шифрлайды. Басқа құрылғылар оларды оқи алмайды.</translation>
+    </message>
+    <message>
+        <source>Connect &amp; Sync</source>
+        <translation>Қосылу және синхрондау</translation>
+    </message>
+    <message>
+        <source>Start Encrypted Sync</source>
+        <translation>Шифрланған синхрондауды бастау</translation>
+    </message>
+    <message>
         <source>Disable Sync</source>
         <translation>Синхрондауды өшіру</translation>
     </message>
     <message>
         <source>Delete Remote Data…</source>
         <translation>Қашықтағы деректерді жою…</translation>
-    </message>
-    <message>
-        <source>This device already has a sync vault (join with existing passphrase)</source>
-        <translation>Бұл құрылғыда синхрондау қоймасы бар (бар құпия фразамен қосылу)</translation>
     </message>
     <message>
         <source>Existing sync passphrase</source>
@@ -3226,14 +3325,6 @@
     <message>
         <source>Setup failed: %1</source>
         <translation>Баптау сәтсіз аяқталды: %1</translation>
-    </message>
-    <message>
-        <source>Join Vault</source>
-        <translation>Қоймаға қосылу</translation>
-    </message>
-    <message>
-        <source>Create Vault</source>
-        <translation>Қойма жасау</translation>
     </message>
     <message>
         <source>Use Device Key Instead</source>
@@ -4185,6 +4276,42 @@
     <message>
         <source>Never</source>
         <translation>Ешқашан</translation>
+    </message>
+    <message>
+        <source>Could not reach the sync server. Changes will sync when you are back online.</source>
+        <translation>Синхрондау серверіне қосылу мүмкін болмады. Желіге қосылғанда өзгерістер синхрондалады.</translation>
+    </message>
+    <message>
+        <source>Could not read the sync encryption key from the OS keychain.</source>
+        <translation>Синхрондау шифрлау кілтін жүйелік кілттер тізбегінен оқу мүмкін болмады.</translation>
+    </message>
+    <message>
+        <source>Local sync metadata is incomplete. Disable sync on this device and reconnect with your passphrase.</source>
+        <translation>Жергілікті синхрондау метадеректері толық емес. Бұл құрылғыда синхрондауды өшіріп, құпиясөзбен қайта қосылыңыз.</translation>
+    </message>
+    <message>
+        <source>Encrypted sync is not enabled for this account.</source>
+        <translation>Бұл тіркелгі үшін шифрланған синхрондау қосылмаған.</translation>
+    </message>
+    <message>
+        <source>Another device updated sync data at the same time. Please sync again.</source>
+        <translation>Басқа құрылғы синхрондау деректерін бір уақытта жаңартты. Қайта синхрондаңыз.</translation>
+    </message>
+    <message>
+        <source>Sync data exceeds the maximum allowed size.</source>
+        <translation>Синхрондау деректері рұқсат етілген ең үлкен өлшемнен асып кетті.</translation>
+    </message>
+    <message>
+        <source>Daily sync write limit reached. Try again later.</source>
+        <translation>Күндізгі синхрондау жазу шегіне жетті. Кейінірек қайталап көріңіз.</translation>
+    </message>
+    <message>
+        <source>Account sync collection limit reached.</source>
+        <translation>Тіркелгінің синхрондау жинақтары шегіне жетті.</translation>
+    </message>
+    <message>
+        <source>Sync error: %1</source>
+        <translation>Синхрондау қатесі: %1</translation>
     </message>
     <message>
         <source>Blocked by invalid organization policy</source>
@@ -5973,7 +6100,7 @@ Error:
     </message>
     <message>
         <source>Close</source>
-        <translation type="unfinished">Жабу</translation>
+        <translation>Жабу</translation>
     </message>
     <message>
         <source>Auth DB: %1</source>

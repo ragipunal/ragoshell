@@ -22,11 +22,35 @@ QtObject {
             harness.app.openPreferences("mcp")
         else if (viewName === "prefs-account-code") {
             CloudService.previewDebugState(1)
-            harness.app.openPreferences()
+            harness.app.openPreferences("account")
         }
         else if (viewName === "prefs-account-pro") {
             CloudService.previewDebugState(2)
-            harness.app.openPreferences()
+            harness.app.openPreferences("account")
+        }
+        else if (viewName === "prefs-account-sync") {
+            CloudService.previewDebugState(3)
+            harness.app.openPreferences("account")
+        }
+        else if (viewName === "cloud-sync") {
+            CloudService.previewDebugState(0)
+            harness.app.openCloudSync(false)
+        }
+        else if (viewName === "cloud-sync-code") {
+            CloudService.previewDebugState(1)
+            harness.app.openCloudSync(false)
+        }
+        else if (viewName === "cloud-sync-pro") {
+            CloudService.previewDebugState(2)
+            harness.app.openCloudSync(true)
+        }
+        else if (viewName === "cloud-sync-active") {
+            CloudService.previewDebugState(3)
+            harness.app.openCloudSync(false)
+        }
+        else if (viewName === "sync-menu") {
+            CloudService.previewDebugState(3)
+            harness.appBar.openSyncMenuDebug()
         }
         else if (viewName === "about")
             harness.app.openAbout()

@@ -316,6 +316,10 @@
         <translation>बिना सहेजी स्क्रिप्ट पुनर्प्राप्त करें…</translation>
     </message>
     <message>
+        <source>Cloud &amp; Sync…</source>
+        <translation>क्लाउड और सिंक…</translation>
+    </message>
+    <message>
         <source>Preferences…</source>
         <translation>प्राथमिकताएँ…</translation>
     </message>
@@ -439,6 +443,10 @@
         <translation>सर्वर मॉनिटर</translation>
     </message>
     <message>
+        <source>Sync Now</source>
+        <translation>अभी सिंक करें</translation>
+    </message>
+    <message>
         <source>Keyboard Shortcuts</source>
         <translation>कीबोर्ड शॉर्टकट</translation>
     </message>
@@ -482,6 +490,14 @@
         <source>No unsaved scripts</source>
         <translation>कोई अनसेव्ड स्क्रिप्ट नहीं</translation>
     </message>
+    <message>
+        <source>Set up encrypted sync first</source>
+        <translation>पहले एन्क्रिप्टेड सिंक सेट अप करें</translation>
+    </message>
+    <message>
+        <source>Sign in to your cloud account first</source>
+        <translation>पहले अपने क्लाउड खाते में साइन इन करें</translation>
+    </message>
 </context>
 <context>
     <name>AppBar</name>
@@ -502,6 +518,50 @@
         <translation>मॉनिटर</translation>
     </message>
     <message>
+        <source>Syncing…</source>
+        <translation>सिंक हो रहा है…</translation>
+    </message>
+    <message>
+        <source>Sync</source>
+        <translation>सिंक</translation>
+    </message>
+    <message>
+        <source>Set Up Sync</source>
+        <translation>सिंक सेट करें</translation>
+    </message>
+    <message>
+        <source>Cloud &amp; Sync</source>
+        <translation>क्लाउड और सिंक</translation>
+    </message>
+    <message>
+        <source>Set Up Sync…</source>
+        <translation>सिंक सेट अप करें…</translation>
+    </message>
+    <message>
+        <source>Complete Sign-In…</source>
+        <translation>साइन-इन पूरा करें…</translation>
+    </message>
+    <message>
+        <source>Set Up Encrypted Sync…</source>
+        <translation>एन्क्रिप्टेड सिंक सेट अप करें…</translation>
+    </message>
+    <message>
+        <source>Sync Now</source>
+        <translation>अभी सिंक करें</translation>
+    </message>
+    <message>
+        <source>Sync needs attention</source>
+        <translation>सिंक पर ध्यान देने की आवश्यकता है</translation>
+    </message>
+    <message>
+        <source>Last synced: %1</source>
+        <translation>अंतिम सिंक: %1</translation>
+    </message>
+    <message>
+        <source>Cloud &amp; Sync…</source>
+        <translation>क्लाउड और सिंक…</translation>
+    </message>
+    <message>
         <source>Theme</source>
         <translation>थीम</translation>
     </message>
@@ -520,6 +580,17 @@
     <message>
         <source>More</source>
         <translation>और</translation>
+    </message>
+</context>
+<context>
+    <name>CloudSyncDialog</name>
+    <message>
+        <source>Cloud &amp; Sync</source>
+        <translation>क्लाउड और सिंक</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>बंद करें</translation>
     </message>
 </context>
 <context>
@@ -3129,28 +3200,20 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Account</source>
-        <translation>खाता</translation>
-    </message>
-    <message>
-        <source>Registered device</source>
-        <translation>पंजीकृत डिवाइस</translation>
-    </message>
-    <message>
-        <source>Encrypted sync</source>
-        <translation>एन्क्रिप्टेड सिंक</translation>
-    </message>
-    <message>
-        <source>On · %1</source>
-        <translation>चालू · %1</translation>
-    </message>
-    <message>
         <source>Off</source>
         <translation type="unfinished">बंद</translation>
     </message>
     <message>
         <source>ENCRYPTED SYNC</source>
         <translation>एन्क्रिप्टेड सिंक</translation>
+    </message>
+    <message>
+        <source>Device: %1</source>
+        <translation>डिवाइस: %1</translation>
+    </message>
+    <message>
+        <source>Last synced: %1</source>
+        <translation>अंतिम सिंक: %1</translation>
     </message>
     <message>
         <source>Sync data leaves this device only as client-encrypted ciphertext. The server never sees your passphrase, keys, or plain settings.</source>
@@ -3189,16 +3252,52 @@
         <translation>एन्क्रिप्टेड सिंक सेट अप करें…</translation>
     </message>
     <message>
+        <source>Advanced</source>
+        <translation>उन्नत</translation>
+    </message>
+    <message>
+        <source>New Sync Passphrase</source>
+        <translation>नया सिंक पासफ़्रेज़</translation>
+    </message>
+    <message>
+        <source>Use Existing Passphrase</source>
+        <translation>मौजूदा पासफ़्रेज़ का उपयोग करें</translation>
+    </message>
+    <message>
+        <source>Enter the sync passphrase you already created on another device.</source>
+        <translation>वह सिंक पासफ़्रेज़ दर्ज करें जो आपने पहले किसी अन्य डिवाइस पर बनाया था।</translation>
+    </message>
+    <message>
+        <source>Choose a passphrase (at least 8 characters) to encrypt your sync data. Enter this same passphrase on your other devices.</source>
+        <translation>अपने सिंक डेटा को एन्क्रिप्ट करने के लिए कम से कम 8 अक्षरों का पासफ़्रेज़ चुनें। अपने अन्य डिवाइस पर भी यही पासफ़्रेज़ दर्ज करें।</translation>
+    </message>
+    <message>
+        <source>Hide Passphrase</source>
+        <translation>पासफ़्रेज़ छिपाएँ</translation>
+    </message>
+    <message>
+        <source>Show Passphrase</source>
+        <translation>पासफ़्रेज़ दिखाएँ</translation>
+    </message>
+    <message>
+        <source>Encrypts backups with a key stored only on this device. Other devices will not be able to read them.</source>
+        <translation>केवल इस डिवाइस पर संग्रहीत कुंजी से बैकअप एन्क्रिप्ट करता है। अन्य डिवाइस उन्हें पढ़ नहीं पाएंगे।</translation>
+    </message>
+    <message>
+        <source>Connect &amp; Sync</source>
+        <translation>कनेक्ट और सिंक करें</translation>
+    </message>
+    <message>
+        <source>Start Encrypted Sync</source>
+        <translation>एन्क्रिप्टेड सिंक शुरू करें</translation>
+    </message>
+    <message>
         <source>Disable Sync</source>
         <translation>सिंक बंद करें</translation>
     </message>
     <message>
         <source>Delete Remote Data…</source>
         <translation>रिमोट डेटा हटाएँ…</translation>
-    </message>
-    <message>
-        <source>This device already has a sync vault (join with existing passphrase)</source>
-        <translation>इस डिवाइस में पहले से एक सिंक वॉल्ट है (मौजूदा पासफ़्रेज़ से जुड़ें)</translation>
     </message>
     <message>
         <source>Existing sync passphrase</source>
@@ -3227,14 +3326,6 @@
     <message>
         <source>Setup failed: %1</source>
         <translation>सेटअप विफल: %1</translation>
-    </message>
-    <message>
-        <source>Join Vault</source>
-        <translation>वॉल्ट से जुड़ें</translation>
-    </message>
-    <message>
-        <source>Create Vault</source>
-        <translation>वॉल्ट बनाएँ</translation>
     </message>
     <message>
         <source>Use Device Key Instead</source>
@@ -4186,6 +4277,42 @@
     <message>
         <source>Never</source>
         <translation>कभी नहीं</translation>
+    </message>
+    <message>
+        <source>Could not reach the sync server. Changes will sync when you are back online.</source>
+        <translation>सिंक सर्वर तक नहीं पहुँचा जा सका। ऑनलाइन वापस आने पर बदलाव सिंक हो जाएंगे।</translation>
+    </message>
+    <message>
+        <source>Could not read the sync encryption key from the OS keychain.</source>
+        <translation>सिस्टम कीचेन से सिंक एन्क्रिप्शन कुंजी पढ़ी नहीं जा सकी।</translation>
+    </message>
+    <message>
+        <source>Local sync metadata is incomplete. Disable sync on this device and reconnect with your passphrase.</source>
+        <translation>स्थानीय सिंक मेटाडेटा अधूरा है। इस डिवाइस पर सिंक अक्षम करें और अपने पासफ़्रेज़ से पुनः जुड़ें।</translation>
+    </message>
+    <message>
+        <source>Encrypted sync is not enabled for this account.</source>
+        <translation>इस खाते के लिए एन्क्रिप्टेड सिंक सक्षम नहीं है।</translation>
+    </message>
+    <message>
+        <source>Another device updated sync data at the same time. Please sync again.</source>
+        <translation>किसी अन्य डिवाइस ने उसी समय सिंक डेटा अपडेट किया। कृपया फिर से सिंक करें।</translation>
+    </message>
+    <message>
+        <source>Sync data exceeds the maximum allowed size.</source>
+        <translation>सिंक डेटा अनुमत अधिकतम आकार से अधिक है।</translation>
+    </message>
+    <message>
+        <source>Daily sync write limit reached. Try again later.</source>
+        <translation>दैनिक सिंक लेखन सीमा पूरी हो गई है। बाद में पुनः प्रयास करें।</translation>
+    </message>
+    <message>
+        <source>Account sync collection limit reached.</source>
+        <translation>खाता सिंक संग्रह सीमा पूरी हो गई है।</translation>
+    </message>
+    <message>
+        <source>Sync error: %1</source>
+        <translation>सिंक त्रुटि: %1</translation>
     </message>
     <message>
         <source>Blocked by invalid organization policy</source>
@@ -5979,7 +6106,7 @@ Error:
     </message>
     <message>
         <source>Close</source>
-        <translation type="unfinished">बंद करें</translation>
+        <translation>बंद करें</translation>
     </message>
     <message>
         <source>Auth DB: %1</source>

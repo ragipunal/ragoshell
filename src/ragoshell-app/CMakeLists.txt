@@ -131,6 +131,7 @@ set(RAGO_QML_FILES
     qml/PreferencesSchemaSection.qml
     qml/PreferencesMcpSection.qml
     qml/PreferencesAccountSection.qml
+    qml/CloudSyncDialog.qml
     qml/MandatoryUpdateDialog.qml
     qml/AboutDialog.qml
     qml/LicensesDialog.qml

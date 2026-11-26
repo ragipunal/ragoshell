@@ -316,6 +316,10 @@
         <translation>Kaydedilmemiş Betikleri Kurtar…</translation>
     </message>
     <message>
+        <source>Cloud &amp; Sync…</source>
+        <translation>Bulut ve Eşitleme…</translation>
+    </message>
+    <message>
         <source>Preferences…</source>
         <translation>Tercihler…</translation>
     </message>
@@ -438,6 +442,10 @@
         <translation>Sunucu İzleme</translation>
     </message>
     <message>
+        <source>Sync Now</source>
+        <translation>Şimdi Eşitle</translation>
+    </message>
+    <message>
         <source>Keyboard Shortcuts</source>
         <translation>Klavye Kısayolları</translation>
     </message>
@@ -481,6 +489,14 @@
         <source>No unsaved scripts</source>
         <translation>Kaydedilmemiş betik yok</translation>
     </message>
+    <message>
+        <source>Set up encrypted sync first</source>
+        <translation>Önce şifreli eşitlemeyi kurun</translation>
+    </message>
+    <message>
+        <source>Sign in to your cloud account first</source>
+        <translation>Önce bulut hesabınızda oturum açın</translation>
+    </message>
 </context>
 <context>
     <name>AppBar</name>
@@ -501,6 +517,50 @@
         <translation>İzleme</translation>
     </message>
     <message>
+        <source>Syncing…</source>
+        <translation>Eşitleniyor…</translation>
+    </message>
+    <message>
+        <source>Sync</source>
+        <translation>Eşitle</translation>
+    </message>
+    <message>
+        <source>Set Up Sync</source>
+        <translation>Eşitlemeyi Kur</translation>
+    </message>
+    <message>
+        <source>Cloud &amp; Sync</source>
+        <translation>Bulut ve Eşitleme</translation>
+    </message>
+    <message>
+        <source>Set Up Sync…</source>
+        <translation>Eşitlemeyi Kur…</translation>
+    </message>
+    <message>
+        <source>Complete Sign-In…</source>
+        <translation>Oturum Açmayı Tamamla…</translation>
+    </message>
+    <message>
+        <source>Set Up Encrypted Sync…</source>
+        <translation>Şifreli Eşitlemeyi Kur…</translation>
+    </message>
+    <message>
+        <source>Sync Now</source>
+        <translation>Şimdi Eşitle</translation>
+    </message>
+    <message>
+        <source>Sync needs attention</source>
+        <translation>Eşitlemede sorun var</translation>
+    </message>
+    <message>
+        <source>Last synced: %1</source>
+        <translation>Son eşitleme: %1</translation>
+    </message>
+    <message>
+        <source>Cloud &amp; Sync…</source>
+        <translation>Bulut ve Eşitleme…</translation>
+    </message>
+    <message>
         <source>Theme</source>
         <translation>Tema</translation>
     </message>
@@ -519,6 +579,17 @@
     <message>
         <source>More</source>
         <translation>Diğer</translation>
+    </message>
+</context>
+<context>
+    <name>CloudSyncDialog</name>
+    <message>
+        <source>Cloud &amp; Sync</source>
+        <translation>Bulut ve Eşitleme</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Kapat</translation>
     </message>
 </context>
 <context>
@@ -3123,28 +3194,20 @@
         <translation>Varsayılana Sıfırla</translation>
     </message>
     <message>
-        <source>Account</source>
-        <translation>Hesap</translation>
-    </message>
-    <message>
-        <source>Registered device</source>
-        <translation>Kayıtlı cihaz</translation>
-    </message>
-    <message>
-        <source>Encrypted sync</source>
-        <translation>Şifreli eşitleme</translation>
-    </message>
-    <message>
-        <source>On · %1</source>
-        <translation>Açık · %1</translation>
-    </message>
-    <message>
         <source>Off</source>
         <translation>Kapalı</translation>
     </message>
     <message>
         <source>ENCRYPTED SYNC</source>
         <translation>ŞİFRELİ EŞİTLEME</translation>
+    </message>
+    <message>
+        <source>Device: %1</source>
+        <translation>Cihaz: %1</translation>
+    </message>
+    <message>
+        <source>Last synced: %1</source>
+        <translation>Son eşitleme: %1</translation>
     </message>
     <message>
         <source>Sync data leaves this device only as client-encrypted ciphertext. The server never sees your passphrase, keys, or plain settings.</source>
@@ -3183,16 +3246,52 @@
         <translation>Şifreli Eşitlemeyi Kur…</translation>
     </message>
     <message>
+        <source>Advanced</source>
+        <translation>Gelişmiş</translation>
+    </message>
+    <message>
+        <source>New Sync Passphrase</source>
+        <translation>Yeni Eşitleme Parolası</translation>
+    </message>
+    <message>
+        <source>Use Existing Passphrase</source>
+        <translation>Mevcut Parolayı Kullan</translation>
+    </message>
+    <message>
+        <source>Enter the sync passphrase you already created on another device.</source>
+        <translation>Başka bir cihazda daha önce oluşturduğunuz eşitleme parolasını girin.</translation>
+    </message>
+    <message>
+        <source>Choose a passphrase (at least 8 characters) to encrypt your sync data. Enter this same passphrase on your other devices.</source>
+        <translation>Eşitleme verilerinizi şifrelemek için en az 8 karakterli bir parola belirleyin. Diğer cihazlarınızda da aynı parolayı girin.</translation>
+    </message>
+    <message>
+        <source>Hide Passphrase</source>
+        <translation>Parolayı Gizle</translation>
+    </message>
+    <message>
+        <source>Show Passphrase</source>
+        <translation>Parolayı Göster</translation>
+    </message>
+    <message>
+        <source>Encrypts backups with a key stored only on this device. Other devices will not be able to read them.</source>
+        <translation>Yedekleri yalnızca bu cihazda saklanan bir anahtarla şifreler. Diğer cihazlar bu verileri okuyamaz.</translation>
+    </message>
+    <message>
+        <source>Connect &amp; Sync</source>
+        <translation>Bağlan ve Eşitle</translation>
+    </message>
+    <message>
+        <source>Start Encrypted Sync</source>
+        <translation>Şifreli Eşitlemeyi Başlat</translation>
+    </message>
+    <message>
         <source>Disable Sync</source>
         <translation>Eşitlemeyi Devre Dışı Bırak</translation>
     </message>
     <message>
         <source>Delete Remote Data…</source>
         <translation>Uzak Verileri Sil…</translation>
-    </message>
-    <message>
-        <source>This device already has a sync vault (join with existing passphrase)</source>
-        <translation>Bu cihazda zaten bir eşitleme kasası var (mevcut parola cümlesiyle katıl)</translation>
     </message>
     <message>
         <source>Existing sync passphrase</source>
@@ -3221,14 +3320,6 @@
     <message>
         <source>Setup failed: %1</source>
         <translation>Kurulum başarısız oldu: %1</translation>
-    </message>
-    <message>
-        <source>Join Vault</source>
-        <translation>Kasaya Katıl</translation>
-    </message>
-    <message>
-        <source>Create Vault</source>
-        <translation>Kasa Oluştur</translation>
     </message>
     <message>
         <source>Use Device Key Instead</source>
@@ -4179,6 +4270,42 @@
     <message>
         <source>Never</source>
         <translation>Hiçbir zaman</translation>
+    </message>
+    <message>
+        <source>Could not reach the sync server. Changes will sync when you are back online.</source>
+        <translation>Eşitleme sunucusuna ulaşılamadı. Çevrimiçi olduğunuzda değişiklikler eşitlenecektir.</translation>
+    </message>
+    <message>
+        <source>Could not read the sync encryption key from the OS keychain.</source>
+        <translation>Eşitleme şifreleme anahtarı işletim sistemi anahtar zincirinden okunamadı.</translation>
+    </message>
+    <message>
+        <source>Local sync metadata is incomplete. Disable sync on this device and reconnect with your passphrase.</source>
+        <translation>Yerel eşitleme üst verileri eksik. Bu cihazda eşitlemeyi kapatıp parolanızla yeniden bağlanın.</translation>
+    </message>
+    <message>
+        <source>Encrypted sync is not enabled for this account.</source>
+        <translation>Bu hesap için şifreli eşitleme etkin değil.</translation>
+    </message>
+    <message>
+        <source>Another device updated sync data at the same time. Please sync again.</source>
+        <translation>Başka bir cihaz aynı anda eşitleme verilerini güncelledi. Lütfen yeniden eşitleyin.</translation>
+    </message>
+    <message>
+        <source>Sync data exceeds the maximum allowed size.</source>
+        <translation>Eşitleme verileri izin verilen azami boyutu aşıyor.</translation>
+    </message>
+    <message>
+        <source>Daily sync write limit reached. Try again later.</source>
+        <translation>Günlük eşitleme yazma sınırına ulaşıldı. Daha sonra tekrar deneyin.</translation>
+    </message>
+    <message>
+        <source>Account sync collection limit reached.</source>
+        <translation>Hesap eşitleme koleksiyonu sınırına ulaşıldı.</translation>
+    </message>
+    <message>
+        <source>Sync error: %1</source>
+        <translation>Eşitleme hatası: %1</translation>
     </message>
     <message>
         <source>Blocked by invalid organization policy</source>

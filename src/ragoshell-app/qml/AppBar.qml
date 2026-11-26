@@ -17,9 +17,16 @@ Item {
 
     height: (Theme.touch ? 42 : 46) + SafeArea.margins.top
 
-    // Dev/CI helpers (--open-view more-menu | theme-menu).
+    // Dev/CI helpers (--open-view more-menu | theme-menu | sync-menu).
     function openMoreMenu() { moreButton.clicked() }
     function openThemeMenu() { themeButton.clicked() }
+    function openSyncMenuDebug() {
+        var anchor = syncPillButton.visible ? syncPillButton : syncIconButton
+        openSyncMenu(anchor)
+    }
+    function openSyncMenu(anchor) {
+        syncMenu.popup(anchor, anchor.width - syncMenu.width, anchor.height + 6)
+    }
 
     Rectangle {
         anchors.fill: parent
@@ -167,6 +174,89 @@ Item {
             Layout.preferredWidth: 18
         }
 
+        RagoPillButton {
+            id: syncPillButton
+            visible: bar.showName && !AppSettings.disableHttpsFeatures
+            compact: true
+            iconText: CloudService.syncBusy ? "↻" : "⇅"
+            text: CloudService.syncBusy ? qsTr("Syncing…")
+                  : (CloudService.syncActive ? qsTr("Sync") : qsTr("Set Up Sync"))
+            checked: CloudService.syncActive && CloudService.syncLastError.length === 0
+            danger: (CloudService.signedIn && CloudService.syncLastError.length > 0) || CloudService.policyInvalid
+            onClicked: bar.openSyncMenu(syncPillButton)
+        }
+
+        RagoIconButton {
+            id: syncIconButton
+            visible: !bar.showName && !AppSettings.disableHttpsFeatures
+            glyph: CloudService.syncBusy ? "↻" : "⇅"
+            size: 26
+            accent: CloudService.syncActive && CloudService.syncLastError.length === 0
+            danger: (CloudService.signedIn && CloudService.syncLastError.length > 0) || CloudService.policyInvalid
+            toolTipText: CloudService.syncActive ? qsTr("Cloud & Sync") : qsTr("Set Up Sync")
+            onClicked: bar.openSyncMenu(syncIconButton)
+        }
+
+        RagoMenu {
+            id: syncMenu
+
+            RagoMenuItem {
+                visible: !CloudService.signedIn && !CloudService.awaitingApproval
+                text: qsTr("Set Up Sync…")
+                onTriggered: bar.app.openCloudSync(false)
+            }
+
+            RagoMenuItem {
+                visible: CloudService.awaitingApproval
+                text: qsTr("Complete Sign-In…")
+                onTriggered: bar.app.openCloudSync(false)
+            }
+
+            RagoMenuItem {
+                visible: CloudService.signedIn && !CloudService.syncActive
+                enabled: false
+                text: CloudService.userEmail.length > 0 ? CloudService.userEmail : CloudService.deviceName
+            }
+
+            RagoMenuSeparator {
+                visible: CloudService.signedIn && !CloudService.syncActive
+            }
+
+            RagoMenuItem {
+                visible: CloudService.signedIn && !CloudService.syncActive
+                enabled: !CloudService.busy && CloudService.keyStoreAvailable && !CloudService.policyInvalid
+                text: qsTr("Set Up Encrypted Sync…")
+                onTriggered: bar.app.openCloudSync(true)
+            }
+
+            RagoMenuItem {
+                visible: CloudService.signedIn && CloudService.syncActive
+                enabled: !CloudService.syncBusy && !CloudService.policyInvalid
+                text: CloudService.syncBusy ? qsTr("Syncing…") : qsTr("Sync Now")
+                shortcutText: "↻"
+                onTriggered: CloudService.syncNow()
+            }
+
+            RagoMenuItem {
+                visible: CloudService.signedIn && CloudService.syncActive
+                enabled: false
+                danger: CloudService.syncLastError.length > 0
+                text: CloudService.syncLastError.length > 0
+                      ? qsTr("Sync needs attention")
+                      : qsTr("Last synced: %1").arg(CloudService.syncLastSyncText)
+            }
+
+            RagoMenuSeparator {
+                visible: CloudService.signedIn && CloudService.syncActive
+            }
+
+            RagoMenuItem {
+                visible: CloudService.signedIn
+                text: qsTr("Cloud & Sync…")
+                onTriggered: bar.app.openCloudSync(false)
+            }
+        }
+
         RagoIconButton {
             id: themeButton
             glyph: "◐"
@@ -210,6 +300,7 @@ Item {
                 CommandMenuItem { actions: bar.actions; commandId: "tools.monitor"; visible: bar.compact }
                 CommandMenuItem { actions: bar.actions; commandId: "view.log" }
                 RagoMenuSeparator {}
+                CommandMenuItem { actions: bar.actions; commandId: "file.cloudSync" }
                 CommandMenuItem { actions: bar.actions; commandId: "file.preferences" }
                 CommandMenuItem { actions: bar.actions; commandId: "help.shortcuts" }
                 CommandMenuItem { actions: bar.actions; commandId: "help.logFolder" }

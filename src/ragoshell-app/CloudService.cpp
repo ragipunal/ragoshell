@@ -65,7 +65,7 @@ namespace RagoShell
     bool CloudService::signedIn() const
     {
         if (_debugMode != 0)
-            return _debugMode == 2;
+            return _debugMode >= 2;
         return _client && _client->isSignedIn();
     }
 
@@ -107,7 +107,7 @@ namespace RagoShell
 
     QString CloudService::deviceIdShort() const
     {
-        if (_debugMode == 2)
+        if (_debugMode >= 2)
             return QStringLiteral("7c9e6679");
         const QString full = deviceId();
         return full.isEmpty() ? QString() : full.left(8);
@@ -115,7 +115,7 @@ namespace RagoShell
 
     QString CloudService::userEmail() const
     {
-        if (_debugMode == 2)
+        if (_debugMode >= 2)
             return QStringLiteral("dba@example.org");
         return _client ? _client->userEmail() : QString();
     }
@@ -158,6 +158,8 @@ namespace RagoShell
 
     QString CloudService::statusId() const
     {
+        if (_debugMode >= 2)
+            return QStringLiteral("active");
         if (!_client || !_client->isSignedIn())
             return QStringLiteral("none");
         if (_client->isOfflineGraceActive())
@@ -180,6 +182,8 @@ namespace RagoShell
 
     QString CloudService::statusLabel() const
     {
+        if (_debugMode >= 2)
+            return tr("Active");
         if (!_client || !_client->isSignedIn())
             return tr("Not signed in");
         if (_client->isOfflineGraceActive())
@@ -207,14 +211,14 @@ namespace RagoShell
 
     bool CloudService::syncEnabled() const
     {
-        if (_debugMode == 2)
+        if (_debugMode >= 2)
             return true;
         return _client && _client->isSignedIn() && _client->features().sync;
     }
 
     bool CloudService::hostedBridgeEnabled() const
     {
-        if (_debugMode == 2)
+        if (_debugMode >= 2)
             return true;
         // ValidOnline and unexpired only — in grace or past exp the gateway would
         // deny anyway, so the channel stays hidden (8.5 security review, finding 5).
@@ -377,6 +381,8 @@ namespace RagoShell
 
     bool CloudService::syncActive() const
     {
+        if (_debugMode == 3)
+            return true;
         return _sync && _sync->syncEnabled();
     }
 
@@ -387,11 +393,15 @@ namespace RagoShell
 
     bool CloudService::syncConfigured() const
     {
+        if (_debugMode == 3)
+            return true;
         return _sync && _sync->hasConfiguredKey();
     }
 
     QString CloudService::syncStateText() const
     {
+        if (_debugMode == 3)
+            return tr("Ready");
         if (!_sync || !_sync->syncEnabled())
             return tr("Off");
         switch (_sync->state())
@@ -407,6 +417,8 @@ namespace RagoShell
 
     QString CloudService::syncLastSyncText() const
     {
+        if (_debugMode == 3)
+            return QLocale().toString(QDateTime::currentDateTime(), QLocale::ShortFormat);
         const qint64 ms = _sync ? _sync->lastSyncAtMs() : 0;
         if (ms <= 0)
             return tr("Never");
@@ -416,16 +428,51 @@ namespace RagoShell
 
     QString CloudService::syncLastError() const
     {
-        return _sync ? _sync->lastError() : QString();
+        const QString code = _sync ? _sync->lastError() : QString();
+        if (code.isEmpty())
+            return QString();
+        if (code == QLatin1String("offline"))
+            return tr("Could not reach the sync server. Changes will sync when you are back online.");
+        if (code == QLatin1String("unauthorized"))
+            return tr("Your cloud session has ended. Local connections remain unaffected.");
+        if (code == QLatin1String("policy_invalid"))
+            return tr("Cloud features are blocked because the enterprise policy file is invalid.");
+        if (code == QLatin1String("https_disabled"))
+            return tr("Cloud features are disabled in configuration.");
+        if (code == QLatin1String("unsafe_api_url"))
+            return tr("Cloud service URL failed security validation.");
+        if (code == QLatin1String("sync_key_locked"))
+            return tr("Could not read the sync encryption key from the OS keychain.");
+        if (code == QLatin1String("kdf_params_missing"))
+            return tr("Local sync metadata is incomplete. Disable sync on this device and reconnect with your passphrase.");
+        if (code == QLatin1String("sync_entitlement_required"))
+            return tr("Encrypted sync is not enabled for this account.");
+        if (code == QLatin1String("sync_conflict"))
+            return tr("Another device updated sync data at the same time. Please sync again.");
+        if (code == QLatin1String("response_too_large") || code == QLatin1String("sync_collection_too_large"))
+            return tr("Sync data exceeds the maximum allowed size.");
+        if (code == QLatin1String("put_http_429"))
+            return tr("Daily sync write limit reached. Try again later.");
+        if (code == QLatin1String("put_http_409") || code == QLatin1String("sync_collection_limit_reached"))
+            return tr("Account sync collection limit reached.");
+        return tr("Sync error: %1").arg(code);
     }
 
     QStringList CloudService::syncCollections() const
     {
+        if (_debugMode == 3) {
+            return {QStringLiteral("connections"),
+                    QStringLiteral("snippets"),
+                    QStringLiteral("preferences"),
+                    QStringLiteral("query_history")};
+        }
         return _sync ? _sync->enabledCollections() : QStringList();
     }
 
     bool CloudService::syncIncludePasswords() const
     {
+        if (_debugMode == 3)
+            return true;
         return _sync && _sync->passwordsIncluded();
     }
 

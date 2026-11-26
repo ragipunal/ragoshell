@@ -316,6 +316,10 @@
         <translation>未保存のスクリプトを復元…</translation>
     </message>
     <message>
+        <source>Cloud &amp; Sync…</source>
+        <translation>クラウドと同期…</translation>
+    </message>
+    <message>
         <source>Preferences…</source>
         <translation>環境設定…</translation>
     </message>
@@ -438,6 +442,10 @@
         <translation>サーバーモニター</translation>
     </message>
     <message>
+        <source>Sync Now</source>
+        <translation>今すぐ同期</translation>
+    </message>
+    <message>
         <source>Keyboard Shortcuts</source>
         <translation>キーボードショートカット</translation>
     </message>
@@ -481,6 +489,14 @@
         <source>No unsaved scripts</source>
         <translation>未保存のスクリプトはありません</translation>
     </message>
+    <message>
+        <source>Set up encrypted sync first</source>
+        <translation>先に暗号化同期を設定してください</translation>
+    </message>
+    <message>
+        <source>Sign in to your cloud account first</source>
+        <translation>先にクラウドアカウントへサインインしてください</translation>
+    </message>
 </context>
 <context>
     <name>AppBar</name>
@@ -501,6 +517,50 @@
         <translation>モニター</translation>
     </message>
     <message>
+        <source>Syncing…</source>
+        <translation>同期中…</translation>
+    </message>
+    <message>
+        <source>Sync</source>
+        <translation>同期</translation>
+    </message>
+    <message>
+        <source>Set Up Sync</source>
+        <translation>同期を設定</translation>
+    </message>
+    <message>
+        <source>Cloud &amp; Sync</source>
+        <translation>クラウドと同期</translation>
+    </message>
+    <message>
+        <source>Set Up Sync…</source>
+        <translation>同期を設定…</translation>
+    </message>
+    <message>
+        <source>Complete Sign-In…</source>
+        <translation>サインインを完了…</translation>
+    </message>
+    <message>
+        <source>Set Up Encrypted Sync…</source>
+        <translation>暗号化同期を設定…</translation>
+    </message>
+    <message>
+        <source>Sync Now</source>
+        <translation>今すぐ同期</translation>
+    </message>
+    <message>
+        <source>Sync needs attention</source>
+        <translation>同期の確認が必要です</translation>
+    </message>
+    <message>
+        <source>Last synced: %1</source>
+        <translation>最終同期: %1</translation>
+    </message>
+    <message>
+        <source>Cloud &amp; Sync…</source>
+        <translation>クラウドと同期…</translation>
+    </message>
+    <message>
         <source>Theme</source>
         <translation>テーマ</translation>
     </message>
@@ -519,6 +579,17 @@
     <message>
         <source>More</source>
         <translation>その他</translation>
+    </message>
+</context>
+<context>
+    <name>CloudSyncDialog</name>
+    <message>
+        <source>Cloud &amp; Sync</source>
+        <translation>クラウドと同期</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>閉じる</translation>
     </message>
 </context>
 <context>
@@ -3123,28 +3194,20 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Account</source>
-        <translation>アカウント</translation>
-    </message>
-    <message>
-        <source>Registered device</source>
-        <translation>登録済みデバイス</translation>
-    </message>
-    <message>
-        <source>Encrypted sync</source>
-        <translation>暗号化同期</translation>
-    </message>
-    <message>
-        <source>On · %1</source>
-        <translation>オン · %1</translation>
-    </message>
-    <message>
         <source>Off</source>
         <translation type="unfinished">オフ</translation>
     </message>
     <message>
         <source>ENCRYPTED SYNC</source>
         <translation>暗号化同期</translation>
+    </message>
+    <message>
+        <source>Device: %1</source>
+        <translation>デバイス: %1</translation>
+    </message>
+    <message>
+        <source>Last synced: %1</source>
+        <translation>最終同期: %1</translation>
     </message>
     <message>
         <source>Sync data leaves this device only as client-encrypted ciphertext. The server never sees your passphrase, keys, or plain settings.</source>
@@ -3183,16 +3246,52 @@
         <translation>暗号化同期を設定…</translation>
     </message>
     <message>
+        <source>Advanced</source>
+        <translation>詳細</translation>
+    </message>
+    <message>
+        <source>New Sync Passphrase</source>
+        <translation>新しい同期パスフレーズ</translation>
+    </message>
+    <message>
+        <source>Use Existing Passphrase</source>
+        <translation>既存のパスフレーズを使用</translation>
+    </message>
+    <message>
+        <source>Enter the sync passphrase you already created on another device.</source>
+        <translation>別のデバイスで作成済みの同期パスフレーズを入力してください。</translation>
+    </message>
+    <message>
+        <source>Choose a passphrase (at least 8 characters) to encrypt your sync data. Enter this same passphrase on your other devices.</source>
+        <translation>同期データを暗号化するパスフレーズ（8文字以上）を設定してください。他のデバイスでも同じパスフレーズを入力します。</translation>
+    </message>
+    <message>
+        <source>Hide Passphrase</source>
+        <translation>パスフレーズを隠す</translation>
+    </message>
+    <message>
+        <source>Show Passphrase</source>
+        <translation>パスフレーズを表示</translation>
+    </message>
+    <message>
+        <source>Encrypts backups with a key stored only on this device. Other devices will not be able to read them.</source>
+        <translation>このデバイスのみに保存される鍵でバックアップを暗号化します。他のデバイスからは復号できません。</translation>
+    </message>
+    <message>
+        <source>Connect &amp; Sync</source>
+        <translation>接続して同期</translation>
+    </message>
+    <message>
+        <source>Start Encrypted Sync</source>
+        <translation>暗号化同期を開始</translation>
+    </message>
+    <message>
         <source>Disable Sync</source>
         <translation>同期を無効化</translation>
     </message>
     <message>
         <source>Delete Remote Data…</source>
         <translation>リモートデータを削除…</translation>
-    </message>
-    <message>
-        <source>This device already has a sync vault (join with existing passphrase)</source>
-        <translation>このデバイスには同期保管庫がすでにあります (既存のパスフレーズで参加)</translation>
     </message>
     <message>
         <source>Existing sync passphrase</source>
@@ -3221,14 +3320,6 @@
     <message>
         <source>Setup failed: %1</source>
         <translation>設定に失敗しました: %1</translation>
-    </message>
-    <message>
-        <source>Join Vault</source>
-        <translation>保管庫に参加</translation>
-    </message>
-    <message>
-        <source>Create Vault</source>
-        <translation>保管庫を作成</translation>
     </message>
     <message>
         <source>Use Device Key Instead</source>
@@ -4179,6 +4270,42 @@
     <message>
         <source>Never</source>
         <translation>なし</translation>
+    </message>
+    <message>
+        <source>Could not reach the sync server. Changes will sync when you are back online.</source>
+        <translation>同期サーバーに接続できませんでした。オンラインに戻ると変更が同期されます。</translation>
+    </message>
+    <message>
+        <source>Could not read the sync encryption key from the OS keychain.</source>
+        <translation>OSのキーチェーンから同期暗号化キーを読み取れませんでした。</translation>
+    </message>
+    <message>
+        <source>Local sync metadata is incomplete. Disable sync on this device and reconnect with your passphrase.</source>
+        <translation>ローカルの同期メタデータが不完全です。このデバイスで同期を無効にし、パスフレーズで再接続してください。</translation>
+    </message>
+    <message>
+        <source>Encrypted sync is not enabled for this account.</source>
+        <translation>このアカウントでは暗号化同期が有効になっていません。</translation>
+    </message>
+    <message>
+        <source>Another device updated sync data at the same time. Please sync again.</source>
+        <translation>別のデバイスが同時に同期データを更新しました。もう一度同期してください。</translation>
+    </message>
+    <message>
+        <source>Sync data exceeds the maximum allowed size.</source>
+        <translation>同期データが許可されている最大サイズを超えています。</translation>
+    </message>
+    <message>
+        <source>Daily sync write limit reached. Try again later.</source>
+        <translation>1日の同期書き込み上限に達しました。しばらくしてから再試行してください。</translation>
+    </message>
+    <message>
+        <source>Account sync collection limit reached.</source>
+        <translation>アカウントの同期コレクション上限に達しました。</translation>
+    </message>
+    <message>
+        <source>Sync error: %1</source>
+        <translation>同期エラー: %1</translation>
     </message>
     <message>
         <source>Blocked by invalid organization policy</source>
@@ -5955,7 +6082,7 @@ Error:
     </message>
     <message>
         <source>Close</source>
-        <translation type="unfinished">閉じる</translation>
+        <translation>閉じる</translation>
     </message>
     <message>
         <source>Auth DB: %1</source>

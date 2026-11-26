@@ -316,6 +316,10 @@
         <translation>Saqlanmagan skriptlarni tiklash…</translation>
     </message>
     <message>
+        <source>Cloud &amp; Sync…</source>
+        <translation>Bulut va sinxronlash…</translation>
+    </message>
+    <message>
         <source>Preferences…</source>
         <translation>Sozlamalar…</translation>
     </message>
@@ -439,6 +443,10 @@
         <translation>Server monitori</translation>
     </message>
     <message>
+        <source>Sync Now</source>
+        <translation>Hozir sinxronlash</translation>
+    </message>
+    <message>
         <source>Keyboard Shortcuts</source>
         <translation>Tezkor tugmalar</translation>
     </message>
@@ -482,6 +490,14 @@
         <source>No unsaved scripts</source>
         <translation>Saqlanmagan skriptlar yoʻq</translation>
     </message>
+    <message>
+        <source>Set up encrypted sync first</source>
+        <translation>Avval shifrlangan sinxronlashni sozlang</translation>
+    </message>
+    <message>
+        <source>Sign in to your cloud account first</source>
+        <translation>Avval bulut hisobingizga kiring</translation>
+    </message>
 </context>
 <context>
     <name>AppBar</name>
@@ -502,6 +518,50 @@
         <translation>Monitor</translation>
     </message>
     <message>
+        <source>Syncing…</source>
+        <translation>Sinxronlanmoqda…</translation>
+    </message>
+    <message>
+        <source>Sync</source>
+        <translation>Sinxronlash</translation>
+    </message>
+    <message>
+        <source>Set Up Sync</source>
+        <translation>Sinxronlashni sozlash</translation>
+    </message>
+    <message>
+        <source>Cloud &amp; Sync</source>
+        <translation>Bulut va sinxronlash</translation>
+    </message>
+    <message>
+        <source>Set Up Sync…</source>
+        <translation>Sinxronlashni sozlash…</translation>
+    </message>
+    <message>
+        <source>Complete Sign-In…</source>
+        <translation>Kirishni yakunlash…</translation>
+    </message>
+    <message>
+        <source>Set Up Encrypted Sync…</source>
+        <translation>Shifrlangan sinxronlashni sozlash…</translation>
+    </message>
+    <message>
+        <source>Sync Now</source>
+        <translation>Hozir sinxronlash</translation>
+    </message>
+    <message>
+        <source>Sync needs attention</source>
+        <translation>Sinxronlash e’tibor talab qiladi</translation>
+    </message>
+    <message>
+        <source>Last synced: %1</source>
+        <translation>So‘nggi sinxronlash: %1</translation>
+    </message>
+    <message>
+        <source>Cloud &amp; Sync…</source>
+        <translation>Bulut va sinxronlash…</translation>
+    </message>
+    <message>
         <source>Theme</source>
         <translation>Mavzu</translation>
     </message>
@@ -520,6 +580,17 @@
     <message>
         <source>More</source>
         <translation>Yana</translation>
+    </message>
+</context>
+<context>
+    <name>CloudSyncDialog</name>
+    <message>
+        <source>Cloud &amp; Sync</source>
+        <translation>Bulut va sinxronlash</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Yopish</translation>
     </message>
 </context>
 <context>
@@ -3129,28 +3200,20 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Account</source>
-        <translation>Hisob</translation>
-    </message>
-    <message>
-        <source>Registered device</source>
-        <translation>Roʻyxatdan oʻtgan qurilma</translation>
-    </message>
-    <message>
-        <source>Encrypted sync</source>
-        <translation>Shifrlangan sinxronlash</translation>
-    </message>
-    <message>
-        <source>On · %1</source>
-        <translation>Yoqiq · %1</translation>
-    </message>
-    <message>
         <source>Off</source>
         <translation type="unfinished">Oʻchiq</translation>
     </message>
     <message>
         <source>ENCRYPTED SYNC</source>
         <translation>SHIFRLANGAN SINXRONLASH</translation>
+    </message>
+    <message>
+        <source>Device: %1</source>
+        <translation>Qurilma: %1</translation>
+    </message>
+    <message>
+        <source>Last synced: %1</source>
+        <translation>So‘nggi sinxronlash: %1</translation>
     </message>
     <message>
         <source>Sync data leaves this device only as client-encrypted ciphertext. The server never sees your passphrase, keys, or plain settings.</source>
@@ -3189,16 +3252,52 @@
         <translation>Shifrlangan sinxronlashni sozlash…</translation>
     </message>
     <message>
+        <source>Advanced</source>
+        <translation>Qoʻshimcha</translation>
+    </message>
+    <message>
+        <source>New Sync Passphrase</source>
+        <translation>Yangi sinxronlash paroli</translation>
+    </message>
+    <message>
+        <source>Use Existing Passphrase</source>
+        <translation>Mavjud paroldan foydalanish</translation>
+    </message>
+    <message>
+        <source>Enter the sync passphrase you already created on another device.</source>
+        <translation>Boshqa qurilmada avval yaratilgan sinxronlash parolini kiriting.</translation>
+    </message>
+    <message>
+        <source>Choose a passphrase (at least 8 characters) to encrypt your sync data. Enter this same passphrase on your other devices.</source>
+        <translation>Sinxronlash ma’lumotlarini shifrlash uchun kamida 8 belgidan iborat parol tanlang. Boshqa qurilmalaringizda ham shu parolni kiriting.</translation>
+    </message>
+    <message>
+        <source>Hide Passphrase</source>
+        <translation>Parolni yashirish</translation>
+    </message>
+    <message>
+        <source>Show Passphrase</source>
+        <translation>Parolni ko‘rsatish</translation>
+    </message>
+    <message>
+        <source>Encrypts backups with a key stored only on this device. Other devices will not be able to read them.</source>
+        <translation>Zaxira nusxalarni faqat shu qurilmada saqlanadigan kalit bilan shifrlaydi. Boshqa qurilmalar ularni o‘qiy olmaydi.</translation>
+    </message>
+    <message>
+        <source>Connect &amp; Sync</source>
+        <translation>Ulanish va sinxronlash</translation>
+    </message>
+    <message>
+        <source>Start Encrypted Sync</source>
+        <translation>Shifrlangan sinxronlashni boshlash</translation>
+    </message>
+    <message>
         <source>Disable Sync</source>
         <translation>Sinxronlashni oʻchirish</translation>
     </message>
     <message>
         <source>Delete Remote Data…</source>
         <translation>Masofadagi maʼlumotlarni oʻchirish…</translation>
-    </message>
-    <message>
-        <source>This device already has a sync vault (join with existing passphrase)</source>
-        <translation>Bu qurilmada sinxronlash ombori allaqachon bor (mavjud parol iborasi bilan qoʻshilish)</translation>
     </message>
     <message>
         <source>Existing sync passphrase</source>
@@ -3227,14 +3326,6 @@
     <message>
         <source>Setup failed: %1</source>
         <translation>Sozlash muvaffaqiyatsiz tugadi: %1</translation>
-    </message>
-    <message>
-        <source>Join Vault</source>
-        <translation>Omborga qoʻshilish</translation>
-    </message>
-    <message>
-        <source>Create Vault</source>
-        <translation>Ombor yaratish</translation>
     </message>
     <message>
         <source>Use Device Key Instead</source>
@@ -4186,6 +4277,42 @@
     <message>
         <source>Never</source>
         <translation>Hech qachon</translation>
+    </message>
+    <message>
+        <source>Could not reach the sync server. Changes will sync when you are back online.</source>
+        <translation>Sinxronlash serveriga ulanib bo‘lmadi. Onlayn bo‘lganingizda o‘zgarishlar sinxronlanadi.</translation>
+    </message>
+    <message>
+        <source>Could not read the sync encryption key from the OS keychain.</source>
+        <translation>Sinxronlash shifrlash kalitini tizim kalitlar zanjiridan o‘qib bo‘lmadi.</translation>
+    </message>
+    <message>
+        <source>Local sync metadata is incomplete. Disable sync on this device and reconnect with your passphrase.</source>
+        <translation>Mahalliy sinxronlash metama’lumotlari to‘liq emas. Ushbu qurilmada sinxronlashni o‘chirib, parolingiz bilan qayta ulaning.</translation>
+    </message>
+    <message>
+        <source>Encrypted sync is not enabled for this account.</source>
+        <translation>Ushbu hisob uchun shifrlangan sinxronlash yoqilmagan.</translation>
+    </message>
+    <message>
+        <source>Another device updated sync data at the same time. Please sync again.</source>
+        <translation>Boshqa qurilma bir vaqtning o‘zida ma’lumotlarni yangiladi. Qayta sinxronlang.</translation>
+    </message>
+    <message>
+        <source>Sync data exceeds the maximum allowed size.</source>
+        <translation>Sinxronlash ma’lumotlari ruxsat etilgan eng katta hajmdan oshib ketdi.</translation>
+    </message>
+    <message>
+        <source>Daily sync write limit reached. Try again later.</source>
+        <translation>Kunlik sinxronlash yozish chegarasiga yetildi. Keyinroq qayta urinib ko‘ring.</translation>
+    </message>
+    <message>
+        <source>Account sync collection limit reached.</source>
+        <translation>Hisobning sinxronlash kolleksiyalari chegarasiga yetildi.</translation>
+    </message>
+    <message>
+        <source>Sync error: %1</source>
+        <translation>Sinxronlash xatosi: %1</translation>
     </message>
     <message>
         <source>Blocked by invalid organization policy</source>
@@ -5979,7 +6106,7 @@ Xato:
     </message>
     <message>
         <source>Close</source>
-        <translation type="unfinished">Yopish</translation>
+        <translation>Yopish</translation>
     </message>
     <message>
         <source>Auth DB: %1</source>

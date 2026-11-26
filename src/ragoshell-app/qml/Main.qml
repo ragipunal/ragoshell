@@ -541,6 +541,7 @@ ApplicationWindow {
     // ---- Dialogs (created on first use) -------------------------------------
     LazyDialog { id: connDialog; sourceComponent: Component { ConnectionDialog {} } }
     LazyDialog { id: prefsDialog; sourceComponent: Component { PreferencesDialog {} } }
+    LazyDialog { id: cloudSyncDialog; sourceComponent: Component { CloudSyncDialog {} } }
     LazyDialog {
         id: aboutDialog
         sourceComponent: Component {
@@ -618,6 +619,7 @@ ApplicationWindow {
 
     // ---- Actions shared by the command registry and the shortcuts below ----
     function openNewConnection() { connDialog.get().openNew() }
+    function openCloudSync(startSetup) { cloudSyncDialog.get().openDialog(startSetup === true) }
     function openPreferences(section) {
         var dialog = prefsDialog.get()
         dialog.revealSection = section || ""

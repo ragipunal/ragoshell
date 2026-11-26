@@ -316,6 +316,10 @@
         <translation>Récupérer les scripts non enregistrés…</translation>
     </message>
     <message>
+        <source>Cloud &amp; Sync…</source>
+        <translation>Cloud et synchronisation…</translation>
+    </message>
+    <message>
         <source>Preferences…</source>
         <translation>Préférences…</translation>
     </message>
@@ -439,6 +443,10 @@
         <translation>Moniteur de serveur</translation>
     </message>
     <message>
+        <source>Sync Now</source>
+        <translation>Synchroniser maintenant</translation>
+    </message>
+    <message>
         <source>Keyboard Shortcuts</source>
         <translation>Raccourcis clavier</translation>
     </message>
@@ -482,6 +490,14 @@
         <source>No unsaved scripts</source>
         <translation>Aucun script non enregistré</translation>
     </message>
+    <message>
+        <source>Set up encrypted sync first</source>
+        <translation>Configurez d’abord la synchronisation chiffrée</translation>
+    </message>
+    <message>
+        <source>Sign in to your cloud account first</source>
+        <translation>Connectez-vous d’abord à votre compte cloud</translation>
+    </message>
 </context>
 <context>
     <name>AppBar</name>
@@ -502,6 +518,50 @@
         <translation>Moniteur</translation>
     </message>
     <message>
+        <source>Syncing…</source>
+        <translation>Synchronisation…</translation>
+    </message>
+    <message>
+        <source>Sync</source>
+        <translation>Sync</translation>
+    </message>
+    <message>
+        <source>Set Up Sync</source>
+        <translation>Configurer la sync</translation>
+    </message>
+    <message>
+        <source>Cloud &amp; Sync</source>
+        <translation>Cloud et synchronisation</translation>
+    </message>
+    <message>
+        <source>Set Up Sync…</source>
+        <translation>Configurer la synchronisation…</translation>
+    </message>
+    <message>
+        <source>Complete Sign-In…</source>
+        <translation>Terminer la connexion…</translation>
+    </message>
+    <message>
+        <source>Set Up Encrypted Sync…</source>
+        <translation>Configurer la synchronisation chiffrée…</translation>
+    </message>
+    <message>
+        <source>Sync Now</source>
+        <translation>Synchroniser maintenant</translation>
+    </message>
+    <message>
+        <source>Sync needs attention</source>
+        <translation>La synchronisation requiert votre attention</translation>
+    </message>
+    <message>
+        <source>Last synced: %1</source>
+        <translation>Dernière synchronisation : %1</translation>
+    </message>
+    <message>
+        <source>Cloud &amp; Sync…</source>
+        <translation>Cloud et synchronisation…</translation>
+    </message>
+    <message>
         <source>Theme</source>
         <translation>Thème</translation>
     </message>
@@ -520,6 +580,17 @@
     <message>
         <source>More</source>
         <translation>Plus</translation>
+    </message>
+</context>
+<context>
+    <name>CloudSyncDialog</name>
+    <message>
+        <source>Cloud &amp; Sync</source>
+        <translation>Cloud et synchronisation</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Fermer</translation>
     </message>
 </context>
 <context>
@@ -3129,28 +3200,20 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Account</source>
-        <translation>Compte</translation>
-    </message>
-    <message>
-        <source>Registered device</source>
-        <translation>Appareil enregistré</translation>
-    </message>
-    <message>
-        <source>Encrypted sync</source>
-        <translation>Synchronisation chiffrée</translation>
-    </message>
-    <message>
-        <source>On · %1</source>
-        <translation>Activé · %1</translation>
-    </message>
-    <message>
         <source>Off</source>
         <translation type="unfinished">Désactivé</translation>
     </message>
     <message>
         <source>ENCRYPTED SYNC</source>
         <translation>SYNCHRONISATION CHIFFRÉE</translation>
+    </message>
+    <message>
+        <source>Device: %1</source>
+        <translation>Appareil : %1</translation>
+    </message>
+    <message>
+        <source>Last synced: %1</source>
+        <translation>Dernière synchronisation : %1</translation>
     </message>
     <message>
         <source>Sync data leaves this device only as client-encrypted ciphertext. The server never sees your passphrase, keys, or plain settings.</source>
@@ -3189,16 +3252,52 @@
         <translation>Configurer la synchronisation chiffrée…</translation>
     </message>
     <message>
+        <source>Advanced</source>
+        <translation>Avancé</translation>
+    </message>
+    <message>
+        <source>New Sync Passphrase</source>
+        <translation>Nouvelle phrase de synchronisation</translation>
+    </message>
+    <message>
+        <source>Use Existing Passphrase</source>
+        <translation>Utiliser une phrase existante</translation>
+    </message>
+    <message>
+        <source>Enter the sync passphrase you already created on another device.</source>
+        <translation>Saisissez la phrase de synchronisation déjà créée sur un autre appareil.</translation>
+    </message>
+    <message>
+        <source>Choose a passphrase (at least 8 characters) to encrypt your sync data. Enter this same passphrase on your other devices.</source>
+        <translation>Choisissez une phrase secrète (au moins 8 caractères) pour chiffrer vos données. Saisissez cette même phrase sur vos autres appareils.</translation>
+    </message>
+    <message>
+        <source>Hide Passphrase</source>
+        <translation>Masquer la phrase</translation>
+    </message>
+    <message>
+        <source>Show Passphrase</source>
+        <translation>Afficher la phrase</translation>
+    </message>
+    <message>
+        <source>Encrypts backups with a key stored only on this device. Other devices will not be able to read them.</source>
+        <translation>Chiffre les sauvegardes avec une clé stockée uniquement sur cet appareil. Les autres appareils ne pourront pas les lire.</translation>
+    </message>
+    <message>
+        <source>Connect &amp; Sync</source>
+        <translation>Connecter et synchroniser</translation>
+    </message>
+    <message>
+        <source>Start Encrypted Sync</source>
+        <translation>Démarrer la synchronisation chiffrée</translation>
+    </message>
+    <message>
         <source>Disable Sync</source>
         <translation>Désactiver la synchronisation</translation>
     </message>
     <message>
         <source>Delete Remote Data…</source>
         <translation>Supprimer les données distantes…</translation>
-    </message>
-    <message>
-        <source>This device already has a sync vault (join with existing passphrase)</source>
-        <translation>Cet appareil possède déjà un coffre de synchronisation (rejoindre avec la phrase secrète existante)</translation>
     </message>
     <message>
         <source>Existing sync passphrase</source>
@@ -3227,14 +3326,6 @@
     <message>
         <source>Setup failed: %1</source>
         <translation>Échec de la configuration&#xa0;: %1</translation>
-    </message>
-    <message>
-        <source>Join Vault</source>
-        <translation>Rejoindre le coffre</translation>
-    </message>
-    <message>
-        <source>Create Vault</source>
-        <translation>Créer le coffre</translation>
     </message>
     <message>
         <source>Use Device Key Instead</source>
@@ -4186,6 +4277,42 @@
     <message>
         <source>Never</source>
         <translation>Jamais</translation>
+    </message>
+    <message>
+        <source>Could not reach the sync server. Changes will sync when you are back online.</source>
+        <translation>Impossible de joindre le serveur de synchronisation. Les modifications seront synchronisées dès le retour en ligne.</translation>
+    </message>
+    <message>
+        <source>Could not read the sync encryption key from the OS keychain.</source>
+        <translation>Impossible de lire la clé de chiffrement de synchronisation depuis le trousseau du système.</translation>
+    </message>
+    <message>
+        <source>Local sync metadata is incomplete. Disable sync on this device and reconnect with your passphrase.</source>
+        <translation>Les métadonnées locales de synchronisation sont incomplètes. Désactivez la synchronisation sur cet appareil et reconnectez-vous avec votre phrase secrète.</translation>
+    </message>
+    <message>
+        <source>Encrypted sync is not enabled for this account.</source>
+        <translation>La synchronisation chiffrée n’est pas activée pour ce compte.</translation>
+    </message>
+    <message>
+        <source>Another device updated sync data at the same time. Please sync again.</source>
+        <translation>Un autre appareil a mis à jour les données en même temps. Veuillez relancer la synchronisation.</translation>
+    </message>
+    <message>
+        <source>Sync data exceeds the maximum allowed size.</source>
+        <translation>Les données de synchronisation dépassent la taille maximale autorisée.</translation>
+    </message>
+    <message>
+        <source>Daily sync write limit reached. Try again later.</source>
+        <translation>Limite quotidienne d’écriture de synchronisation atteinte. Réessayez plus tard.</translation>
+    </message>
+    <message>
+        <source>Account sync collection limit reached.</source>
+        <translation>Limite de collections synchronisées du compte atteinte.</translation>
+    </message>
+    <message>
+        <source>Sync error: %1</source>
+        <translation>Erreur de synchronisation : %1</translation>
     </message>
     <message>
         <source>Blocked by invalid organization policy</source>
@@ -5979,7 +6106,7 @@ Erreur&#xa0;:
     </message>
     <message>
         <source>Close</source>
-        <translation type="unfinished">Fermer</translation>
+        <translation>Fermer</translation>
     </message>
     <message>
         <source>Auth DB: %1</source>

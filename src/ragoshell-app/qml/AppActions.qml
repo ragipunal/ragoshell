@@ -17,6 +17,11 @@ QtObject {
         function onHardwareKeyboardChanged() { actions.revision++ }
     }
 
+    readonly property Connections _cloudConn: Connections {
+        target: CloudService
+        function onStateChanged() { actions.revision++ }
+    }
+
     // State of the current tab and connections, refreshed when a menu or the palette opens.
     property bool hasTab: false
     property bool hasShell: false
@@ -82,7 +87,10 @@ QtObject {
           title: function() { return qsTr("Recover Unsaved Scripts…") },
           enabled: function() { return Drafts.count > 0 },
           run: function() { app.openRecoverDrafts() } },
-        { id: "file.preferences", section: "file", separatorBefore: true,
+        { id: "file.cloudSync", section: "file", separatorBefore: true, cloudOnly: true,
+          title: function() { return qsTr("Cloud & Sync…") },
+          run: function() { app.openCloudSync(false) } },
+        { id: "file.preferences", section: "file",
           title: function() { return qsTr("Preferences…") },
           shortcut: function() { return Platform.keyLabel("Ctrl+,") },
           run: function() { app.openPreferences() } },
@@ -222,6 +230,13 @@ QtObject {
           shortcut: function() { return Platform.keyLabel("Ctrl+Shift+M") },
           enabled: function() { return hasConnection },
           run: function() { app.openMonitorForActiveServer() } },
+        { id: "tools.syncNow", section: "tools", separatorBefore: true, cloudOnly: true, needs: "sync",
+          title: function() { return qsTr("Sync Now") },
+          enabled: function() {
+              return CloudService.signedIn && CloudService.syncActive
+                     && !CloudService.syncBusy && !CloudService.policyInvalid
+          },
+          run: function() { CloudService.syncNow() } },
 
         { id: "help.shortcuts", section: "help", keyboardOnly: true,
           title: function() { return qsTr("Keyboard Shortcuts") },
@@ -256,6 +271,9 @@ QtObject {
         case "connection": return qsTr("Needs a connected server")
         case "selection": return qsTr("Select documents in a result first")
         case "drafts": return qsTr("No unsaved scripts")
+        case "sync": return CloudService.signedIn
+                            ? qsTr("Set up encrypted sync first")
+                            : qsTr("Sign in to your cloud account first")
         }
         return ""
     }
@@ -266,6 +284,8 @@ QtObject {
         if (d.desktopOnly && Platform.isMobile)
             return false
         if (d.keyboardOnly && !showShortcuts)
+            return false
+        if (d.cloudOnly && AppSettings.disableHttpsFeatures)
             return false
         return true
     }

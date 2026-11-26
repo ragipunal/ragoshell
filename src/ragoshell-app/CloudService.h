@@ -190,7 +190,7 @@ namespace RagoShell
         Q_INVOKABLE void syncDisable();
         Q_INVOKABLE void syncWipeRemote();
 
-        /// Populates synthetic UI state for --open-view prefs-account-code / prefs-account-pro.
+        /// Populates synthetic UI state for --open-view (0=live, 1=code, 2=signed-in, 3=sync-active).
         Q_INVOKABLE void previewDebugState(int mode);
 
     public Q_SLOTS:

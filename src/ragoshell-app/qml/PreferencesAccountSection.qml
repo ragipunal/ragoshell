@@ -5,14 +5,27 @@ import QtQuick.Controls.Basic
 import QtQuick.Layouts
 import RagoShell
 
+// Cloud account & end-to-end encrypted sync controls (docs/CloudSyncUx.md).
+// Hosted inline in PreferencesDialog (standalone: false) and inside CloudSyncDialog (standalone: true).
 ColumnLayout {
     id: root
     spacing: 12
 
-    readonly property bool singleColumn: root.width < 520
+    property bool standalone: false
+    readonly property bool singleColumn: root.width < 460
     property bool serverEditOpen: false
+    property bool advancedOpen: false
     property bool _editServerCustom: false
     property string _serverFormError: ""
+
+    // Only surface the server card at the top when a custom server, enterprise policy,
+    // environment override, or active server edit applies. Default users reach it via
+    // "Change Server…" (signed out) or "Advanced" (signed in).
+    readonly property bool showServerCard: root.serverEditOpen
+                                           || CloudService.customServerActive
+                                           || CloudService.policyLocked
+                                           || CloudService.policyInvalid
+                                           || CloudService.envOverridden
 
     function syncFields() {
         deviceNameInput.text = CloudService.deviceName
@@ -29,8 +42,14 @@ ColumnLayout {
         serverEditOpen = true
     }
 
+    function openSyncSetup() {
+        if (CloudService.signedIn && !CloudService.syncActive && CloudService.keyStoreAvailable)
+            syncCol.openSetup(false)
+    }
+
     function closeEditors() {
         serverEditOpen = false
+        advancedOpen = false
         _serverFormError = ""
         serverSwitchDialog.close()
         syncWipeDialog.close()
@@ -62,6 +81,7 @@ ColumnLayout {
     }
 
     RowLayout {
+        visible: !root.standalone
         Layout.fillWidth: true
         spacing: 8
 
@@ -79,13 +99,17 @@ ColumnLayout {
         RagoBadge {
             visible: CloudService.signedIn
             text: CloudService.statusLabel
-            badgeColor: CloudService.statusId === "past_due" || CloudService.statusId === "canceled"
+            badgeColor: CloudService.statusId === "past_due"
+                        || CloudService.statusId === "canceled"
+                        || CloudService.offlineGraceActive
                         ? Theme.warningColor
                         : Theme.accentColor
         }
     }
 
+    // Reassurance prose is needed only before signing in; once signed in it becomes noise.
     Label {
+        visible: !CloudService.signedIn && !CloudService.awaitingApproval
         Layout.fillWidth: true
         wrapMode: Text.WordWrap
         font.pixelSize: 12
@@ -122,8 +146,9 @@ ColumnLayout {
         text: qsTr("OS keychain is unavailable; cloud sign-in will apply to this session only and will never write tokens to disk.")
     }
 
-    // 0. Cloud server endpoint & enterprise policy profile (docs/EnterpriseServerProfile.md §6 Step E)
+    // 0. Cloud server endpoint & enterprise policy profile (shown when non-default or being edited)
     Rectangle {
+        visible: root.showServerCard
         Layout.fillWidth: true
         Layout.minimumWidth: 0
         implicitHeight: serverCardCol.implicitHeight + 24
@@ -342,15 +367,11 @@ ColumnLayout {
                     text: root._serverFormError
                 }
 
-                GridLayout {
+                Flow {
                     Layout.fillWidth: true
-                    columns: root.singleColumn ? 1 : 3
-                    columnSpacing: 8
-                    rowSpacing: 8
+                    spacing: 8
 
                     RagoPillButton {
-                        Layout.fillWidth: true
-                        stretch: true
                         primary: true
                         text: qsTr("Apply Server")
                         Accessible.name: text
@@ -383,8 +404,6 @@ ColumnLayout {
 
                     RagoPillButton {
                         visible: CloudService.configuredServerMode === "custom" || CloudService.customServerActive
-                        Layout.fillWidth: true
-                        stretch: true
                         text: qsTr("Reset to Default")
                         Accessible.name: text
                         onClicked: {
@@ -410,8 +429,6 @@ ColumnLayout {
                     }
 
                     RagoPillButton {
-                        Layout.fillWidth: true
-                        stretch: true
                         text: qsTr("Cancel")
                         Accessible.name: text
                         onClicked: {
@@ -424,47 +441,69 @@ ColumnLayout {
         }
     }
 
-    // 1. Signed-out state (or requesting initial device code)
-    ColumnLayout {
+    // 1. Signed-out state
+    Rectangle {
         visible: !CloudService.signedIn && !CloudService.awaitingApproval
         Layout.fillWidth: true
         Layout.minimumWidth: 0
-        spacing: 10
+        implicitHeight: signedOutCol.implicitHeight + 24
+        radius: 10
+        color: Theme.glassBackground
+        border.width: 1
+        border.color: Theme.glassBorder
 
-        GridLayout {
-            Layout.fillWidth: true
-            columns: root.singleColumn ? 1 : 2
-            columnSpacing: 16
-            rowSpacing: 8
+        ColumnLayout {
+            id: signedOutCol
+            anchors.fill: parent
+            anchors.margins: 12
+            spacing: 10
 
-            Label {
-                text: qsTr("Device name")
-                font.pixelSize: 13
-                color: Theme.textColor
-                Layout.fillWidth: root.singleColumn
-            }
-
-            RagoTextField {
-                id: deviceNameInput
+            GridLayout {
                 Layout.fillWidth: true
-                Layout.minimumWidth: 0
-                maximumLength: 64
-                enabled: !CloudService.requestingCode && !CloudService.policyInvalid
-                placeholderText: qsTr("Workstation")
-                onEditingFinished: root.commitDeviceName()
-            }
-        }
+                columns: root.singleColumn ? 1 : 2
+                columnSpacing: 16
+                rowSpacing: 8
 
-        RagoPillButton {
-            Layout.fillWidth: root.singleColumn
-            stretch: root.singleColumn
-            primary: true
-            enabled: !CloudService.requestingCode && !AppSettings.disableHttpsFeatures && !CloudService.policyInvalid
-            text: CloudService.requestingCode ? qsTr("Requesting Code…") : qsTr("Sign In with Browser…")
-            Accessible.name: text
-            onClicked: {
-                root.commitDeviceName()
-                CloudService.startSignIn(deviceNameInput.text)
+                Label {
+                    text: qsTr("Device name")
+                    font.pixelSize: 13
+                    color: Theme.textColor
+                    Layout.fillWidth: root.singleColumn
+                }
+
+                RagoTextField {
+                    id: deviceNameInput
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    maximumLength: 64
+                    enabled: !CloudService.requestingCode && !CloudService.policyInvalid
+                    placeholderText: qsTr("Workstation")
+                    onEditingFinished: root.commitDeviceName()
+                }
+            }
+
+            Flow {
+                Layout.fillWidth: true
+                spacing: 8
+
+                RagoPillButton {
+                    primary: true
+                    enabled: !CloudService.requestingCode && !AppSettings.disableHttpsFeatures && !CloudService.policyInvalid
+                    text: CloudService.requestingCode ? qsTr("Requesting Code…") : qsTr("Sign In with Browser…")
+                    Accessible.name: text
+                    onClicked: {
+                        root.commitDeviceName()
+                        CloudService.startSignIn(deviceNameInput.text)
+                    }
+                }
+
+                RagoPillButton {
+                    visible: !CloudService.policyLocked && !root.showServerCard
+                    enabled: !CloudService.busy && !CloudService.requestingCode
+                    text: qsTr("Change Server…")
+                    Accessible.name: text
+                    onClicked: root.openServerEditor()
+                }
             }
         }
     }
@@ -531,15 +570,11 @@ ColumnLayout {
                           .arg(CloudService.formattedRemainingTime)
             }
 
-            GridLayout {
+            Flow {
                 Layout.fillWidth: true
-                columns: root.singleColumn ? 1 : 3
-                columnSpacing: 8
-                rowSpacing: 8
+                spacing: 8
 
                 RagoPillButton {
-                    Layout.fillWidth: true
-                    stretch: true
                     primary: true
                     text: qsTr("Open Browser")
                     Accessible.name: text
@@ -547,16 +582,12 @@ ColumnLayout {
                 }
 
                 RagoPillButton {
-                    Layout.fillWidth: true
-                    stretch: true
                     text: CloudService.codeCopied ? qsTr("Code Copied") : qsTr("Copy Code")
                     Accessible.name: text
                     onClicked: CloudService.copyUserCode()
                 }
 
                 RagoPillButton {
-                    Layout.fillWidth: true
-                    stretch: true
                     text: qsTr("Cancel")
                     Accessible.name: text
                     onClicked: CloudService.cancelSignIn()
@@ -565,7 +596,7 @@ ColumnLayout {
         }
     }
 
-    // 3. Signed-in state
+    // 3. Signed-in account summary (compact, calm, no red buttons)
     Rectangle {
         visible: CloudService.signedIn
         Layout.fillWidth: true
@@ -580,111 +611,94 @@ ColumnLayout {
             id: signedInCol
             anchors.fill: parent
             anchors.margins: 12
-            spacing: 10
+            spacing: 8
 
             GridLayout {
                 Layout.fillWidth: true
+                Layout.minimumWidth: 0
                 columns: root.singleColumn ? 1 : 2
-                columnSpacing: 16
-                rowSpacing: 6
-
-                Label {
-                    text: qsTr("Account")
-                    font.pixelSize: 12
-                    color: Theme.disabledTextColor
-                }
-                Label {
-                    Layout.fillWidth: true
-                    Layout.minimumWidth: 0
-                    elide: Text.ElideMiddle
-                    font.pixelSize: 13
-                    font.weight: Font.Medium
-                    color: Theme.textColor
-                    text: CloudService.userEmail.length > 0 ? CloudService.userEmail : CloudService.userId
-                }
-
-                Label {
-                    text: qsTr("Registered device")
-                    font.pixelSize: 12
-                    color: Theme.disabledTextColor
-                }
-                Label {
-                    Layout.fillWidth: true
-                    Layout.minimumWidth: 0
-                    wrapMode: Text.WordWrap
-                    font.pixelSize: 13
-                    color: Theme.textColor
-                    text: CloudService.deviceIdShort.length > 0
-                          ? (CloudService.deviceName + " (" + CloudService.deviceIdShort + ")")
-                          : CloudService.deviceName
-                }
-
-                Label {
-                    text: qsTr("Encrypted sync")
-                    font.pixelSize: 12
-                    color: Theme.disabledTextColor
-                }
-                Label {
-                    Layout.fillWidth: true
-                    Layout.minimumWidth: 0
-                    wrapMode: Text.WordWrap
-                    font.pixelSize: 13
-                    color: CloudService.syncActive ? Theme.accentColor : Theme.disabledTextColor
-                    text: CloudService.syncActive
-                          ? qsTr("On · %1").arg(CloudService.syncLastSyncText)
-                          : qsTr("Off")
-                }
-            }
-
-            Label {
-                visible: CloudService.validitySummary.length > 0
-                Layout.fillWidth: true
-                wrapMode: Text.WordWrap
-                font.pixelSize: 11
-                color: Theme.disabledTextColor
-                text: CloudService.validitySummary
-            }
-
-            GridLayout {
-                Layout.fillWidth: true
-                columns: root.singleColumn ? 1 : (Platform.isMobile ? 2 : 3)
-                columnSpacing: 8
+                columnSpacing: 12
                 rowSpacing: 8
 
-                RagoPillButton {
+                ColumnLayout {
                     Layout.fillWidth: true
-                    stretch: true
-                    enabled: !CloudService.busy && !AppSettings.disableHttpsFeatures && !CloudService.policyInvalid
-                    text: CloudService.busy ? qsTr("Refreshing…") : qsTr("Refresh Status")
-                    Accessible.name: text
-                    onClicked: CloudService.refreshStatus()
-                }
+                    Layout.minimumWidth: 0
+                    spacing: 3
 
-                RagoPillButton {
-                    visible: !Platform.isMobile && !CloudService.policyInvalid
-                    Layout.fillWidth: true
-                    stretch: true
-                    text: qsTr("Manage Account…")
-                    Accessible.name: text
-                    onClicked: {
-                        if (!Platform.isMobile)
-                            CloudService.openManageAccountPortal()
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Layout.minimumWidth: 0
+                        spacing: 8
+
+                        Label {
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 0
+                            elide: Text.ElideMiddle
+                            font.pixelSize: 13
+                            font.weight: Font.Medium
+                            color: Theme.textColor
+                            text: CloudService.userEmail.length > 0 ? CloudService.userEmail : CloudService.userId
+                        }
+
+                        RagoBadge {
+                            visible: root.standalone
+                            text: CloudService.statusLabel
+                            badgeColor: CloudService.statusId === "past_due"
+                                        || CloudService.statusId === "canceled"
+                                        || CloudService.offlineGraceActive
+                                        ? Theme.warningColor
+                                        : Theme.accentColor
+                        }
+                    }
+
+                    Label {
+                        Layout.fillWidth: true
+                        Layout.minimumWidth: 0
+                        elide: Text.ElideRight
+                        font.pixelSize: 12
+                        color: Theme.disabledTextColor
+                        text: qsTr("Device: %1").arg(CloudService.deviceName)
+                    }
+
+                    Label {
+                        visible: CloudService.offlineGraceActive && CloudService.validitySummary.length > 0
+                        Layout.fillWidth: true
+                        wrapMode: Text.WordWrap
+                        font.pixelSize: 11
+                        color: Theme.warningColor
+                        text: CloudService.validitySummary
                     }
                 }
 
-                RagoPillButton {
-                    Layout.fillWidth: true
-                    stretch: true
-                    danger: true
-                    text: qsTr("Sign Out")
-                    Accessible.name: text
-                    onClicked: CloudService.signOut()
+                Flow {
+                    Layout.fillWidth: root.singleColumn
+                    Layout.alignment: root.singleColumn ? Qt.AlignLeft : Qt.AlignRight
+                    Layout.minimumWidth: 0
+                    spacing: 6
+
+                    RagoPillButton {
+                        compact: true
+                        visible: !Platform.isMobile && !CloudService.policyInvalid
+                        text: qsTr("Manage Account…")
+                        Accessible.name: text
+                        onClicked: {
+                            if (!Platform.isMobile)
+                                CloudService.openManageAccountPortal()
+                        }
+                    }
+
+                    RagoPillButton {
+                        compact: true
+                        text: qsTr("Sign Out")
+                        Accessible.name: text
+                        onClicked: CloudService.signOut()
+                    }
                 }
             }
         }
     }
 
-    // 4. Encrypted sync controls (A7)
+    // 4. Encrypted sync controls (focused primary workflow + collapsible Advanced panel)
     Rectangle {
         visible: CloudService.signedIn
         Layout.fillWidth: true
@@ -704,11 +718,31 @@ ColumnLayout {
             property bool setupOpen: false
             property string setupError: ""
             property bool attachMode: false
+            property bool showPass: false
+
+            function openSetup(attach) {
+                setupOpen = true
+                setupError = ""
+                attachMode = attach
+                showPass = false
+                syncPassInput.text = ""
+                syncPassConfirm.text = ""
+            }
+
+            function setAttachMode(attach) {
+                if (attachMode === attach)
+                    return
+                attachMode = attach
+                setupError = ""
+                syncPassInput.text = ""
+                syncPassConfirm.text = ""
+            }
 
             function closeSetup() {
                 setupOpen = false
                 setupError = ""
                 attachMode = false
+                showPass = false
                 syncPassInput.text = ""
                 syncPassConfirm.text = ""
             }
@@ -729,11 +763,22 @@ ColumnLayout {
                 }
 
                 RagoBadge {
-                    visible: CloudService.syncActive
-                    text: CloudService.syncStateText
-                    badgeColor: CloudService.syncLastError.length > 0
-                                ? Theme.warningColor : Theme.accentColor
+                    text: CloudService.syncActive ? CloudService.syncStateText : qsTr("Off")
+                    badgeColor: !CloudService.syncActive
+                                ? Theme.disabledTextColor
+                                : (CloudService.syncLastError.length > 0
+                                   ? Theme.warningColor
+                                   : Theme.accentColor)
                 }
+            }
+
+            Label {
+                visible: CloudService.syncActive
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                font.pixelSize: 12
+                color: Theme.disabledTextColor
+                text: qsTr("Last synced: %1").arg(CloudService.syncLastSyncText)
             }
 
             Label {
@@ -741,50 +786,69 @@ ColumnLayout {
                 wrapMode: Text.WordWrap
                 font.pixelSize: 11
                 color: Theme.disabledTextColor
-                text: qsTr("Sync data leaves this device only as client-encrypted ciphertext. "
-                           + "The server never sees your passphrase, keys, or plain settings.")
+                text: qsTr("Sync data leaves this device only as client-encrypted ciphertext. The server never sees your passphrase, keys, or plain settings.")
             }
 
-            Label {
+            Rectangle {
                 visible: CloudService.syncLastError.length > 0
                 Layout.fillWidth: true
-                wrapMode: Text.WordWrap
-                font.pixelSize: 11
-                color: Theme.warningColor
-                text: CloudService.syncLastError
+                implicitHeight: syncErrLabel.implicitHeight + 14
+                radius: 8
+                color: Qt.rgba(Theme.warningColor.r, Theme.warningColor.g, Theme.warningColor.b, 0.12)
+                border.width: 1
+                border.color: Qt.rgba(Theme.warningColor.r, Theme.warningColor.g, Theme.warningColor.b, 0.40)
+
+                Label {
+                    id: syncErrLabel
+                    anchors.fill: parent
+                    anchors.margins: 7
+                    wrapMode: Text.WordWrap
+                    font.pixelSize: 11
+                    color: Theme.warningColor
+                    text: CloudService.syncLastError
+                }
             }
 
-            // Active state: collection selection + actions
+            // Active state: compact 2-column RagoCheckBox selection
             ColumnLayout {
                 visible: CloudService.syncActive
                 Layout.fillWidth: true
+                Layout.minimumWidth: 0
                 spacing: 6
 
-                Repeater {
-                    model: [
-                        { "id": "connections",   "label": qsTr("Connections") },
-                        { "id": "snippets",      "label": qsTr("Saved snippets") },
-                        { "id": "preferences",   "label": qsTr("Preferences") },
-                        { "id": "query_history", "label": qsTr("Query history") }
-                    ]
-                    delegate: CheckBox {
-                        required property var modelData
-                        text: modelData.label
-                        checked: CloudService.syncCollections.indexOf(modelData.id) >= 0
-                        onToggled: {
-                            var cols = CloudService.syncCollections.slice()
-                            var i = cols.indexOf(modelData.id)
-                            if (checked && i < 0)
-                                cols.push(modelData.id)
-                            else if (!checked && i >= 0)
-                                cols.splice(i, 1)
-                            CloudService.syncSetCollections(
-                                cols, CloudService.syncIncludePasswords)
+                GridLayout {
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    columns: root.singleColumn ? 1 : 2
+                    columnSpacing: 16
+                    rowSpacing: 4
+
+                    Repeater {
+                        model: [
+                            { "id": "connections",   "label": qsTr("Connections") },
+                            { "id": "snippets",      "label": qsTr("Saved snippets") },
+                            { "id": "preferences",   "label": qsTr("Preferences") },
+                            { "id": "query_history", "label": qsTr("Query history") }
+                        ]
+                        delegate: RagoCheckBox {
+                            required property var modelData
+                            text: modelData.label
+                            checked: CloudService.syncCollections.indexOf(modelData.id) >= 0
+                            onToggled: {
+                                var cols = CloudService.syncCollections.slice()
+                                var i = cols.indexOf(modelData.id)
+                                if (checked && i < 0)
+                                    cols.push(modelData.id)
+                                else if (!checked && i >= 0)
+                                    cols.splice(i, 1)
+                                CloudService.syncSetCollections(
+                                    cols, CloudService.syncIncludePasswords)
+                            }
                         }
                     }
                 }
 
-                CheckBox {
+                RagoCheckBox {
                     visible: CloudService.syncCollections.indexOf("connections") >= 0
                     text: qsTr("Include saved passwords (still end-to-end encrypted)")
                     checked: CloudService.syncIncludePasswords
@@ -793,17 +857,17 @@ ColumnLayout {
                 }
             }
 
-            GridLayout {
+            // Primary action bar (when setup panel is not open)
+            Flow {
+                visible: CloudService.syncActive || !syncCol.setupOpen
                 Layout.fillWidth: true
-                columns: root.singleColumn ? 1 : (Platform.isMobile ? 2 : 3)
-                columnSpacing: 8
-                rowSpacing: 8
+                spacing: 8
 
                 RagoPillButton {
                     visible: CloudService.syncActive
-                    Layout.fillWidth: true
-                    stretch: true
-                    enabled: !CloudService.syncBusy
+                    primary: true
+                    iconText: CloudService.syncBusy ? "↻" : "⇅"
+                    enabled: !CloudService.syncBusy && !CloudService.policyInvalid
                     text: CloudService.syncBusy ? qsTr("Syncing…") : qsTr("Sync Now")
                     Accessible.name: text
                     onClicked: CloudService.syncNow()
@@ -811,64 +875,115 @@ ColumnLayout {
 
                 RagoPillButton {
                     visible: !CloudService.syncActive && !syncCol.setupOpen
-                    Layout.fillWidth: true
-                    stretch: true
-                    enabled: !CloudService.busy && CloudService.keyStoreAvailable
+                    primary: true
+                    iconText: "⇅"
+                    enabled: !CloudService.busy && CloudService.keyStoreAvailable && !CloudService.policyInvalid
                     text: qsTr("Set Up Encrypted Sync…")
                     Accessible.name: text
-                    onClicked: syncCol.setupOpen = true
+                    onClicked: syncCol.openSetup(false)
                 }
 
                 RagoPillButton {
-                    visible: CloudService.syncActive
-                    Layout.fillWidth: true
-                    stretch: true
-                    danger: true
-                    text: qsTr("Disable Sync")
+                    checked: root.advancedOpen
+                    text: qsTr("Advanced")
                     Accessible.name: text
-                    onClicked: CloudService.syncDisable()
-                }
-
-                RagoPillButton {
-                    visible: CloudService.syncActive
-                    Layout.fillWidth: true
-                    stretch: true
-                    danger: true
-                    text: qsTr("Delete Remote Data…")
-                    Accessible.name: text
-                    onClicked: syncWipeDialog.open()
+                    onClicked: root.advancedOpen = !root.advancedOpen
                 }
             }
 
-            // Setup panel: passphrase or device-key provisioning
+            // Setup panel: explicit two-mode selector (New passphrase vs Existing passphrase)
             ColumnLayout {
                 visible: syncCol.setupOpen && !CloudService.syncActive
                 Layout.fillWidth: true
+                Layout.minimumWidth: 0
                 spacing: 8
 
-                CheckBox {
-                    text: qsTr("This device already has a sync vault (join with existing passphrase)")
-                    checked: syncCol.attachMode
-                    onToggled: syncCol.attachMode = checked
+                GridLayout {
+                    Layout.fillWidth: true
+                    columns: root.singleColumn ? 1 : 2
+                    columnSpacing: 8
+                    rowSpacing: 6
+
+                    RagoPillButton {
+                        Layout.fillWidth: true
+                        stretch: true
+                        checked: !syncCol.attachMode
+                        text: qsTr("New Sync Passphrase")
+                        Accessible.name: text
+                        onClicked: syncCol.setAttachMode(false)
+                    }
+
+                    RagoPillButton {
+                        Layout.fillWidth: true
+                        stretch: true
+                        checked: syncCol.attachMode
+                        text: qsTr("Use Existing Passphrase")
+                        Accessible.name: text
+                        onClicked: syncCol.setAttachMode(true)
+                    }
                 }
 
-                TextField {
+                Label {
+                    Layout.fillWidth: true
+                    wrapMode: Text.WordWrap
+                    font.pixelSize: 12
+                    color: Theme.disabledTextColor
+                    text: syncCol.attachMode
+                          ? qsTr("Enter the sync passphrase you already created on another device.")
+                          : qsTr("Choose a passphrase (at least 8 characters) to encrypt your sync data. Enter this same passphrase on your other devices.")
+                }
+
+                RagoTextField {
                     id: syncPassInput
                     Layout.fillWidth: true
                     Layout.minimumWidth: 0
-                    echoMode: TextInput.Password
+                    echoMode: syncCol.showPass ? TextInput.Normal : TextInput.Password
+                    inputMethodHints: Qt.ImhSensitiveData | Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
                     placeholderText: syncCol.attachMode
                                      ? qsTr("Existing sync passphrase")
                                      : qsTr("New sync passphrase (min 8 chars)")
+                    Accessible.name: placeholderText
+                    onTextEdited: syncCol.setupError = ""
                 }
 
-                TextField {
+                RagoTextField {
                     id: syncPassConfirm
                     visible: !syncCol.attachMode
                     Layout.fillWidth: true
                     Layout.minimumWidth: 0
-                    echoMode: TextInput.Password
+                    echoMode: syncCol.showPass ? TextInput.Normal : TextInput.Password
+                    inputMethodHints: Qt.ImhSensitiveData | Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
                     placeholderText: qsTr("Repeat passphrase")
+                    Accessible.name: placeholderText
+                    onTextEdited: syncCol.setupError = ""
+                }
+
+                Flow {
+                    Layout.fillWidth: true
+                    spacing: 6
+
+                    RagoPillButton {
+                        compact: true
+                        text: syncCol.showPass ? qsTr("Hide Passphrase") : qsTr("Show Passphrase")
+                        Accessible.name: text
+                        onClicked: syncCol.showPass = !syncCol.showPass
+                    }
+
+                    RagoPillButton {
+                        compact: true
+                        visible: !syncCol.attachMode
+                        text: qsTr("Use Device Key Instead")
+                        Accessible.name: text
+                        ToolTip.visible: hovered
+                        ToolTip.text: qsTr("Encrypts backups with a key stored only on this device. Other devices will not be able to read them.")
+                        onClicked: {
+                            var err = CloudService.syncEnableDeviceKey()
+                            if (err.length === 0)
+                                syncCol.closeSetup()
+                            else
+                                syncCol.setupError = err
+                        }
+                    }
                 }
 
                 Label {
@@ -889,18 +1004,16 @@ ColumnLayout {
                     }
                 }
 
-                GridLayout {
+                Flow {
                     Layout.fillWidth: true
-                    columns: root.singleColumn ? 1 : 3
-                    columnSpacing: 8
+                    spacing: 8
 
                     RagoPillButton {
-                        Layout.fillWidth: true
-                        stretch: true
+                        primary: true
                         enabled: syncPassInput.text.length >= 8
                                  && (syncCol.attachMode
                                      || syncPassInput.text === syncPassConfirm.text)
-                        text: syncCol.attachMode ? qsTr("Join Vault") : qsTr("Create Vault")
+                        text: syncCol.attachMode ? qsTr("Connect & Sync") : qsTr("Start Encrypted Sync")
                         Accessible.name: text
                         onClicked: {
                             var err = syncCol.attachMode
@@ -916,55 +1029,99 @@ ColumnLayout {
                     }
 
                     RagoPillButton {
-                        visible: !syncCol.attachMode
-                        Layout.fillWidth: true
-                        stretch: true
-                        text: qsTr("Use Device Key Instead")
-                        Accessible.name: text
-                        onClicked: {
-                            var err = CloudService.syncEnableDeviceKey()
-                            if (err.length === 0)
-                                syncCol.closeSetup()
-                            else
-                                syncCol.setupError = err
-                        }
-                    }
-
-                    RagoPillButton {
-                        Layout.fillWidth: true
-                        stretch: true
                         text: qsTr("Cancel")
                         Accessible.name: text
                         onClicked: syncCol.closeSetup()
                     }
                 }
             }
+
+            // Collapsible Advanced section: keeps administrative & destructive actions off the main canvas
+            ColumnLayout {
+                visible: root.advancedOpen
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+                spacing: 8
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 1
+                    color: Theme.glassBorder
+                }
+
+                Flow {
+                    Layout.fillWidth: true
+                    spacing: 8
+
+                    RagoPillButton {
+                        compact: true
+                        enabled: !CloudService.busy && !AppSettings.disableHttpsFeatures && !CloudService.policyInvalid
+                        text: CloudService.busy ? qsTr("Refreshing…") : qsTr("Refresh Status")
+                        Accessible.name: text
+                        onClicked: CloudService.refreshStatus()
+                    }
+
+                    RagoPillButton {
+                        compact: true
+                        visible: !CloudService.policyLocked && !root.serverEditOpen
+                        enabled: !CloudService.busy && !CloudService.syncBusy
+                        text: qsTr("Change Server…")
+                        Accessible.name: text
+                        onClicked: root.openServerEditor()
+                    }
+
+                    RagoPillButton {
+                        compact: true
+                        visible: CloudService.syncActive
+                        text: qsTr("Disable Sync")
+                        Accessible.name: text
+                        onClicked: {
+                            CloudService.syncDisable()
+                            root.advancedOpen = false
+                        }
+                    }
+
+                    RagoPillButton {
+                        compact: true
+                        visible: CloudService.syncActive
+                        danger: true
+                        text: qsTr("Delete Remote Data…")
+                        Accessible.name: text
+                        onClicked: syncWipeDialog.open()
+                    }
+                }
+            }
         }
     }
 
-    Dialog {
+    RagoDialog {
         id: syncWipeDialog
-        modal: true
         title: qsTr("Delete Remote Sync Data")
-        standardButtons: Dialog.Ok | Dialog.Cancel
-        anchors.centerIn: parent
+        acceptText: qsTr("Delete Remote Data…")
+        rejectText: qsTr("Cancel")
+        showReject: true
+        dangerAccept: true
+        width: Math.min(visibleWidth - 24, 420)
         onAccepted: CloudService.syncWipeRemote()
-        Label {
+
+        contentItem: Label {
+            width: syncWipeDialog.availableWidth
             wrapMode: Text.WordWrap
-            text: qsTr("All encrypted collections stored on the server will be deleted "
-                       + "permanently. Local settings stay on this device.")
+            font.pixelSize: 13
+            color: Theme.textColor
+            text: qsTr("All encrypted collections stored on the server will be deleted permanently. Local settings stay on this device.")
         }
     }
 
-    Dialog {
+    RagoDialog {
         id: serverSwitchDialog
         property bool resetRequested: false
         property string pendingMode: "default"
-        modal: true
         title: qsTr("Switch Cloud Server")
-        standardButtons: Dialog.Ok | Dialog.Cancel
-        anchors.centerIn: parent
-        width: Math.min(400, root.width > 32 ? root.width - 32 : 360)
+        acceptText: qsTr("Apply Server")
+        rejectText: qsTr("Cancel")
+        showReject: true
+        width: Math.min(visibleWidth - 24, 420)
         onAccepted: {
             var err = resetRequested
                 ? CloudService.resetServerProfileToDefault()
@@ -978,9 +1135,12 @@ ColumnLayout {
                 root.serverEditOpen = false
             }
         }
-        Label {
+
+        contentItem: Label {
             width: serverSwitchDialog.availableWidth
             wrapMode: Text.WordWrap
+            font.pixelSize: 13
+            color: Theme.textColor
             text: qsTr("Switching the cloud server will sign out of your current session and clear local sync state. Saved local MongoDB connections, scripts, and query history stay on this device.")
         }
     }
