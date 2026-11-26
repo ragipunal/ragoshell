@@ -45,6 +45,12 @@ RagoMenu {
         enabled: resultContextMenu.page.selectedDocIndices.length > 0
         onTriggered: resultContextMenu.page.triggerDeleteSelectedDocuments()
     }
+    RagoMenuItem {
+        text: qsTr("Select All")
+        keys: "Ctrl+A"
+        enabled: resultContextMenu.page.shell ? resultContextMenu.page.shell.resultCount > 0 : false
+        onTriggered: resultContextMenu.page.selectAllDocuments()
+    }
 
     RagoMenuSeparator {}
 

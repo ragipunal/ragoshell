@@ -5488,6 +5488,10 @@ Error:
         <translation>Eliminar documento…</translation>
     </message>
     <message>
+        <source>Select All</source>
+        <translation>Seleccionar todo</translation>
+    </message>
+    <message>
         <source>Copy Value</source>
         <translation>Copiar valor</translation>
     </message>

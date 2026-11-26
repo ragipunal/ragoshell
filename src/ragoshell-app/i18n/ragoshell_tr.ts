@@ -5470,6 +5470,10 @@ Hata:
         <translation>Belgeyi Sil…</translation>
     </message>
     <message>
+        <source>Select All</source>
+        <translation>Tümünü Seç</translation>
+    </message>
+    <message>
         <source>Copy Value</source>
         <translation>Değeri Kopyala</translation>
     </message>

@@ -5492,6 +5492,10 @@ Erro:
         <translation>Excluir documento…</translation>
     </message>
     <message>
+        <source>Select All</source>
+        <translation>Selecionar tudo</translation>
+    </message>
+    <message>
         <source>Copy Value</source>
         <translation>Copiar valor</translation>
     </message>

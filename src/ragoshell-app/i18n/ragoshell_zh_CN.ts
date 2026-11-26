@@ -5470,6 +5470,10 @@ Error:
         <translation>删除文档…</translation>
     </message>
     <message>
+        <source>Select All</source>
+        <translation>全选</translation>
+    </message>
+    <message>
         <source>Copy Value</source>
         <translation>复制值</translation>
     </message>

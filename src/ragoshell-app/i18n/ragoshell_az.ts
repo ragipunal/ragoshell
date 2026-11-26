@@ -5492,6 +5492,10 @@ Xəta:
         <translation>Sənədi sil…</translation>
     </message>
     <message>
+        <source>Select All</source>
+        <translation>Hamısını seç</translation>
+    </message>
+    <message>
         <source>Copy Value</source>
         <translation>Dəyəri kopyala</translation>
     </message>

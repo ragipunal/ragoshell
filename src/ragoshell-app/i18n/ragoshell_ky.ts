@@ -5492,6 +5492,10 @@ Error:
         <translation>Документти өчүрүү…</translation>
     </message>
     <message>
+        <source>Select All</source>
+        <translation>Баарын тандоо</translation>
+    </message>
+    <message>
         <source>Copy Value</source>
         <translation>Маанини көчүрүү</translation>
     </message>

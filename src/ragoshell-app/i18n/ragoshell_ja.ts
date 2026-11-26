@@ -5470,6 +5470,10 @@ Error:
         <translation>ドキュメントを削除…</translation>
     </message>
     <message>
+        <source>Select All</source>
+        <translation>すべて選択</translation>
+    </message>
+    <message>
         <source>Copy Value</source>
         <translation>値をコピー</translation>
     </message>

@@ -5492,6 +5492,10 @@ Error:
         <translation>डॉक्यूमेंट मिटाएँ…</translation>
     </message>
     <message>
+        <source>Select All</source>
+        <translation>सभी चुनें</translation>
+    </message>
+    <message>
         <source>Copy Value</source>
         <translation>मान कॉपी करें</translation>
     </message>

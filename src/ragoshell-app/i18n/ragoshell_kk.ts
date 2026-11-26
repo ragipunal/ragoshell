@@ -5486,6 +5486,10 @@ Error:
         <translation>Құжатты жою…</translation>
     </message>
     <message>
+        <source>Select All</source>
+        <translation>Барлығын таңдау</translation>
+    </message>
+    <message>
         <source>Copy Value</source>
         <translation>Мәнді көшіру</translation>
     </message>

@@ -5492,6 +5492,10 @@ Erreur&#xa0;:
         <translation>Supprimer le document…</translation>
     </message>
     <message>
+        <source>Select All</source>
+        <translation>Tout sélectionner</translation>
+    </message>
+    <message>
         <source>Copy Value</source>
         <translation>Copier la valeur</translation>
     </message>

@@ -5514,6 +5514,10 @@ Error:
         <translation>Удалить документ…</translation>
     </message>
     <message>
+        <source>Select All</source>
+        <translation>Выделить всё</translation>
+    </message>
+    <message>
         <source>Copy Value</source>
         <translation>Копировать значение</translation>
     </message>

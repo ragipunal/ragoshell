@@ -90,6 +90,7 @@ Item {
     // Multi-document selection state (sorted unique array of 0-based doc indices)
     property var selectedDocIndices: []
     property int _selectionAnchorDoc: -1
+    property int _focusDocIndex: -1
     property int _activeTreeRow: -1
 
     Connections {
@@ -321,7 +322,14 @@ Item {
         if (!page.shell)
             return
         if (fullDoc && selectedDocIndices.length > 0) {
-            page.shell.copyToClipboard(page.shell.documentJsonAt(selectedDocIndices[0]))
+            if (selectedDocIndices.length === 1) {
+                page.shell.copyToClipboard(page.shell.documentJsonAt(selectedDocIndices[0]))
+            } else {
+                var docs = []
+                for (var i = 0; i < selectedDocIndices.length; ++i)
+                    docs.push(page.shell.documentJsonAt(selectedDocIndices[i]))
+                page.shell.copyToClipboard("[\n" + docs.join(",\n") + "\n]")
+            }
         } else if (_ctxRawValue.length > 0) {
             page.shell.copyToClipboard(_ctxRawValue)
         } else if (selectedDocIndices.length > 0) {
@@ -331,7 +339,7 @@ Item {
 
     // ---- Selection helpers -------------------------------------------------
     function isDocSelected(docIdx) {
-        return docIdx >= 0 && selectedDocIndices.indexOf(docIdx) !== -1
+        return selectedDocIndices.indexOf(docIdx) !== -1 && docIdx >= 0
     }
 
     function selectDocumentWithModifiers(docIdx, modifiers) {
@@ -343,10 +351,21 @@ Item {
         if (shift && _selectionAnchorDoc >= 0) {
             var lo = Math.min(_selectionAnchorDoc, docIdx)
             var hi = Math.max(_selectionAnchorDoc, docIdx)
-            var range = []
-            for (var d = lo; d <= hi; ++d)
-                range.push(d)
-            selectedDocIndices = range
+            if (ctrl) {
+                var merged = selectedDocIndices.slice()
+                for (var m = lo; m <= hi; ++m) {
+                    if (merged.indexOf(m) < 0)
+                        merged.push(m)
+                }
+                merged.sort(function(a, b) { return a - b })
+                selectedDocIndices = merged
+            } else {
+                var range = []
+                for (var d = lo; d <= hi; ++d)
+                    range.push(d)
+                selectedDocIndices = range
+            }
+            _focusDocIndex = docIdx
         } else if (ctrl) {
             var copy = selectedDocIndices.slice()
             var existing = copy.indexOf(docIdx)
@@ -357,9 +376,11 @@ Item {
             copy.sort(function(a, b) { return a - b })
             selectedDocIndices = copy
             _selectionAnchorDoc = docIdx
+            _focusDocIndex = docIdx
         } else {
             selectedDocIndices = [docIdx]
             _selectionAnchorDoc = docIdx
+            _focusDocIndex = docIdx
         }
         if (_ctxDocIndex !== docIdx) {
             _ctxDocIndex = docIdx
@@ -370,7 +391,35 @@ Item {
         }
     }
 
-    function populateContextFromCell(docIdx, treeRow, keyStr, rawVal, fieldPath, typeName, expandable) {
+    function selectAllDocuments() {
+        var count = page.shell ? page.shell.resultCount : 0
+        if (count <= 0)
+            return
+        var all = []
+        for (var i = 0; i < count; ++i)
+            all.push(i)
+        selectedDocIndices = all
+        if (_selectionAnchorDoc < 0 || _selectionAnchorDoc >= count)
+            _selectionAnchorDoc = 0
+        if (_focusDocIndex < 0 || _focusDocIndex >= count)
+            _focusDocIndex = count - 1
+    }
+
+    function stepDocumentSelection(delta, extendSelection) {
+        var count = page.shell ? page.shell.resultCount : 0
+        if (count <= 0)
+            return -1
+        var base = _focusDocIndex >= 0 ? _focusDocIndex
+                   : (_selectionAnchorDoc >= 0 ? _selectionAnchorDoc : 0)
+        var next = Math.max(0, Math.min(count - 1, base + delta))
+        if (extendSelection && _selectionAnchorDoc < 0)
+            _selectionAnchorDoc = base
+        selectDocumentWithModifiers(next, extendSelection ? Qt.ShiftModifier : Qt.NoModifier)
+        _ctxDocIndex = next
+        return next
+    }
+
+    function populateContextFromCell(docIdx, treeRow, keyStr, rawVal, fieldPath, typeName, expandable, ensureSelected) {
         _ctxDocIndex = docIdx
         _ctxTreeRow = treeRow
         _ctxKey = keyStr || ""
@@ -381,9 +430,10 @@ Item {
         _ctxOidIso = (page.shell && (_ctxTypeName === "ObjectId" || _ctxRawValue.indexOf("ObjectId") !== -1))
                      ? page.shell.objectIdTimestamp(_ctxRawValue)
                      : ""
-        if (docIdx >= 0 && !isDocSelected(docIdx)) {
+        if (ensureSelected !== false && docIdx >= 0 && !isDocSelected(docIdx)) {
             selectedDocIndices = [docIdx]
             _selectionAnchorDoc = docIdx
+            _focusDocIndex = docIdx
         }
     }
 
@@ -476,7 +526,8 @@ Item {
             page.cancelInPlaceEdit()
             page.selectedDocIndices = page.shell && page.shell.resultCount > 0 ? [0] : []
             page._selectionAnchorDoc = page.selectedDocIndices.length > 0 ? 0 : -1
-            page._ctxDocIndex = page.selectedDocIndices.length > 0 ? 0 : -1
+            page._focusDocIndex = page._selectionAnchorDoc
+            page._ctxDocIndex = page._selectionAnchorDoc
             page._ctxTreeRow = -1
             page._ctxKey = ""
             page._ctxRawValue = ""

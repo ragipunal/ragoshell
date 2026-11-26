@@ -5580,6 +5580,10 @@ Error:
         <translation>حذف المستند…</translation>
     </message>
     <message>
+        <source>Select All</source>
+        <translation>تحديد الكل</translation>
+    </message>
+    <message>
         <source>Copy Value</source>
         <translation>نسخ القيمة</translation>
     </message>

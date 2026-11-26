@@ -19,6 +19,7 @@ Rectangle {
     Keys.onPressed: function(event) {
         var ctrl = (event.modifiers & Qt.ControlModifier) !== 0
         var shift = (event.modifiers & Qt.ShiftModifier) !== 0
+        var alt = (event.modifiers & Qt.AltModifier) !== 0
         if (event.key === Qt.Key_Delete ||
             (tableContainer.page.isMac && ctrl && event.key === Qt.Key_Backspace)) {
             tableContainer.page.triggerDeleteSelectedDocuments()
@@ -38,6 +39,15 @@ Rectangle {
             event.accepted = true
         } else if ((ctrl && event.key === Qt.Key_I) || event.key === Qt.Key_Insert) {
             tableContainer.page.triggerInsertDocument()
+            event.accepted = true
+        } else if (ctrl && !shift && !alt && event.key === Qt.Key_A && tableContainer.page._editingDocIndex < 0) {
+            tableContainer.page.selectAllDocuments()
+            event.accepted = true
+        } else if (!ctrl && !alt && (event.key === Qt.Key_Up || event.key === Qt.Key_Down)
+                   && tableContainer.page._editingDocIndex < 0) {
+            var nextRow = tableContainer.page.stepDocumentSelection(event.key === Qt.Key_Down ? 1 : -1, shift)
+            if (nextRow >= 0)
+                tableView.positionViewAtRow(nextRow, TableView.Contain)
             event.accepted = true
         }
     }
@@ -83,6 +93,7 @@ Rectangle {
             Layout.fillHeight: true
             model: tableContainer.page.shell ? tableContainer.page.shell.tableModel : null
             clip: true
+            pointerNavigationEnabled: false
             resizableColumns: true
 
             columnWidthProvider: function(column) {
@@ -102,6 +113,8 @@ Rectangle {
                 implicitHeight: Math.max(28, AppSettings.codeFontSize + 15)
 
                 readonly property int docIdx: (model && model.docIndex !== undefined) ? model.docIndex : row
+                readonly property bool docSelected: tableContainer.page.selectedDocIndices.indexOf(docIdx) !== -1
+                                                    && docIdx >= 0
                 readonly property string fPath: (model && model.fieldPath !== undefined) ? model.fieldPath : ""
                 readonly property string rawVal: (model && model.rawValue !== undefined) ? model.rawValue : ""
                 readonly property string tName: (model && model.typeName !== undefined) ? model.typeName : ""
@@ -111,7 +124,7 @@ Rectangle {
                                                           tableContainer.page._editingFieldPath === fPath &&
                                                           fPath.length > 0
 
-                color: tableContainer.page.isDocSelected(docIdx)
+                color: tableCell.docSelected
                        ? Theme.selectedColor
                        : (row % 2 === 1 ? Theme.alternateColor : Theme.baseColor)
                 border.width: 1
@@ -157,14 +170,15 @@ Rectangle {
                     onPressed: function(mouse) {
                         tableCell._longPressTriggered = false
                         tableContainer.forceActiveFocus()
+                        if (mouse.button === Qt.LeftButton) {
+                            tableContainer.page.selectDocumentWithModifiers(tableCell.docIdx, mouse.modifiers)
+                        }
                         var k = tableCell.model ? tableCell.model.key : ""
                         tableContainer.page.populateContextFromCell(
                             tableCell.docIdx, -1, k,
                             tableCell.rawVal, tableCell.fPath,
-                            tableCell.tName, false)
-                        if (mouse.button === Qt.LeftButton) {
-                            tableContainer.page.selectDocumentWithModifiers(tableCell.docIdx, mouse.modifiers)
-                        }
+                            tableCell.tName, false,
+                            mouse.button !== Qt.LeftButton)
                     }
                     onPressAndHold: function(mouse) {
                         if (mouse.source === Qt.MouseEventNotSynthesized && !Platform.isMobile)

@@ -64,6 +64,8 @@ qt_add_executable(ragoshell WIN32 MACOSX_BUNDLE
     DraftsSelfTest.h
     ExplorerSelfTest.cpp
     ExplorerSelfTest.h
+    ResultSelectionSelfTest.cpp
+    ResultSelectionSelfTest.h
     LogModel.cpp
     LogModel.h
     QmlObjectListModel.cpp

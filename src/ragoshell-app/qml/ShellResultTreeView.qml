@@ -84,6 +84,21 @@ Rectangle {
         } else if (alt && event.key === Qt.Key_Left && treeContainer.page._activeTreeRow >= 0) {
             treeContainer.page.expandTreeSubtree(treeContainer.page._activeTreeRow, false)
             event.accepted = true
+        } else if (ctrl && !shift && !alt && event.key === Qt.Key_A && treeContainer.page._editingDocIndex < 0) {
+            treeContainer.page.selectAllDocuments()
+            event.accepted = true
+        } else if (!ctrl && !alt && (event.key === Qt.Key_Up || event.key === Qt.Key_Down)
+                   && treeContainer.page._editingDocIndex < 0) {
+            var nextDoc = treeContainer.page.stepDocumentSelection(event.key === Qt.Key_Down ? 1 : -1, shift)
+            if (nextDoc >= 0 && treeView.model) {
+                var topIdx = treeView.model.index(nextDoc, 0)
+                var visRow = treeView.rowAtIndex(topIdx)
+                if (visRow >= 0) {
+                    treeContainer.page._activeTreeRow = visRow
+                    treeView.positionViewAtRow(visRow, TableView.Contain)
+                }
+            }
+            event.accepted = true
         }
     }
 
@@ -213,6 +228,7 @@ Rectangle {
             Layout.fillHeight: true
             model: treeContainer.page.shell ? treeContainer.page.shell.treeModel : null
             clip: true
+            pointerNavigationEnabled: false
             selectionModel: ItemSelectionModel {}
             onWidthChanged: {
                 if (!treeContainer._treeLayoutQueued) {
@@ -247,6 +263,8 @@ Rectangle {
                 required property var model
 
                 readonly property int docIdx: (model && model.docIndex !== undefined) ? model.docIndex : -1
+                readonly property bool docSelected: treeContainer.page.selectedDocIndices.indexOf(docIdx) !== -1
+                                                    && docIdx >= 0
                 readonly property string fPath: (model && model.fieldPath !== undefined) ? model.fieldPath : ""
                 readonly property string rawVal: (model && model.rawValue !== undefined) ? model.rawValue : ""
                 readonly property string tName: (model && model.typeName !== undefined) ? model.typeName : ""
@@ -259,7 +277,7 @@ Rectangle {
 
                 Rectangle {
                     anchors.fill: parent
-                    color: treeContainer.page.isDocSelected(treeDelegate.docIdx)
+                    color: treeDelegate.docSelected
                            ? (treeDelegate.depth === 0
                               ? Theme.selectedColor
                               : Qt.rgba(Theme.accentColor.r,
@@ -270,7 +288,7 @@ Rectangle {
                 }
 
                 Rectangle {
-                    visible: treeDelegate.column === 0 && treeContainer.page.isDocSelected(treeDelegate.docIdx)
+                    visible: treeDelegate.column === 0 && treeDelegate.docSelected
                     anchors.left: parent.left
                     anchors.top: parent.top
                     anchors.bottom: parent.bottom
@@ -367,14 +385,15 @@ Rectangle {
                         treeDelegate._longPressTriggered = false
                         treeContainer.forceActiveFocus()
                         treeContainer.page._activeTreeRow = treeDelegate.row
+                        if (mouse.button === Qt.LeftButton) {
+                            treeContainer.page.selectDocumentWithModifiers(treeDelegate.docIdx, mouse.modifiers)
+                        }
                         var k = treeDelegate.model ? treeDelegate.model.key : ""
                         treeContainer.page.populateContextFromCell(
                             treeDelegate.docIdx, treeDelegate.row, k,
                             treeDelegate.rawVal, treeDelegate.fPath,
-                            treeDelegate.tName, treeDelegate.hasChildren)
-                        if (mouse.button === Qt.LeftButton) {
-                            treeContainer.page.selectDocumentWithModifiers(treeDelegate.docIdx, mouse.modifiers)
-                        }
+                            treeDelegate.tName, treeDelegate.hasChildren,
+                            mouse.button !== Qt.LeftButton)
                     }
                     onPressAndHold: function(mouse) {
                         if (mouse.source === Qt.MouseEventNotSynthesized && !Platform.isMobile)
@@ -401,7 +420,8 @@ Rectangle {
                             treeContainer.page.openResultMenuAt(treeDelegate, mouse.x, mouse.y)
                             return
                         }
-                        if (mouse.button === Qt.LeftButton) {
+                        if (mouse.button === Qt.LeftButton &&
+                            (mouse.modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) === 0) {
                             var arrowBound = treeDelegate.padding + treeDelegate.depth * treeDelegate.indentation + 24
                             if (treeDelegate.column === 0 && treeDelegate.hasChildren &&
                                 (mouse.x < arrowBound || Platform.isMobile)) {

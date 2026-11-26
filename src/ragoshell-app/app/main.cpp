@@ -44,6 +44,7 @@
 #include "ragoshell-app/ConnectionListModel.h"
 #include "ragoshell-app/DraftsSelfTest.h"
 #include "ragoshell-app/ExplorerSelfTest.h"
+#include "ragoshell-app/ResultSelectionSelfTest.h"
 #include "ragoshell-app/ScintillaQuick.h"
 #include "ragoshell-app/ShellController.h"
 #include "ragoshell-app/McpSettingsBridge.h"
@@ -286,6 +287,7 @@ int main(int argc, char *argv[])
     const bool headlessRun = startupArgs.contains(QStringLiteral("--check-qml"))
                           || startupArgs.contains(QStringLiteral("--check-geometry"))
                           || startupArgs.contains(QStringLiteral("--explorer-selftest"))
+                          || startupArgs.contains(QStringLiteral("--selection-selftest"))
                           || startupArgs.contains(QStringLiteral("--snapshot"))
                           || startupArgs.contains(QStringLiteral("--open-view"));
     if (!headlessRun)
@@ -346,6 +348,13 @@ int main(int argc, char *argv[])
     if (startupArgs.contains(QStringLiteral("--explorer-selftest"))) {
         backend.setPersistUiState(false);
         const int rc = RagoShell::runExplorerSelfTest(&engine, &backend);
+        fflush(stderr);
+        rbm_ssh_cleanup();
+        return rc;
+    }
+    if (startupArgs.contains(QStringLiteral("--selection-selftest"))) {
+        backend.setPersistUiState(false);
+        const int rc = RagoShell::runResultSelectionSelfTest(&engine);
         fflush(stderr);
         rbm_ssh_cleanup();
         return rc;

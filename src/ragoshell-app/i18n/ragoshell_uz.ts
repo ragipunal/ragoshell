@@ -5492,6 +5492,10 @@ Xato:
         <translation>Hujjatni oʻchirish…</translation>
     </message>
     <message>
+        <source>Select All</source>
+        <translation>Barchasini tanlash</translation>
+    </message>
+    <message>
         <source>Copy Value</source>
         <translation>Qiymatni nusxalash</translation>
     </message>

@@ -5492,6 +5492,10 @@ Fehler:
         <translation>Dokument löschen…</translation>
     </message>
     <message>
+        <source>Select All</source>
+        <translation>Alles auswählen</translation>
+    </message>
+    <message>
         <source>Copy Value</source>
         <translation>Wert kopieren</translation>
     </message>
