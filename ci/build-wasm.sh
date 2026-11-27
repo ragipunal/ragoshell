@@ -215,21 +215,31 @@ fi
 export EMSDK VCPKG_ROOT Qt6_DIR QT_WASM_PATH
 
 # Verify Emscripten version matches Qt's baked-in QT_EMCC_VERSION before spending time compiling vcpkg ports.
-# Note: never pipe `emcc --version` (Python 3) directly into `head -n 1` under `set -o pipefail`: closing stdout
-# after line 1 raises BrokenPipeError in Py_FinalizeEx and makes Python exit with status 120.
+# Note: read full `emcc --version` output without `head -n 1` (avoids Python Py_FinalizeEx BrokenPipeError exit 120)
+# and scan all lines for the `emcc ... X.Y.Z` banner (first-run stderr notices or Python warnings may precede line 1).
 qconfig_h="$QT_WASM_PATH/include/QtCore/qconfig.h"
 expected_emcc=""
 if [ -f "$qconfig_h" ]; then
-    expected_emcc="$(awk '/^#define[[:space:]]+QT_EMCC_VERSION[[:space:]]+"/ { sub(/^[^"]*"/, ""); sub(/".*$/, ""); print; exit }' "$qconfig_h")"
+    expected_emcc="$(QCONFIG_PATH="$qconfig_h" node -e '
+        const fs = require("node:fs");
+        const txt = fs.readFileSync(process.env.QCONFIG_PATH, "utf8");
+        const m = txt.match(/^#define\s+QT_EMCC_VERSION\s+"(\d+\.\d+\.\d+)"/m);
+        if (m) process.stdout.write(m[1]);
+    ')"
 fi
 if ! emcc_ver_out="$("$emcc_bin" --version 2>&1)"; then
     echo "error: failed to run '$emcc_bin --version':" >&2
     printf '%s\n' "$emcc_ver_out" >&2
     exit 1
 fi
-actual_emcc="$(printf '%s\n' "$emcc_ver_out" | awk 'NR==1 && match($0, /[0-9]+\.[0-9]+\.[0-9]+/) { print substr($0, RSTART, RLENGTH) }')"
+actual_emcc="$(EMCC_OUT="$emcc_ver_out" node -e '
+    const out = process.env.EMCC_OUT || "";
+    const m = out.match(/emcc\b[^\r\n]*?\b(\d+\.\d+\.\d+)\b/i) || out.match(/\b(\d+\.\d+\.\d+)\b/);
+    if (m) process.stdout.write(m[1]);
+')"
 if [ -n "$expected_emcc" ] && [ "$actual_emcc" != "$expected_emcc" ]; then
     echo "error: Qt WASM ($QT_WASM_PATH) requires Emscripten $expected_emcc, but emcc reports '${actual_emcc:-unknown}'." >&2
+    printf '%s\n' "$emcc_ver_out" >&2
     echo "       Run: emsdk install $expected_emcc && emsdk activate $expected_emcc" >&2
     exit 1
 fi

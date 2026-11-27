@@ -205,8 +205,14 @@ if (Test-Path -LiteralPath $qconfigPath) {
         $expectedEmcc = $Matches[1]
     }
 }
-$emccOut = (& $emccBat --version 2>&1 | Select-Object -First 1 | Out-String)
-$actualEmcc = if ($emccOut -match '(\d+\.\d+\.\d+)') { $Matches[1] } else { '' }
+$emccOut = (& $emccBat --version 2>&1 | Out-String)
+$actualEmcc = if ($emccOut -match '(?im)emcc\b[^\r\n]*?\b(\d+\.\d+\.\d+)\b') {
+    $Matches[1]
+} elseif ($emccOut -match '\b(\d+\.\d+\.\d+)\b') {
+    $Matches[1]
+} else {
+    ''
+}
 if ($expectedEmcc -and $actualEmcc -ne $expectedEmcc) {
     throw "Qt WASM ($($env:QT_WASM_PATH)) requires Emscripten $expectedEmcc, but emcc reports '$actualEmcc'. Run: emsdk install $expectedEmcc && emsdk activate $expectedEmcc"
 }
