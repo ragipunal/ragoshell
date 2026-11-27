@@ -215,12 +215,19 @@ fi
 export EMSDK VCPKG_ROOT Qt6_DIR QT_WASM_PATH
 
 # Verify Emscripten version matches Qt's baked-in QT_EMCC_VERSION before spending time compiling vcpkg ports.
+# Note: never pipe `emcc --version` (Python 3) directly into `head -n 1` under `set -o pipefail`: closing stdout
+# after line 1 raises BrokenPipeError in Py_FinalizeEx and makes Python exit with status 120.
 qconfig_h="$QT_WASM_PATH/include/QtCore/qconfig.h"
 expected_emcc=""
 if [ -f "$qconfig_h" ]; then
-    expected_emcc="$(sed -n 's/^#define[[:space:]]*QT_EMCC_VERSION[[:space:]]*"\([0-9][0-9.]*\)".*/\1/p' "$qconfig_h" | head -n 1)"
+    expected_emcc="$(awk '/^#define[[:space:]]+QT_EMCC_VERSION[[:space:]]+"/ { sub(/^[^"]*"/, ""); sub(/".*$/, ""); print; exit }' "$qconfig_h")"
 fi
-actual_emcc="$("$emcc_bin" --version 2>&1 | head -n 1 | sed -n 's/.*[^0-9]\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/p')"
+if ! emcc_ver_out="$("$emcc_bin" --version 2>&1)"; then
+    echo "error: failed to run '$emcc_bin --version':" >&2
+    printf '%s\n' "$emcc_ver_out" >&2
+    exit 1
+fi
+actual_emcc="$(printf '%s\n' "$emcc_ver_out" | awk 'NR==1 && match($0, /[0-9]+\.[0-9]+\.[0-9]+/) { print substr($0, RSTART, RLENGTH) }')"
 if [ -n "$expected_emcc" ] && [ "$actual_emcc" != "$expected_emcc" ]; then
     echo "error: Qt WASM ($QT_WASM_PATH) requires Emscripten $expected_emcc, but emcc reports '${actual_emcc:-unknown}'." >&2
     echo "       Run: emsdk install $expected_emcc && emsdk activate $expected_emcc" >&2
