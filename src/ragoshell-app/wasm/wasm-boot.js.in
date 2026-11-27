@@ -1,0 +1,98 @@
+// CSP-compliant WebAssembly loader bootstrap (50-demo.conf.template:
+// script-src 'self' 'wasm-unsafe-eval'; connect-src 'self').
+// No inline event handlers, no eval/Function, and textContent-only DOM updates.
+(function () {
+    'use strict';
+
+    const EXPORT_NAME = '@RAGO_WASM_EXPORT_NAME@';
+    const MODE_ENV_KEY = '@RAGO_WASM_MODE_ENV_KEY@';
+    const DEFAULT_MODE = '@RAGO_WASM_DEFAULT_MODE@';
+    const REQUIRES_THREADS = @RAGO_WASM_REQUIRES_THREADS@;
+
+    async function boot() {
+        const spinner = document.getElementById('qtspinner');
+        const screen = document.getElementById('screen');
+        const status = document.getElementById('qtstatus');
+        const progress = document.getElementById('qtprogress');
+
+        if (!spinner || !screen || !status) {
+            return;
+        }
+
+        const showSpinner = function (message, hideProgress) {
+            screen.classList.add('is-hidden');
+            spinner.classList.remove('is-hidden');
+            if (progress) {
+                if (hideProgress) {
+                    progress.classList.add('is-hidden');
+                } else {
+                    progress.classList.remove('is-hidden');
+                }
+            }
+            status.textContent = message;
+        };
+
+        const showScreen = function () {
+            spinner.classList.add('is-hidden');
+            screen.classList.remove('is-hidden');
+        };
+
+        if (typeof WebAssembly !== 'object') {
+            showSpinner('WebAssembly is not supported by this browser.', true);
+            return;
+        }
+
+        if (REQUIRES_THREADS && (typeof SharedArrayBuffer === 'undefined' || window.crossOriginIsolated !== true)) {
+            showSpinner(
+                'This browser session is not cross-origin isolated (SharedArrayBuffer is unavailable).\n' +
+                'Serve over HTTPS or localhost with Cross-Origin-Opener-Policy: same-origin and ' +
+                'Cross-Origin-Embedder-Policy: require-corp.',
+                true
+            );
+            return;
+        }
+
+        const entryFn = window[EXPORT_NAME];
+        if (typeof qtLoad !== 'function' || typeof entryFn !== 'function') {
+            showSpinner('Failed to load WebAssembly runtime scripts.', true);
+            return;
+        }
+
+        try {
+            showSpinner('Loading WebAssembly Playground...', false);
+            const env = {};
+            env[MODE_ENV_KEY] = DEFAULT_MODE;
+
+            await qtLoad({
+                qt: {
+                    environment: env,
+                    onLoaded: function () {
+                        showScreen();
+                    },
+                    onExit: function (exitData) {
+                        let msg = 'Application exited';
+                        if (exitData && exitData.code !== undefined) {
+                            msg += ' (code ' + String(exitData.code) + ')';
+                        }
+                        if (exitData && exitData.text) {
+                            msg += ': ' + String(exitData.text);
+                        }
+                        showSpinner(msg, true);
+                    },
+                    entryFunction: entryFn,
+                    containerElements: [screen]
+                }
+            });
+        } catch (err) {
+            console.error(err);
+            const detail = err && err.message ? err.message : String(err);
+            showSpinner('Failed to start WebAssembly runtime: ' + detail, true);
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', boot);
+    } else {
+        boot();
+    }
+})();

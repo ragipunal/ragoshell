@@ -80,7 +80,7 @@ namespace RagoShell {
     
     void MongoServer::tryRefreshReplicaSetFolder(bool expanded, bool showLoading /*= true*/)
     {
-        if (!_connSettings->isReplicaSet())
+        if (!_connSettings->isReplicaSet() || _connSettings->hasTransport())
             return;
 
         if (showLoading)
@@ -163,10 +163,10 @@ namespace RagoShell {
         }
 
         _bus->publish(new MongoServerLoadingDatabasesEvent(this));
-        if (_connSettings->isReplicaSet()) {
+        if (_connSettings->isReplicaSet() && !_connSettings->hasTransport()) {
             tryRefreshReplicaSetConnection();
         }
-        else {  // single server
+        else {  // single server or transport-backed channel
             _bus->send(_worker, new LoadDatabaseNamesRequest(this));
         }
     }
@@ -325,7 +325,7 @@ namespace RagoShell {
             settingsManager->save();
         }
 
-        if (_connSettings->isReplicaSet()) {
+        if (_connSettings->isReplicaSet() && !_connSettings->hasTransport()) {
             _bus->publish(new ConnectionEstablishedEvent(this, event->connectionType, info));
             // In order to do first connection much faster, time consuming refresh 
             // "repSetMonitor->startOrContinueRefresh(). refreshAll()" is being requested after 

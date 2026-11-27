@@ -54,7 +54,7 @@ namespace RagoShell
 
         connect(_client, &CloudClient::stateChanged, this, &CloudService::stateChanged);
 
-        if (!headlessRun) {
+        if (!headlessRun && !(_platform && _platform->isWasmPlayground())) {
             _client->restoreOfflineSession();
             // Keeps the hosted gateway token fresh without the manual refresh (docs/HostedGateway.md §9.8).
             if ((!_settings || !_settings->disableHttpsFeatures()) && !_client->isPolicyInvalid())
@@ -278,7 +278,7 @@ namespace RagoShell
 
     void CloudService::startSignIn(const QString &customDeviceName)
     {
-        if (!_client)
+        if (!_client || (_platform && _platform->isWasmPlayground()))
             return;
         _codeCopied = false;
         _client->startDeviceSignIn(customDeviceName);
@@ -359,7 +359,7 @@ namespace RagoShell
 
     void CloudService::refreshStatus()
     {
-        if (!_client)
+        if (!_client || (_platform && _platform->isWasmPlayground()))
             return;
         _client->refreshAccountAndEntitlements();
     }
@@ -478,6 +478,8 @@ namespace RagoShell
 
     QString CloudService::syncEnablePassphrase(const QString &passphrase)
     {
+        if (_platform && _platform->isWasmPlayground())
+            return QStringLiteral("unavailable");
         QString err;
         if (!_sync || !_sync->configurePassphrase(passphrase, &err))
             return err.isEmpty() ? QStringLiteral("unavailable") : err;
@@ -488,6 +490,8 @@ namespace RagoShell
 
     QString CloudService::syncAttachVault(const QString &passphrase)
     {
+        if (_platform && _platform->isWasmPlayground())
+            return QStringLiteral("unavailable");
         QString err;
         if (!_sync || !_sync->attachToRemoteVault(passphrase, &err))
             return err.isEmpty() ? QStringLiteral("unavailable") : err;
@@ -498,6 +502,8 @@ namespace RagoShell
 
     QString CloudService::syncEnableDeviceKey()
     {
+        if (_platform && _platform->isWasmPlayground())
+            return QStringLiteral("unavailable");
         QString err;
         if (!_sync || !_sync->configureDeviceKey(&err))
             return err.isEmpty() ? QStringLiteral("unavailable") : err;
@@ -517,6 +523,8 @@ namespace RagoShell
 
     void CloudService::syncNow()
     {
+        if (_platform && _platform->isWasmPlayground())
+            return;
         if (_sync)
             _sync->syncNow();
     }
@@ -531,6 +539,8 @@ namespace RagoShell
 
     void CloudService::syncWipeRemote()
     {
+        if (_platform && _platform->isWasmPlayground())
+            return;
         if (_sync)
             _sync->wipeRemote();
     }

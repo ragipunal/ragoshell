@@ -66,15 +66,16 @@ namespace RagoShell
             emit stateChanged();
         });
 
+        const bool wasmBuild = _platform && _platform->isWasm();
         const bool forceCheck = productEnvInt("FORCE_UPDATE_CHECK") == 1;
-        if (_settings && (!_headlessRun || forceCheck)) {
+        if (_settings && !wasmBuild && (!_headlessRun || forceCheck)) {
             const int prevLaunches = _settings->cacheData(QStringLiteral("usageLaunchCount")).toInt();
             _settings->addCacheData(QStringLiteral("usageLaunchCount"), std::max(0, prevLaunches) + 1);
             if (!BrandInfo::isStoreBuild)
                 restoreCachedState();
         }
 
-        if (BrandInfo::isStoreBuild)
+        if (BrandInfo::isStoreBuild || wasmBuild)
             return;
 
         if (!QNetworkInformation::instance()) {
@@ -140,7 +141,7 @@ namespace RagoShell
 
     bool UpdateService::bannerVisible() const
     {
-        if (BrandInfo::isStoreBuild)
+        if (BrandInfo::isStoreBuild || (_platform && _platform->isWasm() && _debugPreviewMode == 0))
             return false;
         return _updateAvailable
                && !_mandatory
@@ -294,7 +295,7 @@ namespace RagoShell
 
     void UpdateService::onWelcomeShown()
     {
-        if (BrandInfo::isStoreBuild)
+        if (BrandInfo::isStoreBuild || (_platform && _platform->isWasm()))
             return;
         const bool forceCheck = productEnvInt("FORCE_UPDATE_CHECK") == 1;
         if ((_headlessRun && !forceCheck) || _welcomeCheckedThisSession)
@@ -328,7 +329,7 @@ namespace RagoShell
 
     void UpdateService::checkNow()
     {
-        if (BrandInfo::isStoreBuild)
+        if (BrandInfo::isStoreBuild || (_platform && _platform->isWasm()))
             return;
         if (_settings && _settings->isEnterprisePolicyInvalid()) {
             _statusKind = StatusKind::PolicyDisabled;
@@ -366,7 +367,7 @@ namespace RagoShell
 
     void UpdateService::startCheck(bool manual)
     {
-        if (BrandInfo::isStoreBuild || _checking)
+        if (BrandInfo::isStoreBuild || (_platform && _platform->isWasm()) || _checking)
             return;
         if (_settings && _settings->disableHttpsFeatures())
             return;

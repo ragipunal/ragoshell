@@ -581,7 +581,7 @@ namespace RagoShell
             if (!collection.startsWith(QLatin1String("get")))   // db.getSiblingDB(...).x and the like
                 emit collectionReferenced(collection);
         }
-        if (_shell)
+        if (!_busy && _shell)
             _shell->autocomplete(prefix.toStdString());
     }
 

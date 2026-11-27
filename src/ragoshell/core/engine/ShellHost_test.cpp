@@ -6,9 +6,13 @@
 
 #include <chrono>
 #include <memory>
+#include <optional>
 
 #include <QCoreApplication>
+#include <QElapsedTimer>
+#include <QEventLoop>
 #include <QJSEngine>
+#include <QTemporaryDir>
 
 #include <bsoncxx/builder/basic/array.hpp>
 #include <bsoncxx/builder/basic/document.hpp>
@@ -21,9 +25,25 @@
 #include <mongocxx/instance.hpp>
 #include <mongocxx/uri.hpp>
 
+#include "ragoshell/core/AppRegistry.h"
+#include "ragoshell/core/BrandInfo.h"
+#include "ragoshell/core/EventBus.h"
 #include "ragoshell/core/domain/MongoDocument.h"
 #include "ragoshell/core/engine/BsonJsConverter.h"
+#include "ragoshell/core/engine/ScriptEngine.h"
 #include "ragoshell/core/engine/ShellHost.h"
+#include "ragoshell/core/events/MongoShellEvents.h"
+#include "ragoshell/core/mongodb/MongoWorker.h"
+#include "ragoshell/core/settings/ConnectionSettings.h"
+#include "ragoshell/core/settings/CredentialSettings.h"
+#include "ragoshell/core/transport/GatewaySession.h"
+#include "ragoshell/core/transport/InMemoryDemoTransport.h"
+#include "ragoshell/core/transport/WebSocketGatewayTransport.h"
+#include "ragoshell/core/utils/AggregationPipeline.h"
+#include "ragoshell/core/utils/CollectionTransfer.h"
+#include "ragoshell/core/utils/SchemaAnalysis.h"
+
+#include <QWebSocketServer>
 
 namespace RagoShell
 {
@@ -482,4 +502,466 @@ TEST(ShellHostTest, a_failed_connection_reports_why_and_stays_disconnected)
     EXPECT_FALSE(error.isEmpty());
     EXPECT_FALSE(host.isConnected());
 }
+
+// ---- transport-backed shell (W4, docs/TransportShell.md) --------------------------------------
+
+class ShellTransportTest : public ::testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        ensureApp();
+        _transport = std::make_unique<InMemoryDemoTransport>();
+        ASSERT_TRUE(_transport->connect(QStringLiteral("{}")).ok);
+        _conn = std::make_unique<ConnectionSettings>(true);
+        _conn->setDefaultDatabase("catalog");
+        _conn->setTransportKind("memory");
+        _shell = std::make_unique<ScriptEngine>(_conn.get(), 10);
+        _shell->setTransport(_transport.get());
+        _shell->init("", "catalog");
+        ASSERT_FALSE(_shell->failedScope()) << _shell->lastInitError();
+    }
+
+    std::unique_ptr<InMemoryDemoTransport> _transport;
+    std::unique_ptr<ConnectionSettings> _conn;
+    std::unique_ptr<ScriptEngine> _shell;
+};
+
+TEST_F(ShellTransportTest, find_sort_projection_and_paging_items)
+{
+    const MongoShellExecResult res = _shell->exec(
+        "db.products.find({ price: { $gt: 50 } }, { _id: 0, sku: 1, price: 1 }).sort({ price: -1 })",
+        "catalog");
+    ASSERT_FALSE(res.error()) << res.errorMessage();
+    ASSERT_EQ(res.results().size(), 1u);
+    const auto &docs = res.results()[0].documents();
+    ASSERT_EQ(docs.size(), 2u);
+    EXPECT_EQ(std::string(docs[0]->bsonObj()["sku"].get_string().value), "MN-27");
+    EXPECT_EQ(std::string(docs[1]->bsonObj()["sku"].get_string().value), "KB-01");
+    EXPECT_FALSE(docs[0]->bsonObj()["_id"]);
+    EXPECT_EQ(res.currentServer(), "demo");
+    EXPECT_EQ(res.currentDatabase(), "catalog");
 }
+
+TEST_F(ShellTransportTest, crud_methods_bulkwrite_and_duplicate_key_error)
+{
+    const MongoShellExecResult writeRes = _shell->exec(R"JS(
+        var ins = db.products.insertOne({ _id: 10, sku: "WC-4K", name: "4K Webcam", price: 149.0, stock: 8, tags: ["video"] });
+        var upd = db.products.updateOne({ _id: 10 }, { $inc: { stock: 4 }, $push: { tags: "usb" } });
+        var after = db.products.findOneAndUpdate({ _id: 10 }, { $set: { active: true } }, { returnNewDocument: true });
+        var bw = db.products.bulkWrite([
+            { insertOne: { document: { _id: 11, sku: "MC-01", name: "Studio Mic", price: 119.0, stock: 5 } } },
+            { deleteOne: { filter: { _id: 11 } } }
+        ]);
+        ({ insertedId: ins.insertedId, modified: upd.modifiedCount, stock: after.stock, bwInserted: bw.insertedCount, bwDeleted: bw.deletedCount })
+    )JS", "catalog");
+    ASSERT_FALSE(writeRes.error()) << writeRes.errorMessage();
+    ASSERT_EQ(writeRes.results().size(), 1u);
+    ASSERT_EQ(writeRes.results()[0].documents().size(), 1u);
+    const auto summary = writeRes.results()[0].documents()[0]->bsonObj();
+    EXPECT_EQ(summary["insertedId"].get_int32().value, 10);
+    EXPECT_EQ(summary["modified"].get_int32().value, 1);
+    EXPECT_EQ(summary["stock"].get_int32().value, 12);
+    EXPECT_EQ(summary["bwInserted"].get_int32().value, 1);
+    EXPECT_EQ(summary["bwDeleted"].get_int32().value, 1);
+
+    // Duplicate key surfaces as MongoServerError with code 11000 in JS catch.
+    const MongoShellExecResult dupRes = _shell->exec(R"JS(
+        (function () {
+            try {
+                db.products.insertOne({ _id: 1, sku: "OTHER" });
+                return "unexpected";
+            } catch (e) {
+                return e.name + ":" + e.code;
+            }
+        })()
+    )JS", "catalog");
+    ASSERT_FALSE(dupRes.error());
+    ASSERT_EQ(dupRes.results().size(), 1u);
+    EXPECT_NE(dupRes.results()[0].response().find("MongoServerError:11000"), std::string::npos)
+        << dupRes.results()[0].response();
+}
+
+TEST_F(ShellTransportTest, aggregation_distinct_count_indexes_explain_and_completion)
+{
+    const MongoShellExecResult aggRes = _shell->exec(R"JS(
+        db.orders.aggregate([
+            { $group: { _id: "$customerId", revenue: { $sum: "$total" }, count: { $sum: 1 } } },
+            { $sort: { revenue: -1 } }
+        ])
+    )JS", "catalog");
+    ASSERT_FALSE(aggRes.error()) << aggRes.errorMessage();
+    ASSERT_EQ(aggRes.results().size(), 1u);
+    ASSERT_EQ(aggRes.results()[0].documents().size(), 2u);
+    EXPECT_EQ(std::string(aggRes.results()[0].documents()[0]->bsonObj()["_id"].get_string().value), "c1");
+
+    const MongoShellExecResult metaRes = _shell->exec(R"JS(
+        db.products.createIndex({ category: 1 });
+        ({
+            c1Orders: db.orders.countDocuments({ customerId: "c1" }),
+            estProducts: db.products.estimatedDocumentCount(),
+            tagCount: db.products.distinct("tags").length,
+            idxCount: db.products.getIndexes().length,
+            ver: db.version(),
+            planOk: db.products.find({ sku: "KB-01" }).explain().ok
+        })
+    )JS", "catalog");
+    ASSERT_FALSE(metaRes.error()) << metaRes.errorMessage();
+    ASSERT_EQ(metaRes.results().size(), 2u);
+    EXPECT_EQ(metaRes.results()[0].response(), "\"category_1\"");
+    ASSERT_EQ(metaRes.results()[1].documents().size(), 1u);
+    const auto meta = metaRes.results()[1].documents()[0]->bsonObj();
+    EXPECT_EQ(meta["c1Orders"].get_int32().value, 2);
+    EXPECT_EQ(meta["estProducts"].get_int32().value, 3);
+    EXPECT_EQ(meta["tagCount"].get_int32().value, 4);
+    EXPECT_EQ(meta["idxCount"].get_int32().value, 3); // _id_, sku_1, category_1
+    EXPECT_EQ(std::string(meta["ver"].get_string().value), "8.0.0-demo");
+    EXPECT_EQ(meta["planOk"].get_int32().value, 1);
+
+    const QStringList completions = _shell->complete("db.", AutocompleteAll);
+    EXPECT_TRUE(completions.contains(QStringLiteral("db.products")));
+    EXPECT_TRUE(completions.contains(QStringLiteral("db.customers")));
+    EXPECT_TRUE(completions.contains(QStringLiteral("db.orders")));
+}
+
+TEST_F(ShellTransportTest, int64_decimal128_and_dates_roundtrip_without_precision_loss)
+{
+    const MongoShellExecResult res = _shell->exec(R"JS(
+        db.ledger.insertOne({
+            _id: ObjectId("507f1f77bcf86cd799439011"),
+            big: NumberLong("9007199254740993"),
+            dec: NumberDecimal("124.50"),
+            at: ISODate("2026-11-26T12:00:00.123Z")
+        });
+        db.ledger.find({ big: NumberLong("9007199254740993") })
+    )JS", "catalog");
+    ASSERT_FALSE(res.error()) << res.errorMessage();
+    ASSERT_EQ(res.results().size(), 2u);
+    const auto &docs = res.results()[1].documents();
+    ASSERT_EQ(docs.size(), 1u);
+    const auto d = docs[0]->bsonObj();
+    EXPECT_EQ(d["_id"].get_oid().value.to_string(), "507f1f77bcf86cd799439011");
+    EXPECT_EQ(d["big"].type(), bsoncxx::type::k_int64);
+    EXPECT_EQ(d["big"].get_int64().value, 9007199254740993LL);
+    EXPECT_EQ(d["dec"].type(), bsoncxx::type::k_decimal128);
+    EXPECT_EQ(d["dec"].get_decimal128().value.to_string(), "124.50");
+    EXPECT_EQ(d["at"].type(), bsoncxx::type::k_date);
+}
+
+namespace
+{
+    class PagedMockTransport final : public IMongoTransport
+    {
+    public:
+        Result connect(const QString &) override { return { true, R"({"ok":1})", {}, 0, {} }; }
+        Result listDatabases() override { return { true, R"([])", {}, 0, {} }; }
+        Result listCollections(const QString &) override { return { true, R"({"cursor":{"firstBatch":[],"id":0},"ok":1})", {}, 0, {} }; }
+        Result ping() override { return { true, R"({"ok":1})", {}, 0, {} }; }
+        Result killOp(const QString &) override { return { true, R"({"ok":1})", {}, 0, {} }; }
+        void disconnect() override {}
+        bool isLive() const override { return true; }
+
+        Result runCommand(const QString &, const QString &ejsonCommand) override
+        {
+            const auto cmd = bsoncxx::from_json(ejsonCommand.toStdString());
+            if (cmd.view()["count"]) {
+                return { true, R"({"n":3,"ok":1})", {}, 0, {} };
+            }
+            if (cmd.view()["find"]) {
+                return { true, R"({"cursor":{"firstBatch":[{"_id":1},{"_id":2}],"id":{"$numberLong":"77"},"ns":"test.items"},"ok":1})", {}, 0, {} };
+            }
+            if (cmd.view()["getMore"]) {
+                ++getMoreCalls;
+                return { true, R"({"cursor":{"nextBatch":[{"_id":3}],"id":{"$numberLong":"0"},"ns":"test.items"},"ok":1})", {}, 0, {} };
+            }
+            if (cmd.view()["killCursors"]) {
+                ++killCursorCalls;
+                return { true, R"({"cursorsKilled":[{"$numberLong":"77"}],"ok":1})", {}, 0, {} };
+            }
+            return { true, R"({"ok":1})", {}, 0, {} };
+        }
+
+        int getMoreCalls = 0;
+        int killCursorCalls = 0;
+    };
+}
+
+TEST(ShellHostTransportCursorTest, getmore_drains_batches_and_close_sends_killcursors)
+{
+    ensureApp();
+    PagedMockTransport mock;
+    QJSEngine engine;
+    ShellHost host(&engine);
+    host.install();
+
+    ShellConnectOptions opts;
+    opts.transport = &mock;
+    opts.transportAddress = QStringLiteral("gateway");
+    QString err;
+    ASSERT_TRUE(host.connect(opts, &err)) << err.toStdString();
+
+    const int cid1 = engine.evaluate("__host.find('test', 'items', {})").toInt();
+    ASSERT_GT(cid1, 0);
+    const auto all = host.takeDocuments(cid1, 0);
+    EXPECT_EQ(all.size(), 3u);
+    EXPECT_EQ(mock.getMoreCalls, 1);
+    EXPECT_EQ(mock.killCursorCalls, 0); // cursor already exhausted (id == 0)
+    host.cursorClose(cid1);
+
+    // Closing an unexhausted remote cursor sends killCursors.
+    const int cid2 = engine.evaluate("__host.find('test', 'items', {})").toInt();
+    ASSERT_GT(cid2, 0);
+    const auto partial = host.takeDocuments(cid2, 1);
+    EXPECT_EQ(partial.size(), 1u);
+    host.cursorClose(cid2);
+    EXPECT_EQ(mock.killCursorCalls, 1);
+}
+
+TEST(ShellHostTransportSecurityTest, fail_closed_without_transport_and_schema_analysis_over_demo)
+{
+    ensureApp();
+    ConnectionSettings desktopMem(true);
+    desktopMem.setServerHost("127.0.0.1");
+    desktopMem.setServerPort(27017);
+    desktopMem.setTransportKind("memory");
+
+    // Without an explicitly bound IMongoTransport, ScriptEngine must refuse
+    // rather than falling back to mongocxx on localhost:27017 (T1/T2).
+    ScriptEngine engine(&desktopMem, 5);
+    engine.init("", "catalog");
+    EXPECT_TRUE(engine.failedScope());
+    const auto execRes = engine.exec("db.products.find({})", "catalog");
+    EXPECT_TRUE(execRes.error());
+
+    // SchemaAnalysis on desktop refuses hasTransport() ConnectionSettings
+    // without touching TCP, while the explicit IMongoTransport overload works.
+    const SchemaResult denied = SchemaAnalysis::analyzeCollection(
+        desktopMem, QStringLiteral("catalog"), QStringLiteral("products"), 50, 2000,
+        DefaultEncoding, Utc);
+    EXPECT_FALSE(denied.ok);
+    EXPECT_EQ(SchemaAnalysis::estimatedDocumentCount(
+                  desktopMem, QStringLiteral("catalog"), QStringLiteral("products"), 2000),
+              -1);
+
+    InMemoryDemoTransport demo;
+    ASSERT_TRUE(demo.connect(QStringLiteral("{}")).ok);
+    const auto listed = SchemaAnalysis::listCollections(demo, QStringLiteral("catalog"), 2000);
+    ASSERT_TRUE(listed.ok) << listed.error.toStdString();
+    EXPECT_EQ(listed.collections.size(), 3u);
+
+    const SchemaResult analyzed = SchemaAnalysis::analyzeCollection(
+        demo, QStringLiteral("catalog"), QStringLiteral("products"), 50, 2000);
+    ASSERT_TRUE(analyzed.ok) << analyzed.error.toStdString();
+    EXPECT_EQ(analyzed.totalDocuments, 3);
+    EXPECT_TRUE(analyzed.fullScan);
+    EXPECT_TRUE(analyzed.indexes.contains(QStringLiteral("{ \"sku\" : 1 }")));
+
+    // SchemaAnalysis over paged IMongoTransport drains getMore batches (`L1.2`).
+    PagedMockTransport paged;
+    const SchemaResult pagedSchema = SchemaAnalysis::analyzeCollection(
+        paged, QStringLiteral("test"), QStringLiteral("items"), 50, 2000);
+    ASSERT_TRUE(pagedSchema.ok) << pagedSchema.error.toStdString();
+    EXPECT_EQ(pagedSchema.sampledDocuments, 3);
+    EXPECT_GE(paged.getMoreCalls, 1);
+
+    // CollectionTransfer & AggregationPipeline fail closed on `hasTransport()` (`H2`).
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE(tmpDir.isValid());
+    QString transferErr;
+    EXPECT_EQ(CollectionTransfer::exportCollectionToFile(
+                  desktopMem, QStringLiteral("catalog"), QStringLiteral("products"),
+                  tmpDir.filePath(QStringLiteral("out.json")),
+                  CollectionTransfer::Format::JsonArray, QString(), 0, nullptr, nullptr, &transferErr),
+              -1);
+    EXPECT_FALSE(transferErr.isEmpty());
+
+    transferErr.clear();
+    EXPECT_EQ(CollectionTransfer::importFileToCollection(
+                  desktopMem, QStringLiteral("catalog"), QStringLiteral("products"),
+                  tmpDir.filePath(QStringLiteral("in.json")),
+                  CollectionTransfer::Format::JsonArray, false, false, nullptr, nullptr, &transferErr),
+              -1);
+    EXPECT_FALSE(transferErr.isEmpty());
+
+    const auto previewDenied = AggregationPipeline::runPreview(
+        desktopMem, QStringLiteral("catalog"), QStringLiteral("products"), {}, 10, 1000);
+    EXPECT_FALSE(previewDenied.ok);
+    EXPECT_FALSE(previewDenied.error.isEmpty());
+
+    // Non-finite / extreme JS numeric options on ShellHost do not trap or UB (`H3`),
+    // and URI userinfo is redacted from transport error messages (`L1.3`).
+    class CredErrorMockTransport final : public IMongoTransport
+    {
+    public:
+        Result connect(const QString &) override { return { true, R"({"ok":1})", {}, 0, {} }; }
+        Result listDatabases() override { return { true, R"([])", {}, 0, {} }; }
+        Result listCollections(const QString &) override { return { true, R"({"cursor":{"firstBatch":[],"id":0},"ok":1})", {}, 0, {} }; }
+        Result ping() override { return { true, R"({"ok":1})", {}, 0, {} }; }
+        Result killOp(const QString &) override { return { true, R"({"ok":1})", {}, 0, {} }; }
+        void disconnect() override {}
+        bool isLive() const override { return false; }
+        Result runCommand(const QString &, const QString &) override
+        {
+            return { false, {}, QStringLiteral("upstream failed for mongodb://admin:SuperSecret123@10.0.0.5:27017/admin"), 6, QStringLiteral("HostUnreachable") };
+        }
+    };
+
+    QJSEngine jsNumEngine;
+    ShellHost jsNumHost(&jsNumEngine);
+    jsNumHost.install();
+    ShellConnectOptions demoOpts;
+    demoOpts.transport = &demo;
+    demoOpts.transportAddress = QStringLiteral("demo");
+    ASSERT_TRUE(jsNumHost.connect(demoOpts, nullptr));
+    const int infCid = jsNumEngine.evaluate(
+        "__host.find('catalog', 'products', {}, { limit: Infinity, skip: NaN, maxTimeMS: 1e30 })").toInt();
+    ASSERT_GT(infCid, 0);
+    EXPECT_EQ(jsNumHost.takeDocuments(infCid, 0).size(), 3u);
+    jsNumHost.cursorClose(infCid);
+
+    const int minCid = jsNumEngine.evaluate(
+        "__host.find('catalog', 'products', {}, { limit: -9223372036854775808 })").toInt();
+    ASSERT_GT(minCid, 0);
+    EXPECT_EQ(jsNumHost.takeDocuments(minCid, 0).size(), 3u);
+    jsNumHost.cursorClose(minCid);
+
+    EXPECT_DOUBLE_EQ(
+        jsNumEngine.evaluate("__host.countDocuments('catalog', 'products', {}, { limit: Infinity, skip: NaN })").toNumber(),
+        3.0);
+
+    CredErrorMockTransport credMock;
+    ShellConnectOptions credOpts;
+    credOpts.transport = &credMock;
+    ASSERT_TRUE(jsNumHost.connect(credOpts, nullptr));
+    const QString caughtErr = jsNumEngine.evaluate(
+        "(function(){ try { __host.runCommand('admin', { hello: 1 }); return ''; } catch (e) { return e.message; } })()")
+        .toString();
+    EXPECT_FALSE(caughtErr.contains(QStringLiteral("SuperSecret123"))) << caughtErr.toStdString();
+    EXPECT_TRUE(caughtErr.contains(QStringLiteral("mongodb://***@")));
+}
+
+TEST(ShellHostTransportGatewayTest, script_engine_executes_over_loopback_websocket_gateway)
+{
+    ensureApp();
+    constexpr const char *kTok = "shell-gw-token-0123456789abcdef0123456789abcdef";
+    QWebSocketServer server(QStringLiteral("shell-gw"), QWebSocketServer::NonSecureMode);
+    ASSERT_TRUE(server.listen(QHostAddress::LocalHost, 0));
+    const QString reqHost = QStringLiteral("127.0.0.1:%1").arg(server.serverPort());
+    const QStringList allowed{QString::fromUtf8(BrandInfo::productUrl),
+                              QStringLiteral("http://localhost:")};
+    QObject::connect(&server, &QWebSocketServer::newConnection, &server, [&] {
+        auto *s = new GatewaySession(
+            server.nextPendingConnection(), allowed, reqHost, QString::fromUtf8(kTok),
+            [] { return std::make_unique<InMemoryDemoTransport>(); });
+        QObject::connect(s, &GatewaySession::finished, &server, [s] { s->deleteLater(); });
+    });
+
+    const QString wsUrl = QStringLiteral("ws://127.0.0.1:%1").arg(server.serverPort());
+    WebSocketGatewayTransport wsClient(wsUrl, QString::fromUtf8(kTok));
+    ASSERT_TRUE(wsClient.connect(QStringLiteral("{}")).ok);
+
+    ConnectionSettings conn(true);
+    conn.setDefaultDatabase("catalog");
+    conn.setTransportKind(wsUrl.toStdString());
+
+    ScriptEngine shell(&conn, 10);
+    shell.setTransport(&wsClient);
+    shell.init("", "catalog");
+    ASSERT_FALSE(shell.failedScope()) << shell.lastInitError();
+
+    const MongoShellExecResult res = shell.exec(
+        "db.products.insertOne({ _id: 55, sku: 'GW-01', name: 'Gateway Hub', price: 59.0 });"
+        "db.products.find({ sku: 'GW-01' })",
+        "catalog");
+    ASSERT_FALSE(res.error()) << res.errorMessage();
+    ASSERT_EQ(res.results().size(), 2u);
+    ASSERT_EQ(res.results()[1].documents().size(), 1u);
+    EXPECT_EQ(std::string(res.results()[1].documents()[0]->bsonObj()["name"].get_string().value),
+              "Gateway Hub");
+    wsClient.disconnect();
+}
+
+class ShellScriptReplyCatcher : public QObject
+{
+    Q_OBJECT
+
+public:
+    bool gotReply = false;
+    bool isError = false;
+    std::string errorMsg;
+    std::optional<MongoShellExecResult> execResult;
+
+public Q_SLOTS:
+    void handle(ExecuteScriptResponse *resp)
+    {
+        isError = resp->isError();
+        if (isError)
+            errorMsg = resp->error().errorMessage();
+        else
+            execResult.emplace(resp->result);
+        gotReply = true;
+    }
+};
+
+TEST(ShellHostTransportGatewayTest, mongo_worker_secondary_executes_script_over_websocket_gateway)
+{
+    ensureApp();
+    constexpr const char *kTok = "worker-gw-token-0123456789abcdef0123456789abcdef";
+    QWebSocketServer server(QStringLiteral("worker-gw"), QWebSocketServer::NonSecureMode);
+    ASSERT_TRUE(server.listen(QHostAddress::LocalHost, 0));
+    const QString reqHost = QStringLiteral("127.0.0.1:%1").arg(server.serverPort());
+    const QStringList allowed{QString::fromUtf8(BrandInfo::productUrl),
+                              QStringLiteral("http://localhost:")};
+    QObject::connect(&server, &QWebSocketServer::newConnection, &server, [&] {
+        auto *s = new GatewaySession(
+            server.nextPendingConnection(), allowed, reqHost, QString::fromUtf8(kTok),
+            [] { return std::make_unique<InMemoryDemoTransport>(); });
+        QObject::connect(s, &GatewaySession::finished, &server, [s] { s->deleteLater(); });
+    });
+
+    const QString wsUrl = QStringLiteral("ws://127.0.0.1:%1").arg(server.serverPort());
+    auto *conn = new ConnectionSettings(true);
+    conn->setServerHost("127.0.0.1");
+    conn->setServerPort(27017);
+    conn->setDefaultDatabase("catalog");
+    conn->setTransportKind(wsUrl.toStdString());
+    conn->setTransportToken(kTok);
+
+    // Secondary-style worker: never receives EstablishConnectionRequest, yet
+    // ExecuteScriptRequest must lazily connect `_ownedTransport` on the worker
+    // thread (`C1`) and tear down `_scriptEngine` before `_ownedTransport` (`C2`).
+    auto *worker = new MongoWorker(conn, QString(), 50, 5.0, 10);
+    bool workerDestroyed = false;
+    QObject::connect(worker, &QObject::destroyed, [&workerDestroyed]() { workerDestroyed = true; });
+
+    ShellScriptReplyCatcher catcher;
+    AppRegistry::instance().bus()->send(
+        worker,
+        new ExecuteScriptRequest(
+            &catcher,
+            "db.products.insertOne({ _id: 88, sku: 'WK-88', name: 'Worker Switch', price: 79.0 });"
+            "db.products.find({ _id: 88 })",
+            "catalog"));
+
+    QElapsedTimer timer;
+    timer.start();
+    while (!catcher.gotReply && timer.elapsed() < 8000)
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+
+    worker->stopAndDelete();
+    QElapsedTimer stopTimer;
+    stopTimer.start();
+    while (!workerDestroyed && stopTimer.elapsed() < 5000)
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+
+    ASSERT_TRUE(catcher.gotReply);
+    ASSERT_FALSE(catcher.isError) << catcher.errorMsg;
+    ASSERT_TRUE(catcher.execResult.has_value());
+    ASSERT_EQ(catcher.execResult->results().size(), 2u);
+    ASSERT_EQ(catcher.execResult->results()[1].documents().size(), 1u);
+    EXPECT_EQ(std::string(catcher.execResult->results()[1].documents()[0]->bsonObj()["sku"].get_string().value),
+              "WK-88");
+}
+}
+
+#include "ShellHost_test.moc"

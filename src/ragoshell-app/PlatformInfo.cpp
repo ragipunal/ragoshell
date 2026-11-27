@@ -15,6 +15,7 @@
 #include "ragoshell/core/utils/KeyLabel.h"
 #include "ragoshell/core/utils/QtUtils.h"
 #include "ragoshell/core/utils/UiDensity.h"
+#include "ragoshell/core/utils/WasmMode.h"
 
 #ifdef Q_OS_ANDROID
 #include <QJniObject>
@@ -94,6 +95,13 @@ namespace RagoShell
         QObject(parent)
     {
         _formFactor = detectFormFactor();
+#if defined(Q_OS_WASM)
+        _wasmPlayground = (WasmMode::resolveRuntimeMode(true, RagoShell::productEnv("WASM_MODE"))
+                           == WasmRuntimeMode::Playground);
+#else
+        _wasmPlayground = (WasmMode::resolveRuntimeMode(false, QString())
+                           == WasmRuntimeMode::Playground);
+#endif
         if (qApp)
             qApp->installEventFilter(this);
 
@@ -133,7 +141,11 @@ namespace RagoShell
 
     QString PlatformInfo::os() const
     {
-#if defined(Q_OS_WIN)
+        if (_headlessPlaygroundPreview)
+            return QStringLiteral("wasm");
+#if defined(Q_OS_WASM)
+        return QStringLiteral("wasm");
+#elif defined(Q_OS_WIN)
         return QStringLiteral("windows");
 #elif defined(Q_OS_MACOS)
         return QStringLiteral("macos");
@@ -144,6 +156,25 @@ namespace RagoShell
 #else
         return QStringLiteral("linux");
 #endif
+    }
+
+    bool PlatformInfo::isWasm() const
+    {
+#if defined(Q_OS_WASM)
+        return true;
+#else
+        return _headlessPlaygroundPreview;
+#endif
+    }
+
+    bool PlatformInfo::isWasmPlayground() const
+    {
+        return _wasmPlayground || _headlessPlaygroundPreview;
+    }
+
+    void PlatformInfo::enableHeadlessPlaygroundPreview()
+    {
+        _headlessPlaygroundPreview = true;
     }
 
     bool PlatformInfo::isMobile() const

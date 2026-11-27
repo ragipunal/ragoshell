@@ -8,6 +8,8 @@ Item {
 
     signal newConnectionRequested()
     signal viewLogsRequested()
+    signal openPlaygroundShellRequested()
+    signal downloadDesktopRequested()
 
     Component.onCompleted: UpdateService.onWelcomeShown()
 
@@ -44,6 +46,7 @@ Item {
                 color: Theme.accentColor
                 wrapMode: Text.WordWrap
                 horizontalAlignment: Text.AlignHCenter
+                Layout.preferredWidth: 0
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignHCenter
             }
@@ -53,6 +56,7 @@ Item {
                 wrapMode: Text.WordWrap
                 font.pixelSize: 13
                 color: Theme.textColor
+                Layout.preferredWidth: 0
                 Layout.maximumWidth: 620
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignHCenter
@@ -68,6 +72,7 @@ Item {
                 rowSpacing: 8
 
                 RagoPillButton {
+                    visible: !Platform.isWasmPlayground
                     Layout.alignment: Qt.AlignHCenter
                     text: Platform.withShortcut(qsTr("New Connection (%1)"), (!Theme.touch && welcome.width >= 520) ? "Ctrl+N" : "")
                     iconText: "✦"
@@ -76,6 +81,24 @@ Item {
                 }
 
                 RagoPillButton {
+                    visible: Platform.isWasmPlayground
+                    Layout.alignment: Qt.AlignHCenter
+                    text: qsTr("Open Playground Shell")
+                    iconText: ">_"
+                    primary: true
+                    onClicked: welcome.openPlaygroundShellRequested()
+                }
+
+                RagoPillButton {
+                    visible: Platform.isWasmPlayground && Brand.downloadUrl.length > 0
+                    Layout.alignment: Qt.AlignHCenter
+                    text: qsTr("Download Desktop App")
+                    iconText: "⬇"
+                    onClicked: welcome.downloadDesktopRequested()
+                }
+
+                RagoPillButton {
+                    visible: !Platform.isWasmPlayground || Brand.downloadUrl.length === 0
                     Layout.alignment: Qt.AlignHCenter
                     text: Platform.withShortcut(qsTr("View Logs (%1)"), (!Theme.touch && welcome.width >= 520) ? "Ctrl+L" : "")
                     iconText: "▤"
@@ -173,16 +196,21 @@ Item {
                         Layout.fillWidth: true
                         spacing: 4
                         Label {
-                            text: qsTr("✦ Connect to MongoDB")
+                            text: Platform.isWasmPlayground
+                                  ? qsTr("✦ In-Browser MongoDB Playground")
+                                  : qsTr("✦ Connect to MongoDB")
                             font.bold: true
                             font.pixelSize: 13
                             color: Theme.textColor
                         }
                         Label {
-                            text: Platform.shortcutsVisible
-                                  ? Platform.macKeys(qsTr("Click 'New Connection' in the top bar or press Ctrl+N to configure Direct Connections, Replica Sets, SSH Tunnels, and TLS/SSL certificates."))
-                                  : qsTr("Use 'New Connection' in the top bar to configure Direct Connections, Replica Sets, SSH Tunnels, and TLS/SSL certificates.")
+                            text: Platform.isWasmPlayground
+                                  ? qsTr("Explore the sample 'catalog' database directly in browser memory — no server setup required. Use 'Reset Demo' in the top bar anytime, or download the desktop app to connect to your own MongoDB servers.")
+                                  : (Platform.shortcutsVisible
+                                     ? Platform.macKeys(qsTr("Click 'New Connection' in the top bar or press Ctrl+N to configure Direct Connections, Replica Sets, SSH Tunnels, and TLS/SSL certificates."))
+                                     : qsTr("Use 'New Connection' in the top bar to configure Direct Connections, Replica Sets, SSH Tunnels, and TLS/SSL certificates."))
                             wrapMode: Text.WordWrap
+                            Layout.preferredWidth: 0
                             Layout.fillWidth: true
                             font.pixelSize: 12
                             color: Theme.disabledTextColor
@@ -203,6 +231,7 @@ Item {
                                   ? Platform.macKeys(qsTr("Double-click any collection in the left Explorer or press Ctrl+T to open a shell. Execute with F5 (or Ctrl+R), stop with F6, autocomplete with Ctrl+Space, and switch between Tree (F2), Table (F3), and Text (F4) views."))
                                   : qsTr("Open any collection in the Explorer to start a shell. Run it with the Run button and switch between Tree, Table, and Text views.")
                             wrapMode: Text.WordWrap
+                            Layout.preferredWidth: 0
                             Layout.fillWidth: true
                             font.pixelSize: 12
                             color: Theme.disabledTextColor
@@ -223,6 +252,7 @@ Item {
                                   ? Platform.macKeys(qsTr("Toggle the Explorer sidebar with Ctrl+E, split orientation with F10, diagnostic logs with Ctrl+L, and switch Dark/Light/System themes live from the header."))
                                   : qsTr("Open the Explorer sidebar from the top bar, switch Dark/Light/System themes live from the header, and read the diagnostic logs with View Logs.")
                             wrapMode: Text.WordWrap
+                            Layout.preferredWidth: 0
                             Layout.fillWidth: true
                             font.pixelSize: 12
                             color: Theme.disabledTextColor
@@ -247,6 +277,7 @@ Item {
                     horizontalAlignment: Text.AlignHCenter
                     font.pixelSize: 12
                     color: Theme.disabledTextColor
+                    Layout.preferredWidth: 0
                     Layout.fillWidth: true
                     Layout.minimumWidth: 0
                 }

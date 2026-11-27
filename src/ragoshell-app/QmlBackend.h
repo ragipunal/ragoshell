@@ -8,6 +8,7 @@
 #include <QString>
 #include <QStringList>
 #include <QHash>
+#include <QSet>
 #include <QUrl>
 #include <atomic>
 #include <memory>
@@ -94,6 +95,7 @@ namespace RagoShell
         Q_PROPERTY(RagoShell::ServerTreeModel *serverTree READ serverTree CONSTANT FINAL)
         Q_PROPERTY(bool connecting READ connecting NOTIFY connectingChanged FINAL)
         Q_PROPERTY(QString statusText READ statusText NOTIFY statusTextChanged FINAL)
+        Q_PROPERTY(bool databasesListed READ databasesListed NOTIFY statusTextChanged FINAL)
         Q_PROPERTY(QString appVersion READ appVersion CONSTANT FINAL)
         Q_PROPERTY(QString qtVersion READ qtVersion CONSTANT FINAL)
         Q_PROPERTY(QVariantList shells READ shells NOTIFY shellsChanged FINAL)
@@ -188,6 +190,8 @@ namespace RagoShell
         /// Drops memory that can be rebuilt (schema snapshots held in memory); called on low-memory
         /// warnings of the system (mobile) and available as an action for tests.
         Q_INVOKABLE void trimMemory();
+        /// Restores the shared in-browser demo dataset to factory defaults and refreshes Explorer (WASM only).
+        Q_INVOKABLE void resetPlaygroundData();
         /// True for a short time after the app checked this connection by itself (the network came
         /// back or the computer woke); errors in that time are shown in the status bar, not as a dialog.
         Q_INVOKABLE bool autoRefreshing(const QString &uuid) const;
@@ -429,6 +433,9 @@ namespace RagoShell
         /// "<server>: N database(s)"; flags the status for databasesListed().
         void setDatabaseListStatus(const QString &serverName, int count);
         MongoServer *findServerByUuid(const QString &uuid) const;
+        bool prepareShellConnection(const QString &uuid, MongoServer *server,
+                                    const QString &dbName,
+                                    std::unique_ptr<ConnectionSettings> *outConn);
         void openRecoveredDraft(MongoServer *server, const ScriptDraft &draft);
         void openPendingRecoveries(const QString &uuid);
         MongoDatabase *findDatabaseBySender(QObject *sender) const;
@@ -479,5 +486,8 @@ namespace RagoShell
         QString _explorerInsertLastError;
         QString _explorerInsertDb;
         QString _explorerInsertColl;
+
+        QSet<QString> _pendingResetStatusUuids;
+        QString _pendingResetStatusText;
     };
 }

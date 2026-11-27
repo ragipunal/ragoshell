@@ -40,6 +40,10 @@
         <translation>अपडेट जाँचें</translation>
     </message>
     <message>
+        <source>Download Desktop App</source>
+        <translation>डेस्कटॉप ऐप डाउनलोड करें</translation>
+    </message>
+    <message>
         <source>Open-Source Licenses…</source>
         <translation>ओपन-सोर्स लाइसेंस…</translation>
     </message>
@@ -447,6 +451,14 @@
         <translation>अभी सिंक करें</translation>
     </message>
     <message>
+        <source>Reset Demo Data…</source>
+        <translation>डेमो डेटा रीसेट करें…</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>डेस्कटॉप ऐप डाउनलोड करें</translation>
+    </message>
+    <message>
         <source>Keyboard Shortcuts</source>
         <translation>कीबोर्ड शॉर्टकट</translation>
     </message>
@@ -516,6 +528,18 @@
     <message>
         <source>Monitor</source>
         <translation>मॉनिटर</translation>
+    </message>
+    <message>
+        <source>Reset Demo</source>
+        <translation>डेमो रीसेट करें</translation>
+    </message>
+    <message>
+        <source>Reset Demo Data</source>
+        <translation>डेमो डेटा रीसेट करें</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>डेस्कटॉप ऐप डाउनलोड करें</translation>
     </message>
     <message>
         <source>Syncing…</source>
@@ -600,6 +624,10 @@
         <translation>अमान्य फ़िल्टर JSON: %1</translation>
     </message>
     <message>
+        <source>Collection export is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Cannot open output file for writing: %1</source>
         <translation>लिखने के लिए आउटपुट फ़ाइल नहीं खोली जा सकी: %1</translation>
     </message>
@@ -610,6 +638,10 @@
     <message>
         <source>Cannot open input file for reading: %1</source>
         <translation>पढ़ने के लिए इनपुट फ़ाइल नहीं खोली जा सकी: %1</translation>
+    </message>
+    <message>
+        <source>Collection import is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Import cancelled.</source>
@@ -2873,6 +2905,18 @@
         <source>Close</source>
         <translation>बंद करें</translation>
     </message>
+    <message>
+        <source>Reset Demo Data?</source>
+        <translation>डेमो डेटा रीसेट करें?</translation>
+    </message>
+    <message>
+        <source>Reset Demo Data</source>
+        <translation>डेमो डेटा रीसेट करें</translation>
+    </message>
+    <message>
+        <source>Restore the in-browser demo database to its initial sample collections and documents? Any changes made in this session will be discarded.</source>
+        <translation>क्या ब्राउज़र के डेमो डेटाबेस को उसके प्रारंभिक नमूना संग्रहों और दस्तावेज़ों पर पुनर्स्थापित करना है? इस सत्र में किए गए सभी बदलाव हटा दिए जाएंगे।</translation>
+    </message>
 </context>
 <context>
     <name>MainWorkspaceArea</name>
@@ -2885,8 +2929,16 @@
         <translation>कोई टैब खुला नहीं</translation>
     </message>
     <message>
+        <source>Double-click any collection in Explorer to query, or open a new playground shell.</source>
+        <translation>क्वेरी करने के लिए एक्सप्लोरर में किसी भी संग्रह पर डबल-क्लिक करें, या नया प्लेग्राउंड शेल खोलें।</translation>
+    </message>
+    <message>
         <source>Double-click any collection in Explorer to query, or open a new connection.</source>
         <translation>क्वेरी करने के लिए एक्सप्लोरर में किसी कलेक्शन पर डबल-क्लिक करें, या नया कनेक्शन खोलें।</translation>
+    </message>
+    <message>
+        <source>Open Playground Shell</source>
+        <translation>प्लेग्राउंड शेल खोलें</translation>
     </message>
     <message>
         <source>Welcome Guide</source>
@@ -4408,8 +4460,8 @@
         <translation>rs.status() चलाने के लिए पहुँच योग्य रेप्लिका सेट सदस्य नहीं मिला।</translation>
     </message>
     <message>
-        <source>Shell tabs are not yet supported over gateway/demo connection channels.</source>
-        <translation>गेटवे/डेमो कनेक्शन चैनलों पर शेल टैब अभी समर्थित नहीं हैं।</translation>
+        <source>Direct replica-set member connections are not supported over gateway or demo channels.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Server is not connected</source>
@@ -4418,6 +4470,10 @@
     <message>
         <source>Shell</source>
         <translation>शेल</translation>
+    </message>
+    <message>
+        <source>Demo data reset to defaults.</source>
+        <translation>डेमो डेटा डिफ़ॉल्ट पर रीसेट किया गया।</translation>
     </message>
     <message>
         <source>The network changed. Checking the open connections…</source>
@@ -4495,6 +4551,10 @@
         <translation>सर्वर कनेक्टेड नहीं है।</translation>
     </message>
     <message>
+        <source>Collection export is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Exporting %1.%2…</source>
         <translation>%1.%2 एक्सपोर्ट हो रहा है…</translation>
     </message>
@@ -4511,6 +4571,10 @@
             <numerusform>%1.%2 से %n डॉक्यूमेंट एक्सपोर्ट हुआ।</numerusform>
             <numerusform>%1.%2 से %n डॉक्यूमेंट एक्सपोर्ट हुए।</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>Collection import is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Importing into %1.%2…</source>
@@ -6202,6 +6266,14 @@ Error:
         <translation>नया कनेक्शन (%1)</translation>
     </message>
     <message>
+        <source>Open Playground Shell</source>
+        <translation>प्लेग्राउंड शेल खोलें</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>डेस्कटॉप ऐप डाउनलोड करें</translation>
+    </message>
+    <message>
         <source>View Logs (%1)</source>
         <translation>लॉग देखें (%1)</translation>
     </message>
@@ -6222,8 +6294,16 @@ Error:
         <translation>शुरुआत करें</translation>
     </message>
     <message>
+        <source>✦ In-Browser MongoDB Playground</source>
+        <translation>✦ ब्राउज़र में MongoDB प्लेग्राउंड</translation>
+    </message>
+    <message>
         <source>✦ Connect to MongoDB</source>
         <translation>✦ MongoDB से कनेक्ट करें</translation>
+    </message>
+    <message>
+        <source>Explore the sample &apos;catalog&apos; database directly in browser memory — no server setup required. Use &apos;Reset Demo&apos; in the top bar anytime, or download the desktop app to connect to your own MongoDB servers.</source>
+        <translation>बिना किसी सर्वर सेटअप के सीधे ब्राउज़र मेमोरी में नमूना &apos;catalog&apos; डेटाबेस का अन्वेषण करें। शीर्ष बार में कभी भी &apos;डेमो रीसेट करें&apos; का उपयोग करें, या अपने स्वयं के MongoDB सर्वरों से जुड़ने के लिए डेस्कटॉप ऐप डाउनलोड करें।</translation>
     </message>
     <message>
         <source>Click &apos;New Connection&apos; in the top bar or press Ctrl+N to configure Direct Connections, Replica Sets, SSH Tunnels, and TLS/SSL certificates.</source>

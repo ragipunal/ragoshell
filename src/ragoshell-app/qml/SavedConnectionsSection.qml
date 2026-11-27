@@ -31,6 +31,7 @@ ColumnLayout {
         }
 
         RagoIconButton {
+            visible: !Platform.isWasmPlayground
             glyph: "+"
             size: 24
             accent: true
@@ -197,6 +198,7 @@ ColumnLayout {
                             }
                         }
                         RagoIconButton {
+                            visible: !Platform.isWasmPlayground
                             glyph: "✎\uFE0E"
                             size: 24
                             toolTipText: qsTr("Edit Connection")
@@ -226,6 +228,7 @@ ColumnLayout {
     }
 
     RagoPillButton {
+        visible: !Platform.isWasmPlayground
         compact: true
         text: qsTr("New Connection")
         iconText: "+"
@@ -258,21 +261,23 @@ ColumnLayout {
             }
         }
         ActionItem {
-            visible: savedSection.pane._ctxConnOnline
+            visible: savedSection.pane._ctxConnOnline && !Platform.isWasmPlayground
             text: qsTr("Server Monitor")
             onTriggered: Backend.openMonitor(savedSection.pane._ctxConnUuid)
         }
         ActionItem {
-            visible: savedSection.pane._ctxConnOnline
+            visible: savedSection.pane._ctxConnOnline && !Platform.isWasmPlayground
             text: qsTr("Disconnect")
             onTriggered: savedSection.pane.requestDisconnectServer(savedSection.pane._ctxConnUuid, savedSection.pane._ctxConnName)
         }
         ActionSeparator {}
         ActionItem {
+            visible: !Platform.isWasmPlayground
             text: qsTr("Edit Connection…")
             onTriggered: savedSection.pane.editConnectionRequested(savedSection.pane._ctxConnRow)
         }
         ActionItem {
+            visible: !Platform.isWasmPlayground
             text: qsTr("Clone Connection")
             onTriggered: ConnectionModel.cloneConnection(savedSection.pane._ctxConnRow)
         }
@@ -281,19 +286,22 @@ ColumnLayout {
             text: qsTr("Forget Schema Data")
             onTriggered: Backend.forgetSchema(savedSection.pane._ctxConnUuid)
         }
-        ActionSeparator {}
+        ActionSeparator { visible: !Platform.isWasmPlayground }
         ActionItem {
+            visible: !Platform.isWasmPlayground
             text: qsTr("Move Up")
             enabled: savedSection.pane._ctxConnRow > 0
             onTriggered: ConnectionModel.moveUp(savedSection.pane._ctxConnRow)
         }
         ActionItem {
+            visible: !Platform.isWasmPlayground
             text: qsTr("Move Down")
             enabled: savedSection.pane._ctxConnRow >= 0 && savedSection.pane._ctxConnRow < ConnectionModel.count - 1
             onTriggered: ConnectionModel.moveDown(savedSection.pane._ctxConnRow)
         }
-        ActionSeparator {}
+        ActionSeparator { visible: !Platform.isWasmPlayground }
         ActionItem {
+            visible: !Platform.isWasmPlayground
             text: qsTr("Remove Connection…")
             danger: true
             onTriggered: {

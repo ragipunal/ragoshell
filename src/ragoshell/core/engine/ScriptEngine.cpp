@@ -30,6 +30,15 @@ namespace RagoShell
 
     ScriptEngine::~ScriptEngine() = default;
 
+    void ScriptEngine::setTransport(IMongoTransport *transport, const std::string &initError)
+    {
+        if (_transport != transport) {
+            _transport = transport;
+            _initialized = false;
+        }
+        _transportInitError = initError;
+    }
+
     void ScriptEngine::changeTimeout(int newTimeout)
     {
         _timeoutSec = newTimeout > 0 ? newTimeout : 15;
@@ -48,7 +57,15 @@ namespace RagoShell
         const int connectTimeoutMs = std::max(15, _timeoutSec) * 1000;
 
         ShellConnectOptions opts;
-        opts.uri = QString::fromStdString(buildMongoUri(*_connection));
+        opts.transport = _transport;
+        if (_transport != nullptr && _connection->transportKind() == "memory") {
+            opts.uri = QStringLiteral("mongodb://demo/");
+            opts.transportAddress = QStringLiteral("demo");
+        } else {
+            opts.uri = QString::fromStdString(buildMongoUri(*_connection));
+            if (_transport != nullptr)
+                opts.transportAddress = QString::fromStdString(_connection->getFullAddress());
+        }
         opts.batchSize = _batchSize;
         opts.connectTimeoutMs = connectTimeoutMs;
         opts.serverSelectionTimeoutMs = std::max(5000, connectTimeoutMs - 2000);
@@ -87,6 +104,18 @@ namespace RagoShell
         }
         _failedScope = false;
         _initialized = false;
+
+        // Fail closed when ConnectionSettings requires an IMongoTransport channel
+        // (WASM demo or WebSocket gateway) and no transport is connected — never fall
+        // through to a raw mongocxx::client (docs/TransportShell.md §2.1, T1/T2).
+        if (_connection && _connection->hasTransport() && !_transport) {
+            _failedScope = true;
+            _lastInitError = !_transportInitError.empty()
+                ? _transportInitError
+                : ("Unsupported or disconnected transport '" + _connection->transportKind() + "'");
+            LOG_MSG("shell: connect failed: " + _lastInitError, LogSeverity::Error);
+            return;
+        }
 
         const ShellReply reply = _backend->connect(connectOptions(dbName));
         if (!reply.ok()) {
@@ -177,7 +206,9 @@ namespace RagoShell
                                                      item.queryInfo, stmt, share, outAggr));
         }
 
-        const std::string server = _connection ? _connection->getFullAddress() : "";
+        const std::string server = (_connection && _connection->transportKind() == "memory")
+            ? std::string("demo")
+            : (_connection ? _connection->getFullAddress() : "");
         std::string activeDb = reply.activeDb;
         if (activeDb.empty() && _connection)
             activeDb = _connection->defaultDatabase();

@@ -50,10 +50,10 @@ RagoDialog {
         {
             "category": qsTr("Connections, Tabs & Workspace"),
             "items": [
-                { "keys": k("Ctrl+N"), "desc": qsTr("Open Connections / New Connection dialog") },
+                Platform.isWasmPlayground ? null : { "keys": k("Ctrl+N"), "desc": qsTr("Open Connections / New Connection dialog") },
                 { "keys": k("Ctrl+T"), "desc": qsTr("Open new Shell tab on connected server") },
                 { "keys": k("Ctrl+Shift+T"), "desc": qsTr("Duplicate current Shell context in new tab") },
-                { "keys": k("Ctrl+Shift+M"), "desc": qsTr("Open live Server Monitor & Current Operations") },
+                Platform.isWasmPlayground ? null : { "keys": k("Ctrl+Shift+M"), "desc": qsTr("Open live Server Monitor & Current Operations") },
                 { "keys": k("Ctrl+K / Ctrl+Shift+P"), "desc": qsTr("Command Palette: search every command, connection and collection") },
                 { "keys": k("Ctrl+H"), "desc": qsTr("Query History & Snippets") },
                 { "keys": k("Ctrl+Shift+A"), "desc": qsTr("Aggregation Builder for the current collection") },
@@ -68,7 +68,7 @@ RagoDialog {
                 { "keys": k("Ctrl+,"), "desc": qsTr("Open Preferences") },
                 { "keys": k(Platform.usesCommandKey ? "Meta+Ctrl+F / F11" : "F11"), "desc": qsTr("Toggle Full Screen") },
                 { "keys": "F1", "desc": qsTr("Show this Keyboard Shortcuts reference") }
-            ]
+            ].filter(function(item) { return item !== null })
         }
     ]
 

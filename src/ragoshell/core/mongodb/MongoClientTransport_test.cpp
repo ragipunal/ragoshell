@@ -79,4 +79,12 @@ TEST(MongoClientTransportTest, command_errors_throw_like_native)
     // usersInfo is outside the demo's command surface → must throw, matching
     // the native path's runCommandChecked contract.
     EXPECT_THROW(client.getUsers("catalog"), std::runtime_error);
+
+    // Duplicate _id arrives inside `writeErrors` on `{ ok: 1 }` — insertDocument
+    // must still throw std::runtime_error so DocumentEditorDialog surfaces E11000.
+    namespace basic = bsoncxx::builder::basic;
+    EXPECT_THROW(client.insertDocument(
+                     basic::make_document(basic::kvp("_id", 1), basic::kvp("sku", "DUP")),
+                     MongoNamespace("catalog.products")),
+                 std::runtime_error);
 }

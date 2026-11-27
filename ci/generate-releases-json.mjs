@@ -596,8 +596,8 @@ export function generateReleaseManifest(options = {}) {
       continue;
     }
     if (st.isDirectory()) {
-      // Allow local staging directories matching <productId>-<version>-<plat>, reject foreign dirs.
-      if (entryName.startsWith(`${brand.productId}-${version}-`)) {
+      // Allow local staging directories matching <productId>-<version>-<plat> and dist/wasm/, reject foreign dirs.
+      if (entryName.startsWith(`${brand.productId}-${version}-`) || entryName === 'wasm') {
         continue;
       }
       throw new Error(`Unexpected directory inside dist/: "${entryName}"`);

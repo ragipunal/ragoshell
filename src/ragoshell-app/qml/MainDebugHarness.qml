@@ -15,7 +15,9 @@ QtObject {
     // Dev/CI visual verification helper invoked by --open-view <name>
     function openDebugView(viewName) {
         if (viewName === "conn")
-            harness.app.openNewConnection()
+            harness.app.openDebugConnection()
+        else if (viewName === "empty-tabs")
+            harness.app.tabs.welcomeOpen = false
         else if (viewName === "prefs")
             harness.app.openPreferences()
         else if (viewName === "prefs-mcp")

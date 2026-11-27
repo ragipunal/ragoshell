@@ -13,9 +13,11 @@ uniform naming scheme.
 | Linux x64 | `ci/build-linux.sh` | `linux-release` | `ragoshell-<ver>-linux-x64.AppImage`, `ragoshell-<ver>-linux-x64.tar.gz` |
 | macOS arm64 | `ci/build-macos.sh` | `macos-release` | `ragoshell-<ver>-macos-arm64.dmg`, `ragoshell-<ver>-macos-arm64.tar.gz` |
 | Android arm64 | `ci/build-android.sh`, `ci/build-android.ps1` | `android-arm64-macos-release` (macOS), `android-arm64-linux` (Linux), `android-arm64-release` (Windows) | `ragoshell-<ver>-android-arm64.apk`, `ragoshell-<ver>-android-arm64.aab` |
+| WebAssembly (Mod A Playground) | `ci/build-wasm.sh`, `ci/build-wasm.ps1` | `wasm-multi` (default), `wasm-single` | `wasm/ragoshell-wasm-demo.tar.gz`, `wasm/ragoshell-wasm-demo.tar.gz.sha256` |
 
 When `<ver>` is omitted (`.\ci\build-windows.ps1`, `./ci/build-linux.sh`,
-`./ci/build-macos.sh`, `./ci/build-android.sh`, `.\ci\build-android.ps1`), every script defaults to
+`./ci/build-macos.sh`, `./ci/build-android.sh`, `.\ci\build-android.ps1`,
+`./ci/build-wasm.sh`, `.\ci\build-wasm.ps1`), every script defaults to
 `PROJECT_VERSION` from the top-level `CMakeLists.txt` (e.g. `2.1.0`). Pass an
 explicit version or tag (e.g. `2.1.0` or `v2.1.0`) to override it.
 
@@ -128,6 +130,22 @@ Check available presets on the current host with `cmake --list-presets` and
     credentials fail fast before CMake runs (`--validate-signing-only` /
     `-ValidateSigningOnly` validates credentials alone). See
     `docs/AndroidCodeSigning.md`.
+- **WebAssembly (`wasm-multi`, `wasm-single`):**
+  - Ninja, Emscripten SDK **`5.0.5`** (`EMSDK`, matching Qt 6.12's `QT_EMCC_VERSION`),
+    host desktop Qt (`Qt6_DIR`), and Qt 6 WebAssembly (`QT_WASM_PATH`, auto-detected
+    from `$Qt6_DIR/../wasm_multithread` for `wasm-multi` or `wasm_singlethread` for
+    `wasm-single`). `brotli` CLI is used when installed; otherwise `ci/compress-brotli.mjs`
+    (Node.js built-in `zlib`) generates `ragoshell.wasm.br` at quality `9`.
+  - `wasm-multi` compiles all `vcpkg` static ports (`wasm32-emscripten-threads` overlay
+    triplet) and application targets with `-pthread` and `-s DYNAMIC_EXECUTION=0`, stages
+    the CSP-compliant `index.html` + `wasm-boot.js` loader (`50-demo.conf.template`:
+    `script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'`), installs and verifies
+    `licenses/`, and writes a deterministic POSIX USTAR archive to
+    `dist/wasm/ragoshell-wasm-demo.tar.gz` ready for atomic SSH deployment via
+    `ssh deploy@<host> demo < dist/wasm/ragoshell-wasm-demo.tar.gz`
+    (`staging-demo` for staging). Pass `--validate-stage-only <dir>` /
+    `-ValidateStageOnly <dir>` or `--verify-archive-only <tar.gz>` /
+    `-VerifyArchiveOnly <tar.gz>` for standalone validation.
 
 ## Test Gates, Fail-Fast Exit Codes & Isolation
 
@@ -219,10 +237,11 @@ Manager.
 
 - **GitHub Actions (`.github/workflows/ci.yml`):** Runs on pushes, tags, and pull
   requests on the public GitHub mirror (`i18n` — including
-  `node ci/test-sbom-and-licenses.mjs`, deterministic SPDX 2.3 SBOM generation,
+  `node ci/test-sbom-and-licenses.mjs`, `node ci/test-wasm-bundle.mjs`,
+  deterministic SPDX 2.3 SBOM generation,
   and SHA-256-verified Google OSV-Scanner `v2.7.0` vulnerability scanning across
   `vcpkg.json` and the generated SBOM — plus `linux`, `macos`, `windows`,
-  `android`, and — on `v*` tags or manual `workflow_dispatch` with
+  `android`, `wasm`, and — on `v*` tags or manual `workflow_dispatch` with
   `publish_release: true` — `release` jobs calling the scripts above and below,
   caching SHA-256-verified Linux AppImage tooling, uploading both `.AppImage`
   and `.tar.gz` Linux artifacts, `.dmg` + `.tar.gz` macOS artifacts, and `.apk`
@@ -289,6 +308,16 @@ specified in `docs/ReleasePipeline.md`.
   `release-pulse-api` compatibility, negative security tests, Ed25519 /
   `trusted comment` tamper/replay guards, `--dry-run` R2 ordering, and (when
   `minisign` is installed) end-to-end CLI keygen, signing, and verification.
+- `./ci/sign-wasm-demo.sh [--version <ver>] [--archive <tar.gz>]` — signs and verifies
+  `dist/wasm/ragoshell-wasm-demo.tar.gz` (`ragoshell-wasm-demo.tar.gz.minisig`) with
+  Minisign (`release:<version>\ttimestamp:<UTC>\tfile:ragoshell-wasm-demo.tar.gz`), paired
+  with `node ci/verify-remote-manifest.mjs verify-demo` and
+  `ragoshell-infra/.gitea/workflows/sync-wasm-demo.yml` for zero-SSH-exposure server sync.
+- `node ci/test-wasm-bundle.mjs` — zero-dependency automated test suite
+  covering CSP-clean `index.html.in` / `wasm-boot.js.in` rendering, single-source
+  brand enforcement, WASM shared-memory (`-pthread`) header inspection, Brotli
+  compression, deterministic USTAR `.tar.gz` archiving, `deploy-receive.sh demo`
+  negative security checks, and `dist/wasm/` release-pipeline coexistence.
 
 ## Translation Helper Scripts
 

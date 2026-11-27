@@ -205,34 +205,37 @@ RagoDialog {
         trayCheck.checked = AppSettings.minimizeToTray
         startupScriptArea.text = AppSettings.startupScript
         confirmDestructiveCheck.checked = AppSettings.confirmDestructiveQueries
-        aiEnabledCheck.checked = AppSettings.aiAssistantEnabled
-        var keys = {}, models = {}, bases = {}, timeouts = {}
-        for (var i = 0; i < AppSettings.aiProviders.length; ++i) {
-            var p = AppSettings.aiProviders[i]
-            keys[p] = AppSettings.aiApiKeyFor(p)
-            models[p] = AppSettings.aiModelFor(p)
-            if (AppSettings.aiHasBaseUrl(p)) {
-                bases[p] = AppSettings.aiBaseUrlFor(p)
-                timeouts[p] = AppSettings.aiTimeoutFor(p)
+        if (!Platform.isWasmPlayground) {
+            aiEnabledCheck.checked = AppSettings.aiAssistantEnabled
+            var keys = {}, models = {}, bases = {}, timeouts = {}
+            for (var i = 0; i < AppSettings.aiProviders.length; ++i) {
+                var p = AppSettings.aiProviders[i]
+                keys[p] = AppSettings.aiApiKeyFor(p)
+                models[p] = AppSettings.aiModelFor(p)
+                if (AppSettings.aiHasBaseUrl(p)) {
+                    bases[p] = AppSettings.aiBaseUrlFor(p)
+                    timeouts[p] = AppSettings.aiTimeoutFor(p)
+                }
             }
+            _aiKeys = keys
+            _aiModelSel = models
+            _aiBaseUrls = bases
+            _aiTimeouts = timeouts
+            _aiShownProvider = ""
+            _aiResetEntry()
+            aiProviderCombo.currentIndex = Math.max(0, AppSettings.aiProviders.indexOf(AppSettings.aiProvider))
+            _aiShow(AppSettings.aiProvider)
+            aiValuesCheck.checked = AppSettings.aiIncludeSampleValues
+            aiFallbackCheck.checked = AppSettings.aiAutoFallback
         }
-        _aiKeys = keys
-        _aiModelSel = models
-        _aiBaseUrls = bases
-        _aiTimeouts = timeouts
-        _aiShownProvider = ""
-        _aiResetEntry()
-        aiProviderCombo.currentIndex = Math.max(0, AppSettings.aiProviders.indexOf(AppSettings.aiProvider))
-        _aiShow(AppSettings.aiProvider)
-        aiValuesCheck.checked = AppSettings.aiIncludeSampleValues
-        aiFallbackCheck.checked = AppSettings.aiAutoFallback
         schemaSection.modeIndex = AppSettings.schemaCollectionMode
         schemaSection.sampleSize = AppSettings.schemaBackgroundSampleSize
         schemaSection.maxCollections = AppSettings.schemaBackgroundMaxCollections
         schemaSection.unmeteredOnly = AppSettings.schemaUnmeteredOnly
         mcpSection.syncFields()
         accountSection.closeEditors()
-        accountSection.syncFields()
+        if (!Platform.isWasmPlayground)
+            accountSection.syncFields()
         updateCheck.checked = AppSettings.checkForUpdates
         usageStatsCheck.checked = AppSettings.shareAnonymousUsage
         _loading = false
@@ -249,7 +252,8 @@ RagoDialog {
         fontSizeSpin.commitText()
         schemaSection.commitSpinBoxes()
         mcpSection.commitSpinBoxes()
-        accountSection.commitDeviceName()
+        if (!Platform.isWasmPlayground)
+            accountSection.commitDeviceName()
         _saved = true
         Theme.density = Theme.availableDensities[densityCombo.currentIndex]
         AppSettings.batchSize = batchSpin.value
@@ -264,35 +268,40 @@ RagoDialog {
         AppSettings.codeFontSize = fontSizeSpin.value
         AppSettings.lineNumbers = lineNumbersCheck.checked
         AppSettings.autoExpand = autoExpandCheck.checked
-        AppSettings.minimizeToTray = trayCheck.checked
+        if (!Platform.isMobile && !Platform.isWasm)
+            AppSettings.minimizeToTray = trayCheck.checked
         AppSettings.startupScript = startupScriptArea.text
         AppSettings.confirmDestructiveQueries = confirmDestructiveCheck.checked
-        AppSettings.aiAssistantEnabled = aiEnabledCheck.checked
-        _aiStash()
-        for (var i = 0; i < AppSettings.aiProviders.length; ++i) {
-            var p = AppSettings.aiProviders[i]
-            if (AppSettings.aiHasBaseUrl(p) && _aiBaseUrls[p] !== undefined) {
-                // The address first: the key below is bound to its origin.
-                var check = AppSettings.checkAiBaseUrl(_aiBaseUrls[p], false)
-                AppSettings.setAiBaseUrlFor(p, check.ok ? check.normalized : _aiBaseUrls[p])
-                if (_aiTimeouts[p] !== undefined)
-                    AppSettings.setAiTimeoutFor(p, _aiTimeouts[p])
+        if (!Platform.isWasmPlayground) {
+            AppSettings.aiAssistantEnabled = aiEnabledCheck.checked
+            _aiStash()
+            for (var i = 0; i < AppSettings.aiProviders.length; ++i) {
+                var p = AppSettings.aiProviders[i]
+                if (AppSettings.aiHasBaseUrl(p) && _aiBaseUrls[p] !== undefined) {
+                    // The address first: the key below is bound to its origin.
+                    var check = AppSettings.checkAiBaseUrl(_aiBaseUrls[p], false)
+                    AppSettings.setAiBaseUrlFor(p, check.ok ? check.normalized : _aiBaseUrls[p])
+                    if (_aiTimeouts[p] !== undefined)
+                        AppSettings.setAiTimeoutFor(p, _aiTimeouts[p])
+                }
+                AppSettings.setAiApiKeyFor(p, _aiKeys[p] || "")
+                if (_aiModelSel[p] !== undefined && (_aiModelSel[p].length > 0 || AppSettings.aiHasBaseUrl(p)))
+                    AppSettings.setAiModelFor(p, _aiModelSel[p])
             }
-            AppSettings.setAiApiKeyFor(p, _aiKeys[p] || "")
-            if (_aiModelSel[p] !== undefined && (_aiModelSel[p].length > 0 || AppSettings.aiHasBaseUrl(p)))
-                AppSettings.setAiModelFor(p, _aiModelSel[p])
+            AppSettings.aiProvider = _aiShownProvider
+            AppSettings.aiIncludeSampleValues = aiValuesCheck.checked
+            AppSettings.aiAutoFallback = aiFallbackCheck.checked
         }
-        AppSettings.aiProvider = _aiShownProvider
-        AppSettings.aiIncludeSampleValues = aiValuesCheck.checked
-        AppSettings.aiAutoFallback = aiFallbackCheck.checked
         AppSettings.schemaCollectionMode = schemaSection.modeIndex
         AppSettings.schemaUnmeteredOnly = schemaSection.unmeteredOnly
         AppSettings.schemaBackgroundSampleSize = schemaSection.sampleSize
         AppSettings.schemaBackgroundMaxCollections = schemaSection.maxCollections
         mcpSection.apply()
-        if (!AppSettings.checkForUpdatesLocked)
-            AppSettings.checkForUpdates = updateCheck.checked
-        AppSettings.shareAnonymousUsage = usageStatsCheck.checked
+        if (!Brand.isStoreBuild && !Platform.isWasm) {
+            if (!AppSettings.checkForUpdatesLocked)
+                AppSettings.checkForUpdates = updateCheck.checked
+            AppSettings.shareAnonymousUsage = usageStatsCheck.checked
+        }
         AppSettings.save()
     }
 
@@ -587,6 +596,7 @@ RagoDialog {
 
                 RagoCheckBox {
                     id: trayCheck
+                    visible: !Platform.isMobile && !Platform.isWasm
                     Layout.fillWidth: true
                     text: qsTr("Enable system tray icon")
                 }
@@ -645,12 +655,14 @@ RagoDialog {
             }
 
             Rectangle {
+                visible: !Platform.isWasmPlayground
                 Layout.fillWidth: true
                 Layout.preferredHeight: 1
                 color: Theme.glassBorder
             }
 
             Label {
+                visible: !Platform.isWasmPlayground
                 text: qsTr("SAVED PASSWORDS")
                 font.bold: true
                 font.pixelSize: 11
@@ -659,6 +671,7 @@ RagoDialog {
             }
 
             Label {
+                visible: !Platform.isWasmPlayground
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap
                 font.pixelSize: 12
@@ -671,12 +684,14 @@ RagoDialog {
             }
 
             Rectangle {
+                visible: !Platform.isWasmPlayground
                 Layout.fillWidth: true
                 Layout.preferredHeight: 1
                 color: Theme.glassBorder
             }
 
             Label {
+                visible: !Platform.isWasmPlayground
                 text: qsTr("AI QUERY ASSISTANT")
                 font.bold: true
                 font.pixelSize: 11
@@ -685,6 +700,7 @@ RagoDialog {
             }
 
             Label {
+                visible: !Platform.isWasmPlayground
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap
                 font.pixelSize: 12
@@ -699,6 +715,7 @@ RagoDialog {
 
             RagoCheckBox {
                 id: aiEnabledCheck
+                visible: !Platform.isWasmPlayground
                 Layout.fillWidth: true
                 text: qsTr("Enable the AI query assistant")
             }
@@ -706,7 +723,7 @@ RagoDialog {
             // Shown once after an update when the saved provider was the
             // removed hosted RagoShell AI: the assistant was turned off.
             Label {
-                visible: AppSettings.aiHostedProviderRemoved
+                visible: !Platform.isWasmPlayground && AppSettings.aiHostedProviderRemoved
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap
                 font.pixelSize: 12
@@ -718,6 +735,7 @@ RagoDialog {
             }
 
             GridLayout {
+                visible: !Platform.isWasmPlayground
                 Layout.fillWidth: true
                 columns: Window.width < 520 ? 1 : 2
                 columnSpacing: 16
@@ -1046,6 +1064,7 @@ RagoDialog {
 
             RagoCheckBox {
                 id: aiFallbackCheck
+                visible: !Platform.isWasmPlayground
                 Layout.fillWidth: true
                 enabled: aiEnabledCheck.checked
                 text: qsTr("When a model runs out of quota, hits a rate limit or is retired, try another model of the same provider")
@@ -1053,6 +1072,7 @@ RagoDialog {
 
             RagoCheckBox {
                 id: aiValuesCheck
+                visible: !Platform.isWasmPlayground
                 Layout.fillWidth: true
                 enabled: aiEnabledCheck.checked
                 text: qsTr("Also send frequent values and min/max ranges (better filters, but sends document data)")
@@ -1082,6 +1102,7 @@ RagoDialog {
             }
 
             Rectangle {
+                visible: !Platform.isWasmPlayground
                 Layout.fillWidth: true
                 Layout.preferredHeight: 1
                 color: Theme.glassBorder
@@ -1089,18 +1110,19 @@ RagoDialog {
 
             PreferencesAccountSection {
                 id: accountSection
+                visible: !Platform.isWasmPlayground
                 Layout.fillWidth: true
             }
 
             Rectangle {
-                visible: !Brand.isStoreBuild
+                visible: !Brand.isStoreBuild && !Platform.isWasm
                 Layout.fillWidth: true
                 Layout.preferredHeight: 1
                 color: Theme.glassBorder
             }
 
             Label {
-                visible: !Brand.isStoreBuild
+                visible: !Brand.isStoreBuild && !Platform.isWasm
                 text: qsTr("UPDATES & USAGE")
                 font.bold: true
                 font.pixelSize: 11
@@ -1109,7 +1131,7 @@ RagoDialog {
             }
 
             Label {
-                visible: !Brand.isStoreBuild
+                visible: !Brand.isStoreBuild && !Platform.isWasm
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap
                 font.pixelSize: 12
@@ -1118,7 +1140,7 @@ RagoDialog {
             }
 
             ColumnLayout {
-                visible: !Brand.isStoreBuild
+                visible: !Brand.isStoreBuild && !Platform.isWasm
                 Layout.fillWidth: true
                 spacing: 8
 

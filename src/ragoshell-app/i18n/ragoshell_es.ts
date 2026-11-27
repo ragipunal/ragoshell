@@ -40,6 +40,10 @@
         <translation>Buscar actualizaciones</translation>
     </message>
     <message>
+        <source>Download Desktop App</source>
+        <translation>Descargar aplicación de escritorio</translation>
+    </message>
+    <message>
         <source>Open-Source Licenses…</source>
         <translation>Licencias de código abierto…</translation>
     </message>
@@ -447,6 +451,14 @@
         <translation>Sincronizar ahora</translation>
     </message>
     <message>
+        <source>Reset Demo Data…</source>
+        <translation>Restablecer datos de demostración…</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>Descargar aplicación de escritorio</translation>
+    </message>
+    <message>
         <source>Keyboard Shortcuts</source>
         <translation>Atajos de teclado</translation>
     </message>
@@ -516,6 +528,18 @@
     <message>
         <source>Monitor</source>
         <translation>Monitor</translation>
+    </message>
+    <message>
+        <source>Reset Demo</source>
+        <translation>Restablecer demo</translation>
+    </message>
+    <message>
+        <source>Reset Demo Data</source>
+        <translation>Restablecer datos de demostración</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>Descargar aplicación de escritorio</translation>
     </message>
     <message>
         <source>Syncing…</source>
@@ -600,6 +624,10 @@
         <translation>JSON de filtro no válido: %1</translation>
     </message>
     <message>
+        <source>Collection export is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Cannot open output file for writing: %1</source>
         <translation>No se puede abrir el archivo de salida para escribir: %1</translation>
     </message>
@@ -610,6 +638,10 @@
     <message>
         <source>Cannot open input file for reading: %1</source>
         <translation>No se puede abrir el archivo de entrada para leer: %1</translation>
+    </message>
+    <message>
+        <source>Collection import is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Import cancelled.</source>
@@ -2872,6 +2904,18 @@
         <source>Close</source>
         <translation>Cerrar</translation>
     </message>
+    <message>
+        <source>Reset Demo Data?</source>
+        <translation>¿Restablecer datos de demostración?</translation>
+    </message>
+    <message>
+        <source>Reset Demo Data</source>
+        <translation>Restablecer datos de demostración</translation>
+    </message>
+    <message>
+        <source>Restore the in-browser demo database to its initial sample collections and documents? Any changes made in this session will be discarded.</source>
+        <translation>¿Restaurar la base de datos de demostración del navegador a sus colecciones y documentos de ejemplo iniciales? Se descartarán los cambios realizados en esta sesión.</translation>
+    </message>
 </context>
 <context>
     <name>MainWorkspaceArea</name>
@@ -2884,8 +2928,16 @@
         <translation>No hay pestañas abiertas</translation>
     </message>
     <message>
+        <source>Double-click any collection in Explorer to query, or open a new playground shell.</source>
+        <translation>Haga doble clic en cualquier colección del Explorador para consultar o abra un nuevo shell de pruebas.</translation>
+    </message>
+    <message>
         <source>Double-click any collection in Explorer to query, or open a new connection.</source>
         <translation>Haga doble clic en una colección del explorador para consultarla, o abra una conexión nueva.</translation>
+    </message>
+    <message>
+        <source>Open Playground Shell</source>
+        <translation>Abrir shell de pruebas</translation>
     </message>
     <message>
         <source>Welcome Guide</source>
@@ -4407,8 +4459,8 @@
         <translation>No se encontró ningún miembro accesible del conjunto de réplicas para ejecutar rs.status().</translation>
     </message>
     <message>
-        <source>Shell tabs are not yet supported over gateway/demo connection channels.</source>
-        <translation>Las pestañas de shell aún no son compatibles con los canales de conexión de puerta de enlace o demo.</translation>
+        <source>Direct replica-set member connections are not supported over gateway or demo channels.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Server is not connected</source>
@@ -4417,6 +4469,10 @@
     <message>
         <source>Shell</source>
         <translation>Shell</translation>
+    </message>
+    <message>
+        <source>Demo data reset to defaults.</source>
+        <translation>Datos de demostración restablecidos a los valores predeterminados.</translation>
     </message>
     <message>
         <source>The network changed. Checking the open connections…</source>
@@ -4494,6 +4550,10 @@
         <translation>El servidor no está conectado.</translation>
     </message>
     <message>
+        <source>Collection export is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Exporting %1.%2…</source>
         <translation>Exportando %1.%2…</translation>
     </message>
@@ -4510,6 +4570,10 @@
             <numerusform>Se exportó %n documento de %1.%2.</numerusform>
             <numerusform>Se exportaron %n documentos de %1.%2.</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>Collection import is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Importing into %1.%2…</source>
@@ -6198,6 +6262,14 @@ Error:
         <translation>Nueva conexión (%1)</translation>
     </message>
     <message>
+        <source>Open Playground Shell</source>
+        <translation>Abrir shell de pruebas</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>Descargar aplicación de escritorio</translation>
+    </message>
+    <message>
         <source>View Logs (%1)</source>
         <translation>Ver registros (%1)</translation>
     </message>
@@ -6218,8 +6290,16 @@ Error:
         <translation>PRIMEROS PASOS</translation>
     </message>
     <message>
+        <source>✦ In-Browser MongoDB Playground</source>
+        <translation>✦ Entorno de pruebas MongoDB en el navegador</translation>
+    </message>
+    <message>
         <source>✦ Connect to MongoDB</source>
         <translation>✦ Conectar con MongoDB</translation>
+    </message>
+    <message>
+        <source>Explore the sample &apos;catalog&apos; database directly in browser memory — no server setup required. Use &apos;Reset Demo&apos; in the top bar anytime, or download the desktop app to connect to your own MongoDB servers.</source>
+        <translation>Explore la base de datos de ejemplo &apos;catalog&apos; directamente en la memoria del navegador, sin configurar ningún servidor. Use &apos;Restablecer demo&apos; en la barra superior cuando quiera o descargue la aplicación de escritorio para conectarse a sus propios servidores MongoDB.</translation>
     </message>
     <message>
         <source>Click &apos;New Connection&apos; in the top bar or press Ctrl+N to configure Direct Connections, Replica Sets, SSH Tunnels, and TLS/SSL certificates.</source>

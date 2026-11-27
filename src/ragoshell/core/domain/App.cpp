@@ -60,8 +60,10 @@ namespace RagoShell
     {
         ConnectionSettings* connSettingsClone = connSettings->clone();
 
-        // Modify connection settings when SSH tunnel is used
+        // Modify connection settings when SSH tunnel is used (native driver only;
+        // transport-backed connections never open local SSH tunnels — W4 review H2).
         if ((type == ConnectionPrimary || type == ConnectionTest)
+            && !connSettingsClone->hasTransport()
             && !connSettingsClone->isReplicaSet()
             && !connSettingsClone->isSrv()
             && connSettingsClone->sshSettings()->enabled()
@@ -100,9 +102,10 @@ namespace RagoShell
         if (type == ConnectionPrimary)
             _bus->publish(new ConnectingEvent(this));
 
-        // When connection is SECONDARY or SSH not enabled or replica set or SRV,
+        // When connection is SECONDARY or transport-backed or SSH not enabled or replica set or SRV,
         // then continue without SSH Tunnel
-        if (type == ConnectionSecondary || !connSettings->sshSettings()->enabled()
+        if (type == ConnectionSecondary || connSettings->hasTransport()
+            || !connSettings->sshSettings()->enabled()
             || connSettings->isReplicaSet() || connSettings->isSrv()
         ) {
             return continueOpenServer(_lastServerHandle, connSettings, type);
@@ -126,7 +129,8 @@ namespace RagoShell
     {
         SshSettings *ssh = connection->sshSettings();
 
-        if (!connection->isReplicaSet() && !connection->isSrv() && ssh->enabled() && ssh->askPassword() &&
+        if (!connection->hasTransport() && !connection->isReplicaSet() && !connection->isSrv()
+            && ssh->enabled() && ssh->askPassword() &&
             (type == ConnectionPrimary || type == ConnectionTest)) {
             bool ok = false;
 
@@ -163,8 +167,9 @@ namespace RagoShell
 
         SslSettings *sslSettings = connection->sslSettings();
 
-        if (sslSettings->sslEnabled() && sslSettings->usePemFile() && sslSettings->askPassphrase() 
-            && (type == ConnectionPrimary || type == ConnectionTest)) 
+        if (!connection->hasTransport() && sslSettings->sslEnabled()
+            && sslSettings->usePemFile() && sslSettings->askPassphrase()
+            && (type == ConnectionPrimary || type == ConnectionTest))
         {
             if (!askSslPassphrasePromptDialog(connection))
             {
@@ -224,13 +229,6 @@ namespace RagoShell
 
     void App::openShell(MongoServer* server, ConnectionSettings* connection, const ScriptInfo &scriptInfo)
     {
-        // Transport-mode connections (WASM demo / gateway) have no shell
-        // path yet — ScriptEngine owns a raw mongocxx client that would
-        // bypass the configured channel (8.6 review M2). Fail loudly at
-        // the call sites; refuse here for every other caller.
-        if (connection->hasTransport())
-            return;
-
         auto serverClone{ openServerInternal(connection, ConnectionSecondary) };
         if (!serverClone || !server)
             return;

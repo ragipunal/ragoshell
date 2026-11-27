@@ -138,7 +138,7 @@ Item {
         Item { Layout.fillWidth: bar.compact }
 
         RagoPillButton {
-            visible: !bar.compact
+            visible: !bar.compact && !Platform.isWasmPlayground
             compact: true
             text: qsTr("New Connection")
             iconText: "✦"
@@ -146,7 +146,7 @@ Item {
             onClicked: bar.app.openNewConnection()
         }
         RagoIconButton {
-            visible: bar.compact
+            visible: bar.compact && !Platform.isWasmPlayground
             glyph: "✦"
             accent: true
             size: 26
@@ -156,13 +156,45 @@ Item {
 
         RagoPillButton {
             //: Button: open the Server Monitor (live server statistics).
-            visible: !bar.compact
+            visible: !bar.compact && !Platform.isWasmPlayground
             compact: true
             text: qsTr("Monitor")
             iconText: "◉"
             enabled: Backend.connectedUuids.length > 0
             checked: bar.app.currentMonitor() !== null
             onClicked: bar.actions.run("tools.monitor")
+        }
+
+        RagoPillButton {
+            visible: !bar.compact && Platform.isWasmPlayground
+            compact: true
+            text: qsTr("Reset Demo")
+            iconText: "↻"
+            onClicked: bar.actions.run("tools.resetDemo")
+        }
+        RagoIconButton {
+            visible: bar.compact && Platform.isWasmPlayground
+            glyph: "↻"
+            size: 26
+            toolTipText: qsTr("Reset Demo Data")
+            onClicked: bar.actions.run("tools.resetDemo")
+        }
+
+        RagoPillButton {
+            visible: !bar.compact && Platform.isWasmPlayground && Brand.downloadUrl.length > 0
+            compact: true
+            text: qsTr("Download Desktop App")
+            iconText: "⬇"
+            primary: true
+            onClicked: bar.actions.run("help.downloadDesktop")
+        }
+        RagoIconButton {
+            visible: bar.compact && Platform.isWasmPlayground && Brand.downloadUrl.length > 0
+            glyph: "⬇"
+            accent: true
+            size: 26
+            toolTipText: qsTr("Download Desktop App")
+            onClicked: bar.actions.run("help.downloadDesktop")
         }
 
         Item { Layout.fillWidth: !bar.compact }
@@ -176,7 +208,7 @@ Item {
 
         RagoPillButton {
             id: syncPillButton
-            visible: bar.showName && !AppSettings.disableHttpsFeatures
+            visible: bar.showName && !AppSettings.disableHttpsFeatures && !Platform.isWasmPlayground
             compact: true
             iconText: CloudService.syncBusy ? "↻" : "⇅"
             text: CloudService.syncBusy ? qsTr("Syncing…")
@@ -188,7 +220,7 @@ Item {
 
         RagoIconButton {
             id: syncIconButton
-            visible: !bar.showName && !AppSettings.disableHttpsFeatures
+            visible: !bar.showName && !AppSettings.disableHttpsFeatures && !Platform.isWasmPlayground
             glyph: CloudService.syncBusy ? "↻" : "⇅"
             size: 26
             accent: CloudService.syncActive && CloudService.syncLastError.length === 0
@@ -297,7 +329,9 @@ Item {
 
             RagoMenu {
                 id: moreMenu
-                CommandMenuItem { actions: bar.actions; commandId: "tools.monitor"; visible: bar.compact }
+                CommandMenuItem { actions: bar.actions; commandId: "tools.monitor"; visible: bar.compact && !Platform.isWasmPlayground }
+                CommandMenuItem { actions: bar.actions; commandId: "tools.resetDemo" }
+                CommandMenuItem { actions: bar.actions; commandId: "help.downloadDesktop" }
                 CommandMenuItem { actions: bar.actions; commandId: "view.log" }
                 RagoMenuSeparator {}
                 CommandMenuItem { actions: bar.actions; commandId: "file.cloudSync" }

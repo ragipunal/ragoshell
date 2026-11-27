@@ -40,6 +40,10 @@
         <translation>Проверить обновления</translation>
     </message>
     <message>
+        <source>Download Desktop App</source>
+        <translation>Скачать настольное приложение</translation>
+    </message>
+    <message>
         <source>Open-Source Licenses…</source>
         <translation>Лицензии открытого ПО…</translation>
     </message>
@@ -448,6 +452,14 @@
         <translation>Синхронизировать</translation>
     </message>
     <message>
+        <source>Reset Demo Data…</source>
+        <translation>Сбросить демо-данные…</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>Скачать настольное приложение</translation>
+    </message>
+    <message>
         <source>Keyboard Shortcuts</source>
         <translation>Сочетания клавиш</translation>
     </message>
@@ -517,6 +529,18 @@
     <message>
         <source>Monitor</source>
         <translation>Монитор</translation>
+    </message>
+    <message>
+        <source>Reset Demo</source>
+        <translation>Сбросить демо</translation>
+    </message>
+    <message>
+        <source>Reset Demo Data</source>
+        <translation>Сбросить демо-данные</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>Скачать настольное приложение</translation>
     </message>
     <message>
         <source>Syncing…</source>
@@ -601,6 +625,10 @@
         <translation>Недопустимый JSON фильтра: %1</translation>
     </message>
     <message>
+        <source>Collection export is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Cannot open output file for writing: %1</source>
         <translation>Не удаётся открыть выходной файл для записи: %1</translation>
     </message>
@@ -611,6 +639,10 @@
     <message>
         <source>Cannot open input file for reading: %1</source>
         <translation>Не удаётся открыть входной файл для чтения: %1</translation>
+    </message>
+    <message>
+        <source>Collection import is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Import cancelled.</source>
@@ -2878,6 +2910,18 @@
         <source>Close</source>
         <translation>Закрыть</translation>
     </message>
+    <message>
+        <source>Reset Demo Data?</source>
+        <translation>Сбросить демо-данные?</translation>
+    </message>
+    <message>
+        <source>Reset Demo Data</source>
+        <translation>Сбросить демо-данные</translation>
+    </message>
+    <message>
+        <source>Restore the in-browser demo database to its initial sample collections and documents? Any changes made in this session will be discarded.</source>
+        <translation>Восстановить демонстрационную базу данных в браузере к исходным коллекциям и документам? Все изменения, внесённые в этом сеансе, будут отменены.</translation>
+    </message>
 </context>
 <context>
     <name>MainWorkspaceArea</name>
@@ -2890,8 +2934,16 @@
         <translation>Нет открытых вкладок</translation>
     </message>
     <message>
+        <source>Double-click any collection in Explorer to query, or open a new playground shell.</source>
+        <translation>Дважды щёлкните любую коллекцию в Проводнике для запроса или откройте новую оболочку песочницы.</translation>
+    </message>
+    <message>
         <source>Double-click any collection in Explorer to query, or open a new connection.</source>
         <translation>Дважды щёлкните любую коллекцию в обозревателе, чтобы выполнить запрос, или откройте новое подключение.</translation>
+    </message>
+    <message>
+        <source>Open Playground Shell</source>
+        <translation>Открыть оболочку песочницы</translation>
     </message>
     <message>
         <source>Welcome Guide</source>
@@ -4416,8 +4468,8 @@
         <translation>Не найден доступный участник набора реплик для выполнения rs.status().</translation>
     </message>
     <message>
-        <source>Shell tabs are not yet supported over gateway/demo connection channels.</source>
-        <translation>Вкладки оболочки пока не поддерживаются для каналов подключения через шлюз/демо.</translation>
+        <source>Direct replica-set member connections are not supported over gateway or demo channels.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Server is not connected</source>
@@ -4426,6 +4478,10 @@
     <message>
         <source>Shell</source>
         <translation>Shell</translation>
+    </message>
+    <message>
+        <source>Demo data reset to defaults.</source>
+        <translation>Демо-данные сброшены к значениям по умолчанию.</translation>
     </message>
     <message>
         <source>The network changed. Checking the open connections…</source>
@@ -4504,6 +4560,10 @@
         <translation>Нет подключения к серверу.</translation>
     </message>
     <message>
+        <source>Collection export is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Exporting %1.%2…</source>
         <translation>Экспорт %1.%2…</translation>
     </message>
@@ -4522,6 +4582,10 @@
             <numerusform>Экспортировано %n документа из %1.%2.</numerusform>
             <numerusform>Экспортировано %n документов из %1.%2.</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>Collection import is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Importing into %1.%2…</source>
@@ -6226,6 +6290,14 @@ Error:
         <translation>Новое подключение (%1)</translation>
     </message>
     <message>
+        <source>Open Playground Shell</source>
+        <translation>Открыть оболочку песочницы</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>Скачать настольное приложение</translation>
+    </message>
+    <message>
         <source>View Logs (%1)</source>
         <translation>Просмотр журналов (%1)</translation>
     </message>
@@ -6246,8 +6318,16 @@ Error:
         <translation>НАЧАЛО РАБОТЫ</translation>
     </message>
     <message>
+        <source>✦ In-Browser MongoDB Playground</source>
+        <translation>✦ Песочница MongoDB в браузере</translation>
+    </message>
+    <message>
         <source>✦ Connect to MongoDB</source>
         <translation>✦ Подключение к MongoDB</translation>
+    </message>
+    <message>
+        <source>Explore the sample &apos;catalog&apos; database directly in browser memory — no server setup required. Use &apos;Reset Demo&apos; in the top bar anytime, or download the desktop app to connect to your own MongoDB servers.</source>
+        <translation>Изучайте демонстрационную базу данных &apos;catalog&apos; прямо в памяти браузера без настройки сервера. В любой момент используйте кнопку «Сбросить демо» на верхней панели или скачайте настольное приложение для подключения к собственным серверам MongoDB.</translation>
     </message>
     <message>
         <source>Click &apos;New Connection&apos; in the top bar or press Ctrl+N to configure Direct Connections, Replica Sets, SSH Tunnels, and TLS/SSL certificates.</source>

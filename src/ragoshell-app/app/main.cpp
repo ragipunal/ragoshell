@@ -25,6 +25,7 @@
 #include "ragoshell/core/utils/Logger.h"
 #include "ragoshell/core/utils/SchemaCatalog.h"
 #include "ragoshell/core/utils/SchemaService.h"
+#include "ragoshell/core/utils/WasmMode.h"
 #include "ragoshell/ssh/ssh.h"
 #include "ragoshell-app/CallTipSelfTest.h"
 #include "ragoshell-app/ImeSelfTest.h"
@@ -244,9 +245,19 @@ int main(int argc, char *argv[])
     RagoShell::QmlUiServices uiServices;
     RagoShell::UiServices::setInstance(&uiServices);
 
+    const QStringList startupArgs = app.arguments();
+    const bool headlessRun = startupArgs.contains(QStringLiteral("--check-qml"))
+                          || startupArgs.contains(QStringLiteral("--check-geometry"))
+                          || startupArgs.contains(QStringLiteral("--explorer-selftest"))
+                          || startupArgs.contains(QStringLiteral("--selection-selftest"))
+                          || startupArgs.contains(QStringLiteral("--snapshot"))
+                          || startupArgs.contains(QStringLiteral("--open-view"));
+
     RagoShell::BrandBridge brandBridge;
     RagoShell::ThemeBridge themeBridge;
     RagoShell::PlatformInfo platformInfo;
+    if (headlessRun && startupArgs.contains(QStringLiteral("--wasm-playground-preview")))
+        platformInfo.enableHeadlessPlaygroundPreview();
     RagoShell::ConnectionListModel connectionModel(settings);
     // Declared before the backend: shell controllers record into it until
     // the backend (and its shells) are destroyed.
@@ -261,35 +272,50 @@ int main(int argc, char *argv[])
     // Unsaved script text of shell tabs, recoverable after a crash. Before the
     // backend too: shell controllers update it until the backend is destroyed.
     RagoShell::ScriptDraftModel scriptDrafts(RagoShell::appDataDir() + QStringLiteral("drafts.json"));
-    scriptDrafts.setStartupPromptEnabled(!app.arguments().contains(QStringLiteral("--snapshot")));
+    scriptDrafts.setStartupPromptEnabled(!startupArgs.contains(QStringLiteral("--snapshot"))
+                                         && !platformInfo.isWasmPlayground());
+    QString playgroundAutoUuid;
 #if defined(Q_OS_WASM)
-    // Mod A playground: seed the in-browser demo catalog once so the first
-    // connect needs no server (docs/WasmBuildReport.md §4, roadmap 8.1).
-    if (settings->connections().empty()) {
-        auto *demo = new RagoShell::ConnectionSettings(mongocxx::uri("mongodb://demo/"), false);
-        demo->setConnectionName("RagoShell Demo (in-browser)");
-        demo->setDefaultDatabase("catalog");
-        demo->setTransportKind("memory");
-        RagoShell::SettingsManager::addConnection(demo);
+    // Mod A playground: ensure the in-browser demo catalog exists so first
+    // launch connects immediately without server setup (docs/WasmPlaygroundUx.md).
+    {
+        RagoShell::ConnectionSettings *memoryConn = nullptr;
+        for (RagoShell::ConnectionSettings *c : settings->connections()) {
+            if (c && c->transportKind() == "memory") {
+                memoryConn = c;
+                break;
+            }
+        }
+        if (!memoryConn && (platformInfo.isWasmPlayground() || settings->connections().empty())) {
+            auto *demo = new RagoShell::ConnectionSettings(mongocxx::uri("mongodb://demo/"), false);
+            demo->setConnectionName(
+                RagoShell::WasmMode::defaultPlaygroundConnectionName(
+                    QString::fromUtf8(RagoShell::BrandInfo::productName)).toStdString());
+            demo->setDefaultDatabase("catalog");
+            demo->setTransportKind("memory");
+            RagoShell::SettingsManager::addConnection(demo);
+            memoryConn = demo;
+            connectionModel.refresh();
+        } else if (memoryConn && platformInfo.isWasmPlayground()
+                   && memoryConn->defaultDatabase() != "catalog") {
+            memoryConn->setDefaultDatabase("catalog");
+        }
+        if (memoryConn && platformInfo.isWasmPlayground())
+            playgroundAutoUuid = memoryConn->uuid();
     }
 #endif
 
     RagoShell::QmlBackend backend;
     // Dev/CI snapshot runs must not read or overwrite the remembered layout.
-    backend.setPersistUiState(!app.arguments().contains(QStringLiteral("--snapshot")));
+    backend.setPersistUiState(!startupArgs.contains(QStringLiteral("--snapshot")));
+    if (platformInfo.isWasmPlayground() && !headlessRun)
+        backend.tabs()->setWelcomeOpen(false);
     RagoShell::SettingsBridge settingsBridge(settings);
     RagoShell::McpSettingsBridge mcpSettings(settings);
     // A deleted connection also leaves the MCP allow-list, here and at start
     // (one removed by sync since the last run); the counts follow.
     QObject::connect(&connectionModel, &RagoShell::ConnectionListModel::connectionsChanged,
                      &mcpSettings, &RagoShell::McpSettingsBridge::pruneMissing);
-    const QStringList startupArgs = app.arguments();
-    const bool headlessRun = startupArgs.contains(QStringLiteral("--check-qml"))
-                          || startupArgs.contains(QStringLiteral("--check-geometry"))
-                          || startupArgs.contains(QStringLiteral("--explorer-selftest"))
-                          || startupArgs.contains(QStringLiteral("--selection-selftest"))
-                          || startupArgs.contains(QStringLiteral("--snapshot"))
-                          || startupArgs.contains(QStringLiteral("--open-view"));
     if (!headlessRun)
         mcpSettings.pruneMissing();
     RagoShell::CloudService cloudService(settings, &platformInfo, queryHistory.store(), headlessRun);
@@ -732,6 +758,20 @@ int main(int argc, char *argv[])
                 });
             });
         }
+    } else if (platformInfo.isWasmPlayground() && !headlessRun && !playgroundAutoUuid.isEmpty()) {
+        auto starterOpened = std::make_shared<bool>(false);
+        QObject::connect(&backend, &RagoShell::QmlBackend::statusTextChanged,
+                         &backend, [&backend, playgroundAutoUuid, starterOpened]() {
+            if (*starterOpened || !backend.databasesListed() || !backend.shells().isEmpty())
+                return;
+            *starterOpened = true;
+            backend.openShellWithScript(
+                playgroundAutoUuid,
+                QStringLiteral("catalog"),
+                RagoShell::WasmMode::playgroundStarterScript(),
+                true);
+        });
+        backend.connectToServer(playgroundAutoUuid);
     }
 
     // Dev/CI helper: --snapshot <file.png> [delayMs] grabs the QML window

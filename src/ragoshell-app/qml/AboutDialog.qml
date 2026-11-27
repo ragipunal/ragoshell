@@ -105,7 +105,7 @@ RagoDialog {
             }
 
             Label {
-                visible: !Brand.isStoreBuild && UpdateService.statusMessage.length > 0
+                visible: !Brand.isStoreBuild && !Platform.isWasm && UpdateService.statusMessage.length > 0
                 text: UpdateService.statusMessage
                 wrapMode: Text.WordWrap
                 horizontalAlignment: Text.AlignHCenter
@@ -124,7 +124,7 @@ RagoDialog {
                 rowSpacing: 8
 
                 RagoPillButton {
-                    visible: !Brand.isStoreBuild
+                    visible: !Brand.isStoreBuild && !Platform.isWasm
                     Layout.fillWidth: true
                     stretch: true
                     enabled: !UpdateService.checking
@@ -142,9 +142,25 @@ RagoDialog {
                 }
 
                 RagoPillButton {
+                    visible: Platform.isWasm && Brand.downloadUrl.length > 0
                     Layout.fillWidth: true
                     stretch: true
-                    Layout.columnSpan: Brand.isStoreBuild ? Math.min(2, actionGrid.columns) : 1
+                    primary: true
+                    iconText: "⬇"
+                    text: qsTr("Download Desktop App")
+                    Accessible.name: text
+                    onClicked: {
+                        if (Brand.isSafeHttpsUrl(Brand.downloadUrl))
+                            Qt.openUrlExternally(Brand.downloadUrl)
+                    }
+                }
+
+                RagoPillButton {
+                    Layout.fillWidth: true
+                    stretch: true
+                    Layout.columnSpan: ((Brand.isStoreBuild && !Platform.isWasm)
+                                        || (Platform.isWasm && Brand.downloadUrl.length === 0))
+                                       ? Math.min(2, actionGrid.columns) : 1
                     text: qsTr("Open-Source Licenses…")
                     Accessible.name: text
                     onClicked: {

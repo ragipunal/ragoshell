@@ -131,6 +131,11 @@ for meta in SHA256SUMS.txt SHA256SUMS.txt.minisig releases.json releases.json.mi
         assets+=("$dist/$meta")
     fi
 done
+for wasm_f in "$dist/wasm/${product_id}-wasm-demo.tar.gz" "$dist/wasm/${product_id}-wasm-demo.tar.gz.minisig"; do
+    if [ -f "$wasm_f" ] && [ ! -L "$wasm_f" ] && [ -s "$wasm_f" ]; then
+        assets+=("$wasm_f")
+    fi
+done
 
 if [ "${#assets[@]}" -eq 0 ]; then
     echo "error: no $product_id-$ver-* artifacts found in $dist" >&2

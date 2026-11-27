@@ -26,9 +26,11 @@ namespace RagoShell
         QML_NAMED_ELEMENT(Platform)
         QML_SINGLETON
 
-        /// "windows", "macos", "linux", "android" or "ios"
+        /// "windows", "macos", "linux", "android", "ios" or "wasm"
         Q_PROPERTY(QString os READ os CONSTANT FINAL)
         Q_PROPERTY(bool isMobile READ isMobile CONSTANT FINAL)
+        Q_PROPERTY(bool isWasm READ isWasm CONSTANT FINAL)
+        Q_PROPERTY(bool isWasmPlayground READ isWasmPlayground CONSTANT FINAL)
         /// "desktop", "tablet" (a phone or tablet OS whose screen is at least 600 dp wide) or "phone"
         Q_PROPERTY(QString formFactor READ formFactor CONSTANT FINAL)
         Q_PROPERTY(bool isTablet READ isTablet CONSTANT FINAL)
@@ -55,6 +57,10 @@ namespace RagoShell
 
         QString os() const;
         bool isMobile() const;
+        bool isWasm() const;
+        bool isWasmPlayground() const;
+        /// Dev/CI headless layout verification only (--wasm-playground-preview); must be set before QML loads.
+        void enableHeadlessPlaygroundPreview();
         QString formFactor() const { return _formFactor; }
         bool isTablet() const { return _formFactor == QLatin1String("tablet"); }
         bool usesCommandKey() const;
@@ -94,8 +100,10 @@ namespace RagoShell
     void attach(QQmlEngine *engine);
 
         QString _formFactor;
-        bool _detected = false;       ///< the platform says a physical hardware keyboard is attached
-        bool _rewritingInput = false; ///< re-entrancy guard while normalizing smart quotes
+        bool _detected = false;                  ///< the platform says a physical hardware keyboard is attached
+        bool _rewritingInput = false;            ///< re-entrancy guard while normalizing smart quotes
+        bool _wasmPlayground = false;            ///< true in WASM Mod A Playground (docs/WasmPlaygroundUx.md)
+        bool _headlessPlaygroundPreview = false; ///< dev/CI headless --check-geometry / --open-view preview only
         QTimer _poll;
     };
 }

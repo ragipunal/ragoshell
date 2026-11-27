@@ -2,12 +2,16 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
+#include <cstdint>
 #include <thread>
 
 #include <QByteArray>
 #include <QRandomGenerator>
+#include <QRegularExpression>
 #include <QStringList>
 
+#include <bsoncxx/builder/basic/array.hpp>
 #include <bsoncxx/builder/basic/document.hpp>
 #include <bsoncxx/builder/basic/kvp.hpp>
 #include <bsoncxx/json.hpp>
@@ -35,8 +39,10 @@ namespace RagoShell
 {
     namespace
     {
-        using bsoncxx::builder::basic::kvp;
-        using bsoncxx::builder::basic::make_document;
+        namespace basic = bsoncxx::builder::basic;
+        using basic::kvp;
+        using basic::make_array;
+        using basic::make_document;
 
         bool has(const QJSValue &options, const char *name)
         {
@@ -54,13 +60,86 @@ namespace RagoShell
         // A filter that is absent (undefined or null) matches everything.
         bsoncxx::document::value filterOrEmpty(const BsonJsConverter &bson, const QJSValue &filter)
         {
-            return filter.isUndefined() || filter.isNull() ? bsoncxx::builder::basic::make_document() : bson.toDocument(filter);
+            return filter.isUndefined() || filter.isNull()
+                ? bsoncxx::builder::basic::make_document()
+                : bson.toDocument(filter);
+        }
+
+        std::int64_t doubleToInt64(double d, std::int64_t fallback = 0)
+        {
+            if (!std::isfinite(d))
+                return fallback;
+            constexpr double kMinI64 = -9223372036854775808.0; // -2^63 (exact in IEEE-754 double)
+            constexpr double kMaxI64 = 9223372036854774784.0;  // largest IEEE-754 double <= INT64_MAX
+            if (d <= kMinI64)
+                return INT64_MIN;
+            if (d >= kMaxI64)
+                return INT64_MAX;
+            return static_cast<std::int64_t>(std::trunc(d));
+        }
+
+        QString redactUriUserinfo(const QString &raw)
+        {
+            QString msg = raw;
+            static const QRegularExpression uriUserinfo(
+                QStringLiteral("mongodb(\\+srv)?://[^/\\s@]+@"));
+            msg.replace(uriUserinfo, QStringLiteral("mongodb\\1://***@"));
+            return msg;
         }
 
         std::chrono::milliseconds millis(const QJSValue &v)
         {
-            return std::chrono::milliseconds(static_cast<std::int64_t>(v.toNumber()));
+            return std::chrono::milliseconds(doubleToInt64(v.toNumber(), 0));
         }
+
+        std::int64_t extractCursorId(bsoncxx::document::view cursorObj)
+        {
+            const auto idEl = cursorObj["id"];
+            if (!idEl)
+                return 0;
+            if (idEl.type() == bsoncxx::type::k_int64)
+                return idEl.get_int64().value;
+            if (idEl.type() == bsoncxx::type::k_int32)
+                return idEl.get_int32().value;
+            if (idEl.type() == bsoncxx::type::k_double)
+                return doubleToInt64(idEl.get_double().value, 0);
+            return 0;
+        }
+
+        std::vector<bsoncxx::document::value> extractBatch(bsoncxx::document::view cursorObj,
+                                                           const char *batchKey)
+        {
+            std::vector<bsoncxx::document::value> out;
+            const auto b = cursorObj[batchKey];
+            if (!b || b.type() != bsoncxx::type::k_array)
+                return out;
+            for (const auto &el : b.get_array().value) {
+                if (el.type() == bsoncxx::type::k_document)
+                    out.emplace_back(el.get_document().value);
+            }
+            return out;
+        }
+
+        class TransportServerException final : public std::exception
+        {
+        public:
+            explicit TransportServerException(const IMongoTransport::Result &res)
+                : _message(res.error.isEmpty() ? std::string("transport command failed")
+                                               : res.error.toStdString()),
+                  _code(res.code),
+                  _codeName(res.codeName)
+            {
+            }
+
+            const char *what() const noexcept override { return _message.c_str(); }
+            int code() const noexcept { return _code; }
+            const QString &codeName() const noexcept { return _codeName; }
+
+        private:
+            std::string _message;
+            int _code = 0;
+            QString _codeName;
+        };
 
         // `uri` with the given options set (an option the URI already has is replaced).
         std::string withUriOptions(const std::string &uri, const std::vector<std::pair<std::string, std::string>> &options)
@@ -90,22 +169,79 @@ namespace RagoShell
 
     bool ShellHost::CursorState::hasNext()
     {
+        if (isTransport) {
+            while (batchIndex >= batch.size() && remoteCursorId != 0 && transport != nullptr) {
+                basic::document cmd;
+                cmd.append(kvp("getMore", remoteCursorId),
+                           kvp("collection", collection.toStdString()));
+                if (batchSize > 0)
+                    cmd.append(kvp("batchSize", batchSize));
+                if (maxTimeMs > 0)
+                    cmd.append(kvp("maxTimeMS", maxTimeMs));
+                const auto res = transport->runCommand(
+                    db, QString::fromStdString(
+                            bsoncxx::to_json(cmd.view(), bsoncxx::ExtendedJsonMode::k_canonical)));
+                if (!res.ok) {
+                    remoteCursorId = 0;
+                    throw TransportServerException(res);
+                }
+                const auto reply = bsoncxx::from_json(res.ejson.toStdString());
+                const auto cursorEl = reply.view()["cursor"];
+                if (!cursorEl || cursorEl.type() != bsoncxx::type::k_document) {
+                    remoteCursorId = 0;
+                    batch.clear();
+                    batchIndex = 0;
+                    break;
+                }
+                const auto cv = cursorEl.get_document().value;
+                remoteCursorId = extractCursorId(cv);
+                batch = extractBatch(cv, "nextBatch");
+                batchIndex = 0;
+            }
+            return batchIndex < batch.size();
+        }
+
         if (!iterator) {
-            iterator.emplace(cursor.begin());
+            iterator.emplace(cursor->begin());
             consumed = false;
         } else if (consumed) {
             ++*iterator;
             consumed = false;
         }
-        return *iterator != cursor.end();
+        return *iterator != cursor->end();
     }
 
     bsoncxx::document::value ShellHost::CursorState::next()
     {
         if (!hasNext())
             throw std::runtime_error("the cursor has no more documents");
+        if (isTransport)
+            return std::move(batch[batchIndex++]);
         consumed = true;
         return bsoncxx::document::value(**iterator);
+    }
+
+    void ShellHost::CursorState::closeRemote() noexcept
+    {
+        if (!isTransport || remoteCursorId == 0 || transport == nullptr)
+            return;
+        const std::int64_t toKill = remoteCursorId;
+        remoteCursorId = 0;
+        try {
+            const auto cmd = make_document(
+                kvp("killCursors", collection.toStdString()),
+                kvp("cursors", make_array(toKill)));
+            transport->runCommand(
+                db, QString::fromStdString(
+                        bsoncxx::to_json(cmd.view(), bsoncxx::ExtendedJsonMode::k_canonical)));
+        } catch (...) {
+            // best effort on close
+        }
+    }
+
+    ShellHost::CursorState::~CursorState()
+    {
+        closeRemote();
     }
 
     // ---- the host -----------------------------------------------------------------------------
@@ -136,10 +272,33 @@ namespace RagoShell
         return *_client;
     }
 
+    bsoncxx::document::value ShellHost::runTransportCommand(const QString &db,
+                                                            bsoncxx::document::view cmd)
+    {
+        if (!_transport)
+            throw std::runtime_error("not connected to a MongoDB server");
+        const auto res = _transport->runCommand(
+            db, QString::fromStdString(
+                    bsoncxx::to_json(cmd, bsoncxx::ExtendedJsonMode::k_canonical)));
+        if (!res.ok)
+            throw TransportServerException(res);
+        return bsoncxx::from_json(res.ejson.toStdString());
+    }
+
     ShellHost::ErrorInfo ShellHost::describeError(const std::exception &error)
     {
         ErrorInfo info;
-        info.message = QString::fromUtf8(error.what());
+        info.message = redactUriUserinfo(QString::fromUtf8(error.what()));
+
+        if (const auto *te = dynamic_cast<const TransportServerException *>(&error)) {
+            info.name = QStringLiteral("MongoServerError");
+            if (te->code() != 0) {
+                info.hasCode = true;
+                info.code = te->code();
+            }
+            info.codeName = te->codeName();
+            return info;
+        }
 
         if (const auto *op = dynamic_cast<const mongocxx::operation_exception *>(&error)) {
             info.name = QStringLiteral("MongoServerError");
@@ -158,8 +317,9 @@ namespace RagoShell
                     info.codeName = QString::fromUtf8(n.get_string().value.data(),
                                                       static_cast<qsizetype>(n.get_string().value.size()));
                 if (const auto m = raw["errmsg"]; m && m.type() == bsoncxx::type::k_string)
-                    info.message = QString::fromUtf8(m.get_string().value.data(),
-                                                     static_cast<qsizetype>(m.get_string().value.size()));
+                    info.message = redactUriUserinfo(
+                        QString::fromUtf8(m.get_string().value.data(),
+                                          static_cast<qsizetype>(m.get_string().value.size())));
             }
         }
         if (const auto *ex = dynamic_cast<const mongocxx::exception *>(&error)) {
@@ -244,7 +404,7 @@ namespace RagoShell
             return true;
         } catch (const std::exception &e) {
             if (error)
-                *error = QString::fromUtf8(e.what());
+                *error = redactUriUserinfo(QString::fromUtf8(e.what()));
             return false;
         }
     }
@@ -252,6 +412,17 @@ namespace RagoShell
     bool ShellHost::connect(const ShellConnectOptions &options, QString *error)
     {
         disconnect();
+        if (options.transport != nullptr) {
+            const auto pingRes = options.transport->ping();
+            if (!pingRes.ok) {
+                if (error)
+                    *error = pingRes.error.isEmpty() ? QStringLiteral("transport ping failed")
+                                                     : redactUriUserinfo(pingRes.error);
+                return false;
+            }
+            adoptTransport(options.transport, options);
+            return true;
+        }
         const std::string appName = newAppName("shell");
         std::unique_ptr<mongocxx::client> opened;
         if (!openClient(options, appName, &opened, error))
@@ -270,6 +441,7 @@ namespace RagoShell
     {
         disconnect();
         _client = std::move(client);
+        _transport = nullptr;
         _appName = appName;
         _connectOptions = options;
         _operationTimeoutMs = options.operationTimeoutMs;
@@ -284,6 +456,31 @@ namespace RagoShell
             rest = rest.left(slash);
         const qsizetype at = rest.lastIndexOf(QLatin1Char('@'));
         _seedHosts = at >= 0 ? rest.mid(at + 1) : rest;
+        _serverAddress.clear();
+    }
+
+    void ShellHost::adoptTransport(IMongoTransport *transport, const ShellConnectOptions &options)
+    {
+        disconnect();
+        _transport = transport;
+        _appName.clear();
+        _connectOptions = options;
+        _operationTimeoutMs = options.operationTimeoutMs;
+        if (!options.transportAddress.isEmpty()) {
+            _seedHosts = options.transportAddress;
+        } else {
+            QString rest = options.uri;
+            const qsizetype scheme = rest.indexOf(QLatin1String("://"));
+            if (scheme >= 0)
+                rest = rest.mid(scheme + 3);
+            const qsizetype slash = rest.indexOf(QLatin1Char('/'));
+            if (slash >= 0)
+                rest = rest.left(slash);
+            const qsizetype at = rest.lastIndexOf(QLatin1Char('@'));
+            _seedHosts = at >= 0 ? rest.mid(at + 1) : rest;
+        }
+        if (_seedHosts.isEmpty())
+            _seedHosts = QStringLiteral("demo");
         _serverAddress.clear();
     }
 
@@ -352,12 +549,18 @@ namespace RagoShell
 
     bool ShellHost::ping(QString *error)
     {
+        if (_transport) {
+            const auto res = _transport->ping();
+            if (!res.ok && error)
+                *error = redactUriUserinfo(res.error);
+            return res.ok;
+        }
         try {
             client().database("admin").run_command(make_document(kvp("ping", 1)));
             return true;
         } catch (const std::exception &e) {
             if (error)
-                *error = QString::fromUtf8(e.what());
+                *error = redactUriUserinfo(QString::fromUtf8(e.what()));
             return false;
         }
     }
@@ -366,12 +569,42 @@ namespace RagoShell
     {
         closeAllCursors();
         _client.reset();
+        _transport = nullptr;
     }
 
     int ShellHost::addCursor(mongocxx::cursor &&cursor)
     {
         const int id = _nextCursorId++;
         _cursors[id] = std::make_unique<CursorState>(std::move(cursor));
+        return id;
+    }
+
+    int ShellHost::openTransportCursor(const QString &db, const QString &collection,
+                                       bsoncxx::document::view reply, int batchSize,
+                                       std::int32_t maxTimeMs)
+    {
+        const auto cursorEl = reply["cursor"];
+        if (!cursorEl || cursorEl.type() != bsoncxx::type::k_document)
+            throw std::runtime_error("command reply is missing cursor document");
+        const auto cv = cursorEl.get_document().value;
+        auto state = std::make_unique<CursorState>();
+        state->isTransport = true;
+        state->transport = _transport;
+        state->db = db;
+        state->collection = collection;
+        if (const auto nsEl = cv["ns"]; nsEl && nsEl.type() == bsoncxx::type::k_string) {
+            const QString ns = QString::fromUtf8(nsEl.get_string().value.data(),
+                                                 static_cast<qsizetype>(nsEl.get_string().value.size()));
+            const qsizetype dot = ns.indexOf(QLatin1Char('.'));
+            if (dot >= 0 && dot + 1 < ns.size())
+                state->collection = ns.mid(dot + 1);
+        }
+        state->batch = extractBatch(cv, "firstBatch");
+        state->remoteCursorId = extractCursorId(cv);
+        state->batchSize = batchSize;
+        state->maxTimeMs = maxTimeMs;
+        const int id = _nextCursorId++;
+        _cursors[id] = std::move(state);
         return id;
     }
 
@@ -399,8 +632,10 @@ namespace RagoShell
     QJSValue ShellHost::runCommand(const QString &db, const QJSValue &command)
     {
         try {
-            const bsoncxx::document::value reply =
-                client().database(db.toStdString()).run_command(_bson.toDocument(command));
+            const bsoncxx::document::value cmdDoc = _bson.toDocument(command);
+            const bsoncxx::document::value reply = _transport
+                ? runTransportCommand(db, cmdDoc.view())
+                : client().database(db.toStdString()).run_command(cmdDoc.view());
             return _bson.toJs(reply.view());
         } catch (const std::exception &e) {
             throwError(e);
@@ -411,6 +646,73 @@ namespace RagoShell
     int ShellHost::find(const QString &db, const QString &collection, const QJSValue &filter, const QJSValue &options)
     {
         try {
+            const bsoncxx::document::value filterDoc = filterOrEmpty(_bson, filter);
+            if (_transport) {
+                basic::document cmd;
+                cmd.append(kvp("find", collection.toStdString()),
+                           kvp("filter", filterDoc.view()));
+                if (has(options, "projection"))
+                    cmd.append(kvp("projection", _bson.toDocument(get(options, "projection"))));
+                if (has(options, "sort"))
+                    cmd.append(kvp("sort", _bson.toDocument(get(options, "sort"))));
+                if (has(options, "collation"))
+                    cmd.append(kvp("collation", _bson.toDocument(get(options, "collation"))));
+                if (has(options, "min"))
+                    cmd.append(kvp("min", _bson.toDocument(get(options, "min"))));
+                if (has(options, "max"))
+                    cmd.append(kvp("max", _bson.toDocument(get(options, "max"))));
+                if (has(options, "let"))
+                    cmd.append(kvp("let", _bson.toDocument(get(options, "let"))));
+                if (has(options, "limit")) {
+                    const double limNum = get(options, "limit").toNumber();
+                    if (std::isfinite(limNum)) {
+                        const std::int64_t lim = doubleToInt64(limNum, 0);
+                        if (lim > 0) {
+                            cmd.append(kvp("limit", lim));
+                        } else if (lim < 0) {
+                            const std::int64_t absLim = (lim == INT64_MIN) ? INT64_MAX : -lim;
+                            cmd.append(kvp("limit", absLim), kvp("singleBatch", true));
+                        }
+                    }
+                }
+                if (has(options, "skip")) {
+                    const std::int64_t sk = doubleToInt64(get(options, "skip").toNumber(), 0);
+                    if (sk > 0)
+                        cmd.append(kvp("skip", sk));
+                }
+                int batchSize = 0;
+                if (has(options, "batchSize")) {
+                    batchSize = get(options, "batchSize").toInt();
+                    if (batchSize > 0)
+                        cmd.append(kvp("batchSize", batchSize));
+                }
+                const auto maxMs = has(options, "maxTimeMS")
+                    ? millis(get(options, "maxTimeMS")) : defaultMaxTime();
+                const auto effectiveMaxMs = static_cast<std::int32_t>(
+                    std::clamp<std::int64_t>(maxMs.count(), 0, INT32_MAX));
+                if (effectiveMaxMs > 0)
+                    cmd.append(kvp("maxTimeMS", effectiveMaxMs));
+                if (has(options, "allowDiskUse"))
+                    cmd.append(kvp("allowDiskUse", get(options, "allowDiskUse").toBool()));
+                if (has(options, "noCursorTimeout"))
+                    cmd.append(kvp("noCursorTimeout", get(options, "noCursorTimeout").toBool()));
+                if (has(options, "returnKey"))
+                    cmd.append(kvp("returnKey", get(options, "returnKey").toBool()));
+                if (has(options, "showRecordId"))
+                    cmd.append(kvp("showRecordId", get(options, "showRecordId").toBool()));
+                if (has(options, "comment"))
+                    cmd.append(kvp("comment", _bson.toValue(get(options, "comment"))));
+                if (has(options, "hint")) {
+                    const QJSValue hint = get(options, "hint");
+                    if (hint.isString())
+                        cmd.append(kvp("hint", hint.toString().toStdString()));
+                    else
+                        cmd.append(kvp("hint", _bson.toDocument(hint)));
+                }
+                const auto reply = runTransportCommand(db, cmd.view());
+                return openTransportCursor(db, collection, reply.view(), batchSize, effectiveMaxMs);
+            }
+
             mongocxx::options::find opts;
             if (has(options, "projection")) opts.projection(_bson.toDocument(get(options, "projection")));
             if (has(options, "sort")) opts.sort(_bson.toDocument(get(options, "sort")));
@@ -418,8 +720,16 @@ namespace RagoShell
             if (has(options, "min")) opts.min(_bson.toDocument(get(options, "min")));
             if (has(options, "max")) opts.max(_bson.toDocument(get(options, "max")));
             if (has(options, "let")) opts.let(_bson.toDocument(get(options, "let")));
-            if (has(options, "limit")) opts.limit(static_cast<std::int64_t>(get(options, "limit").toNumber()));
-            if (has(options, "skip")) opts.skip(static_cast<std::int64_t>(get(options, "skip").toNumber()));
+            if (has(options, "limit")) {
+                const double limNum = get(options, "limit").toNumber();
+                if (std::isfinite(limNum))
+                    opts.limit(doubleToInt64(limNum, 0));
+            }
+            if (has(options, "skip")) {
+                const std::int64_t sk = doubleToInt64(get(options, "skip").toNumber(), 0);
+                if (sk > 0)
+                    opts.skip(sk);
+            }
             if (has(options, "batchSize")) opts.batch_size(get(options, "batchSize").toInt());
             opts.max_time(has(options, "maxTimeMS") ? millis(get(options, "maxTimeMS")) : defaultMaxTime());
             if (has(options, "allowDiskUse")) opts.allow_disk_use(get(options, "allowDiskUse").toBool());
@@ -435,7 +745,6 @@ namespace RagoShell
                     opts.hint(mongocxx::hint(_bson.toDocument(hint)));
             }
 
-            const bsoncxx::document::value filterDoc = filterOrEmpty(_bson, filter);
             mongocxx::cursor cursor =
                 client().database(db.toStdString()).collection(collection.toStdString()).find(filterDoc.view(), opts);
             return addCursor(std::move(cursor));
@@ -449,8 +758,49 @@ namespace RagoShell
                              const QJSValue &options)
     {
         try {
+            const std::vector<bsoncxx::document::value> stageDocs = _bson.toDocuments(pipeline);
+            if (_transport) {
+                basic::array pipeArr;
+                for (const auto &stage : stageDocs)
+                    pipeArr.append(stage.view());
+                basic::document cursorOpt;
+                int batchSize = 0;
+                if (has(options, "batchSize")) {
+                    batchSize = get(options, "batchSize").toInt();
+                    if (batchSize > 0)
+                        cursorOpt.append(kvp("batchSize", batchSize));
+                }
+                basic::document cmd;
+                cmd.append(kvp("aggregate", collection.toStdString()),
+                           kvp("pipeline", pipeArr.extract()),
+                           kvp("cursor", cursorOpt.extract()));
+                if (has(options, "allowDiskUse"))
+                    cmd.append(kvp("allowDiskUse", get(options, "allowDiskUse").toBool()));
+                const auto maxMs = has(options, "maxTimeMS")
+                    ? millis(get(options, "maxTimeMS")) : defaultMaxTime();
+                const auto effectiveMaxMs = static_cast<std::int32_t>(
+                    std::clamp<std::int64_t>(maxMs.count(), 0, INT32_MAX));
+                if (effectiveMaxMs > 0)
+                    cmd.append(kvp("maxTimeMS", effectiveMaxMs));
+                if (has(options, "collation"))
+                    cmd.append(kvp("collation", _bson.toDocument(get(options, "collation"))));
+                if (has(options, "let"))
+                    cmd.append(kvp("let", _bson.toDocument(get(options, "let"))));
+                if (has(options, "comment"))
+                    cmd.append(kvp("comment", _bson.toValue(get(options, "comment"))));
+                if (has(options, "hint")) {
+                    const QJSValue hint = get(options, "hint");
+                    if (hint.isString())
+                        cmd.append(kvp("hint", hint.toString().toStdString()));
+                    else
+                        cmd.append(kvp("hint", _bson.toDocument(hint)));
+                }
+                const auto reply = runTransportCommand(db, cmd.view());
+                return openTransportCursor(db, collection, reply.view(), batchSize, effectiveMaxMs);
+            }
+
             mongocxx::pipeline stages;
-            for (const bsoncxx::document::value &stage : _bson.toDocuments(pipeline))
+            for (const bsoncxx::document::value &stage : stageDocs)
                 stages.append_stage(stage.view());
 
             mongocxx::options::aggregate opts;
@@ -516,9 +866,83 @@ namespace RagoShell
                                      const QJSValue &options)
     {
         try {
+            const bsoncxx::document::value filterDoc = filterOrEmpty(_bson, filter);
+            if (_transport) {
+                basic::array pipe;
+                pipe.append(make_document(kvp("$match", filterDoc.view())));
+                if (has(options, "skip")) {
+                    const std::int64_t sk = doubleToInt64(get(options, "skip").toNumber(), 0);
+                    if (sk > 0)
+                        pipe.append(make_document(kvp("$skip", sk)));
+                }
+                if (has(options, "limit")) {
+                    const double limNum = get(options, "limit").toNumber();
+                    if (std::isfinite(limNum)) {
+                        const std::int64_t lim = doubleToInt64(limNum, 0);
+                        if (lim > 0)
+                            pipe.append(make_document(kvp("$limit", lim)));
+                    }
+                }
+                pipe.append(make_document(
+                    kvp("$group", make_document(kvp("_id", 1), kvp("n", make_document(kvp("$sum", 1)))))));
+
+                basic::document cmd;
+                cmd.append(kvp("aggregate", collection.toStdString()),
+                           kvp("pipeline", pipe.extract()),
+                           kvp("cursor", make_document()));
+                const auto maxMs = has(options, "maxTimeMS")
+                    ? millis(get(options, "maxTimeMS")) : defaultMaxTime();
+                const auto effectiveMaxMs = static_cast<std::int32_t>(
+                    std::clamp<std::int64_t>(maxMs.count(), 0, INT32_MAX));
+                if (effectiveMaxMs > 0)
+                    cmd.append(kvp("maxTimeMS", effectiveMaxMs));
+                if (has(options, "collation"))
+                    cmd.append(kvp("collation", _bson.toDocument(get(options, "collation"))));
+                if (has(options, "hint")) {
+                    const QJSValue hint = get(options, "hint");
+                    if (hint.isString())
+                        cmd.append(kvp("hint", hint.toString().toStdString()));
+                    else
+                        cmd.append(kvp("hint", _bson.toDocument(hint)));
+                }
+                const auto reply = runTransportCommand(db, cmd.view());
+                const int cid = openTransportCursor(db, collection, reply.view(), 0, effectiveMaxMs);
+                double n = 0.0;
+                try {
+                    CursorState *st = cursorState(cid);
+                    if (st->hasNext()) {
+                        const auto doc = st->next();
+                        if (const auto nEl = doc.view()["n"]) {
+                            if (nEl.type() == bsoncxx::type::k_int32)
+                                n = nEl.get_int32().value;
+                            else if (nEl.type() == bsoncxx::type::k_int64)
+                                n = static_cast<double>(nEl.get_int64().value);
+                            else if (nEl.type() == bsoncxx::type::k_double)
+                                n = nEl.get_double().value;
+                        }
+                    }
+                } catch (...) {
+                    cursorClose(cid);
+                    throw;
+                }
+                cursorClose(cid);
+                return n;
+            }
+
             mongocxx::options::count opts;
-            if (has(options, "limit")) opts.limit(static_cast<std::int64_t>(get(options, "limit").toNumber()));
-            if (has(options, "skip")) opts.skip(static_cast<std::int64_t>(get(options, "skip").toNumber()));
+            if (has(options, "limit")) {
+                const double limNum = get(options, "limit").toNumber();
+                if (std::isfinite(limNum)) {
+                    const std::int64_t lim = doubleToInt64(limNum, 0);
+                    if (lim > 0)
+                        opts.limit(lim);
+                }
+            }
+            if (has(options, "skip")) {
+                const std::int64_t sk = doubleToInt64(get(options, "skip").toNumber(), 0);
+                if (sk > 0)
+                    opts.skip(sk);
+            }
             opts.max_time(has(options, "maxTimeMS") ? millis(get(options, "maxTimeMS")) : defaultMaxTime());
             if (has(options, "collation")) opts.collation(_bson.toDocument(get(options, "collation")));
             if (has(options, "hint")) {
@@ -528,7 +952,6 @@ namespace RagoShell
                 else
                     opts.hint(mongocxx::hint(_bson.toDocument(hint)));
             }
-            const bsoncxx::document::value filterDoc = filterOrEmpty(_bson, filter);
             return static_cast<double>(client().database(db.toStdString())
                                            .collection(collection.toStdString())
                                            .count_documents(filterDoc.view(), opts));
@@ -541,6 +964,24 @@ namespace RagoShell
     double ShellHost::estimatedDocumentCount(const QString &db, const QString &collection)
     {
         try {
+            if (_transport) {
+                basic::document cmd;
+                cmd.append(kvp("count", collection.toStdString()));
+                const auto maxMs = static_cast<std::int32_t>(
+                    std::clamp<std::int64_t>(defaultMaxTime().count(), 0, INT32_MAX));
+                if (maxMs > 0)
+                    cmd.append(kvp("maxTimeMS", maxMs));
+                const auto reply = runTransportCommand(db, cmd.view());
+                if (const auto nEl = reply.view()["n"]) {
+                    if (nEl.type() == bsoncxx::type::k_int32)
+                        return nEl.get_int32().value;
+                    if (nEl.type() == bsoncxx::type::k_int64)
+                        return static_cast<double>(nEl.get_int64().value);
+                    if (nEl.type() == bsoncxx::type::k_double)
+                        return nEl.get_double().value;
+                }
+                return 0.0;
+            }
             return static_cast<double>(
                 client().database(db.toStdString()).collection(collection.toStdString()).estimated_document_count());
         } catch (const std::exception &e) {
@@ -553,10 +994,32 @@ namespace RagoShell
                                  const QJSValue &filter, const QJSValue &options)
     {
         try {
+            const bsoncxx::document::value filterDoc = filterOrEmpty(_bson, filter);
+            if (_transport) {
+                basic::document cmd;
+                cmd.append(kvp("distinct", collection.toStdString()),
+                           kvp("key", field.toStdString()),
+                           kvp("query", filterDoc.view()));
+                const auto maxMs = has(options, "maxTimeMS")
+                    ? millis(get(options, "maxTimeMS")) : defaultMaxTime();
+                const auto effectiveMaxMs = static_cast<std::int32_t>(
+                    std::clamp<std::int64_t>(maxMs.count(), 0, INT32_MAX));
+                if (effectiveMaxMs > 0)
+                    cmd.append(kvp("maxTimeMS", effectiveMaxMs));
+                if (has(options, "collation"))
+                    cmd.append(kvp("collation", _bson.toDocument(get(options, "collation"))));
+                if (has(options, "comment"))
+                    cmd.append(kvp("comment", _bson.toValue(get(options, "comment"))));
+                const auto reply = runTransportCommand(db, cmd.view());
+                if (const auto values = reply.view()["values"];
+                    values && values.type() == bsoncxx::type::k_array)
+                    return _bson.toJs(values.get_array().value);
+                return _engine->newArray();
+            }
+
             mongocxx::options::distinct opts;
             opts.max_time(has(options, "maxTimeMS") ? millis(get(options, "maxTimeMS")) : defaultMaxTime());
             if (has(options, "collation")) opts.collation(_bson.toDocument(get(options, "collation")));
-            const bsoncxx::document::value filterDoc = filterOrEmpty(_bson, filter);
             mongocxx::cursor cursor = client().database(db.toStdString())
                                           .collection(collection.toStdString())
                                           .distinct(field.toStdString(), filterDoc.view(), opts);
@@ -576,6 +1039,25 @@ namespace RagoShell
     {
         try {
             const bsoncxx::document::value filterDoc = filterOrEmpty(_bson, filter);
+            if (_transport) {
+                const auto reply = runTransportCommand(
+                    db, make_document(kvp("listCollections", 1), kvp("filter", filterDoc.view())).view());
+                const int cid = openTransportCursor(db, QStringLiteral("$cmd.listCollections"),
+                                                    reply.view(), 0, 0);
+                QJSValue result = _engine->newArray();
+                quint32 index = 0;
+                try {
+                    CursorState *st = cursorState(cid);
+                    while (st->hasNext())
+                        result.setProperty(index++, _bson.toJs(st->next().view()));
+                } catch (...) {
+                    cursorClose(cid);
+                    throw;
+                }
+                cursorClose(cid);
+                return result;
+            }
+
             mongocxx::cursor cursor = client().database(db.toStdString()).list_collections(filterDoc.view());
             QJSValue result = _engine->newArray();
             quint32 index = 0;
@@ -591,6 +1073,24 @@ namespace RagoShell
     QJSValue ShellHost::listIndexes(const QString &db, const QString &collection)
     {
         try {
+            if (_transport) {
+                const auto reply = runTransportCommand(
+                    db, make_document(kvp("listIndexes", collection.toStdString())).view());
+                const int cid = openTransportCursor(db, collection, reply.view(), 0, 0);
+                QJSValue result = _engine->newArray();
+                quint32 index = 0;
+                try {
+                    CursorState *st = cursorState(cid);
+                    while (st->hasNext())
+                        result.setProperty(index++, _bson.toJs(st->next().view()));
+                } catch (...) {
+                    cursorClose(cid);
+                    throw;
+                }
+                cursorClose(cid);
+                return result;
+            }
+
             mongocxx::cursor cursor =
                 client().database(db.toStdString()).collection(collection.toStdString()).list_indexes();
             QJSValue result = _engine->newArray();
@@ -634,12 +1134,13 @@ namespace RagoShell
     {
         if (!_serverAddress.isEmpty())
             return _serverAddress;
-        if (!_client)
+        if (!_client && !_transport)
             return QStringLiteral("[no connection]");
         QString address = _seedHosts;
         try {
-            const bsoncxx::document::value reply =
-                client().database("admin").run_command(make_document(kvp("isMaster", 1)));
+            const bsoncxx::document::value reply = _transport
+                ? runTransportCommand(QStringLiteral("admin"), make_document(kvp("isMaster", 1)).view())
+                : client().database("admin").run_command(make_document(kvp("isMaster", 1)));
             const auto primary = reply.view()["primary"];
             if (primary && primary.type() == bsoncxx::type::k_string)
                 address = QString::fromUtf8(primary.get_string().value.data(),
@@ -668,8 +1169,9 @@ namespace RagoShell
     QString ShellHost::serverVersion()
     {
         try {
-            const bsoncxx::document::value info =
-                client().database("admin").run_command(make_document(kvp("buildInfo", 1)));
+            const bsoncxx::document::value info = _transport
+                ? runTransportCommand(QStringLiteral("admin"), make_document(kvp("buildInfo", 1)).view())
+                : client().database("admin").run_command(make_document(kvp("buildInfo", 1)));
             const auto version = info.view()["version"];
             if (version && version.type() == bsoncxx::type::k_string)
                 return QString::fromUtf8(version.get_string().value.data(),

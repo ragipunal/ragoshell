@@ -40,6 +40,10 @@
         <translation>检查更新</translation>
     </message>
     <message>
+        <source>Download Desktop App</source>
+        <translation>下载桌面版应用</translation>
+    </message>
+    <message>
         <source>Open-Source Licenses…</source>
         <translation>开源许可证…</translation>
     </message>
@@ -446,6 +450,14 @@
         <translation>立即同步</translation>
     </message>
     <message>
+        <source>Reset Demo Data…</source>
+        <translation>重置演示数据…</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>下载桌面版应用</translation>
+    </message>
+    <message>
         <source>Keyboard Shortcuts</source>
         <translation>键盘快捷键</translation>
     </message>
@@ -515,6 +527,18 @@
     <message>
         <source>Monitor</source>
         <translation>监视器</translation>
+    </message>
+    <message>
+        <source>Reset Demo</source>
+        <translation>重置演示</translation>
+    </message>
+    <message>
+        <source>Reset Demo Data</source>
+        <translation>重置演示数据</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>下载桌面版应用</translation>
     </message>
     <message>
         <source>Syncing…</source>
@@ -599,6 +623,10 @@
         <translation>筛选 JSON 无效：%1</translation>
     </message>
     <message>
+        <source>Collection export is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Cannot open output file for writing: %1</source>
         <translation>无法打开输出文件进行写入：%1</translation>
     </message>
@@ -609,6 +637,10 @@
     <message>
         <source>Cannot open input file for reading: %1</source>
         <translation>无法打开输入文件进行读取：%1</translation>
+    </message>
+    <message>
+        <source>Collection import is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Import cancelled.</source>
@@ -2868,6 +2900,18 @@
         <source>Close</source>
         <translation>关闭</translation>
     </message>
+    <message>
+        <source>Reset Demo Data?</source>
+        <translation>重置演示数据？</translation>
+    </message>
+    <message>
+        <source>Reset Demo Data</source>
+        <translation>重置演示数据</translation>
+    </message>
+    <message>
+        <source>Restore the in-browser demo database to its initial sample collections and documents? Any changes made in this session will be discarded.</source>
+        <translation>要将浏览器内的演示数据库恢复为初始示例集合和文档吗？本次会话中所做的任何更改都将被丢弃。</translation>
+    </message>
 </context>
 <context>
     <name>MainWorkspaceArea</name>
@@ -2880,8 +2924,16 @@
         <translation>没有打开的标签页</translation>
     </message>
     <message>
+        <source>Double-click any collection in Explorer to query, or open a new playground shell.</source>
+        <translation>双击资源管理器中的任意集合进行查询，或打开新的演练场 Shell。</translation>
+    </message>
+    <message>
         <source>Double-click any collection in Explorer to query, or open a new connection.</source>
         <translation>双击资源管理器中的任意集合即可查询，或新建连接。</translation>
+    </message>
+    <message>
+        <source>Open Playground Shell</source>
+        <translation>打开演练场 Shell</translation>
     </message>
     <message>
         <source>Welcome Guide</source>
@@ -4400,8 +4452,8 @@
         <translation>找不到可访问的副本集成员来运行 rs.status()。</translation>
     </message>
     <message>
-        <source>Shell tabs are not yet supported over gateway/demo connection channels.</source>
-        <translation>网关/演示连接通道尚不支持 Shell 标签页。</translation>
+        <source>Direct replica-set member connections are not supported over gateway or demo channels.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Server is not connected</source>
@@ -4410,6 +4462,10 @@
     <message>
         <source>Shell</source>
         <translation>Shell</translation>
+    </message>
+    <message>
+        <source>Demo data reset to defaults.</source>
+        <translation>演示数据已重置为默认值。</translation>
     </message>
     <message>
         <source>The network changed. Checking the open connections…</source>
@@ -4486,6 +4542,10 @@
         <translation>服务器未连接。</translation>
     </message>
     <message>
+        <source>Collection export is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Exporting %1.%2…</source>
         <translation>正在导出 %1.%2…</translation>
     </message>
@@ -4500,6 +4560,10 @@
         <translation>
             <numerusform>已从 %1.%2 导出 %n 个文档。</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>Collection import is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Importing into %1.%2…</source>
@@ -6178,6 +6242,14 @@ Error:
         <translation>新建连接 (%1)</translation>
     </message>
     <message>
+        <source>Open Playground Shell</source>
+        <translation>打开演练场 Shell</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>下载桌面版应用</translation>
+    </message>
+    <message>
         <source>View Logs (%1)</source>
         <translation>查看日志 (%1)</translation>
     </message>
@@ -6198,8 +6270,16 @@ Error:
         <translation>入门指南</translation>
     </message>
     <message>
+        <source>✦ In-Browser MongoDB Playground</source>
+        <translation>✦ 浏览器内 MongoDB 演练场</translation>
+    </message>
+    <message>
         <source>✦ Connect to MongoDB</source>
         <translation>✦ 连接到 MongoDB</translation>
+    </message>
+    <message>
+        <source>Explore the sample &apos;catalog&apos; database directly in browser memory — no server setup required. Use &apos;Reset Demo&apos; in the top bar anytime, or download the desktop app to connect to your own MongoDB servers.</source>
+        <translation>无需配置服务器，即可直接在浏览器内存中探索示例 &apos;catalog&apos; 数据库。随时可使用顶部栏的“重置演示”，或下载桌面版应用以连接您自己的 MongoDB 服务器。</translation>
     </message>
     <message>
         <source>Click &apos;New Connection&apos; in the top bar or press Ctrl+N to configure Direct Connections, Replica Sets, SSH Tunnels, and TLS/SSL certificates.</source>

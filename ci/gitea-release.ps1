@@ -106,6 +106,16 @@ foreach ($metaName in @('SHA256SUMS.txt', 'SHA256SUMS.txt.minisig', 'releases.js
         }
     }
 }
+$wasmDistDir = Join-Path $resolvedDist 'wasm'
+foreach ($wasmName in @("$productId-wasm-demo.tar.gz", "$productId-wasm-demo.tar.gz.minisig")) {
+    $wasmPath = Join-Path $wasmDistDir $wasmName
+    if (Test-Path -LiteralPath $wasmPath -PathType Leaf) {
+        $wItem = Get-Item -LiteralPath $wasmPath
+        if (-not $wItem.Attributes.HasFlag([System.IO.FileAttributes]::ReparsePoint) -and $wItem.Length -gt 0) {
+            $assets += $wItem
+        }
+    }
+}
 
 if ($assets.Count -eq 0) {
     throw "No $productId-$ver-* artifacts found in $resolvedDist"

@@ -18,6 +18,7 @@
 #include "ragoshell/core/Core.h"
 #include "ragoshell/core/engine/BsonJsConverter.h"
 #include "ragoshell/core/engine/ShellBackend.h"
+#include "ragoshell/core/transport/IMongoTransport.h"
 
 namespace RagoShell
 {
@@ -71,6 +72,7 @@ namespace RagoShell
         static std::string newShellAppName();
         void adopt(std::unique_ptr<mongocxx::client> client, const std::string &appName,
                    const ShellConnectOptions &options);
+        void adoptTransport(IMongoTransport *transport, const ShellConnectOptions &options);
 
         /// What it takes to find and kill the operations this host has running on the server.
         struct KillTarget
@@ -86,7 +88,7 @@ namespace RagoShell
         /// Time limit of the reads the host starts (milliseconds; 0: none). maxTimeMS of the call overrides it.
         void setOperationTimeoutMs(int timeoutMs) { _operationTimeoutMs = timeoutMs; }
         void disconnect();
-        bool isConnected() const { return _client != nullptr; }
+        bool isConnected() const { return _client != nullptr || _transport != nullptr; }
         /// A ping from C++ (no JavaScript exception on failure).
         bool ping(QString *error = nullptr);
 
@@ -139,23 +141,42 @@ namespace RagoShell
     private:
         struct CursorState
         {
-            mongocxx::cursor cursor;
+            std::optional<mongocxx::cursor> cursor;
             std::optional<mongocxx::cursor::iterator> iterator;
             bool consumed = false; ///< the current element was handed out; step before looking again
 
+            bool isTransport = false;
+            IMongoTransport *transport = nullptr;
+            QString db;
+            QString collection;
+            std::vector<bsoncxx::document::value> batch;
+            std::size_t batchIndex = 0;
+            std::int64_t remoteCursorId = 0;
+            int batchSize = 0;
+            std::int32_t maxTimeMs = 0;
+
+            CursorState() = default;
             explicit CursorState(mongocxx::cursor &&c) : cursor(std::move(c)) {}
+            ~CursorState();
             bool hasNext();
             bsoncxx::document::value next();
+            void closeRemote() noexcept;
         };
 
         CursorState *cursorState(int cursorId);
         int addCursor(mongocxx::cursor &&cursor);
+        int openTransportCursor(const QString &db, const QString &collection,
+                                bsoncxx::document::view reply, int batchSize,
+                                std::int32_t maxTimeMs);
+        bsoncxx::document::value runTransportCommand(const QString &db,
+                                                     bsoncxx::document::view cmd);
         mongocxx::client &client();
         void throwError(const std::exception &error);
 
         QJSEngine *_engine;
         BsonJsConverter _bson;
         std::unique_ptr<mongocxx::client> _client;
+        IMongoTransport *_transport = nullptr;
         std::map<int, std::unique_ptr<CursorState>> _cursors;
         int _nextCursorId = 1;
         std::chrono::milliseconds defaultMaxTime() const

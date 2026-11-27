@@ -18,6 +18,10 @@ Item {
         unsavedTabsConfirm.open()
     }
 
+    function openResetPlaygroundConfirm() {
+        resetPlaygroundConfirm.open()
+    }
+
     // Message dialog driven by QmlUiServices (rago-core prompts).
     RagoDialog {
         id: msgDialog
@@ -235,6 +239,25 @@ Item {
             font.pixelSize: 13
             color: Theme.textColor
         }
+    }
+
+    RagoDialog {
+        id: resetPlaygroundConfirm
+        title: qsTr("Reset Demo Data?")
+        acceptText: qsTr("Reset Demo Data")
+        rejectText: qsTr("Cancel")
+        showReject: true
+        dangerAccept: true
+        width: Math.min(visibleWidth - 24, 440)
+
+        contentItem: Label {
+            text: qsTr("Restore the in-browser demo database to its initial sample collections and documents? Any changes made in this session will be discarded.")
+            wrapMode: Text.WordWrap
+            font.pixelSize: 13
+            color: Theme.textColor
+        }
+
+        onAccepted: Backend.resetPlaygroundData()
     }
 
     MandatoryUpdateDialog {

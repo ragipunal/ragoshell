@@ -40,6 +40,10 @@
         <translation>Güncellemeleri Denetle</translation>
     </message>
     <message>
+        <source>Download Desktop App</source>
+        <translation>Masaüstü Uygulamasını İndir</translation>
+    </message>
+    <message>
         <source>Open-Source Licenses…</source>
         <translation>Açık Kaynak Lisansları…</translation>
     </message>
@@ -446,6 +450,14 @@
         <translation>Şimdi Eşitle</translation>
     </message>
     <message>
+        <source>Reset Demo Data…</source>
+        <translation>Demo Verisini Sıfırla…</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>Masaüstü Uygulamasını İndir</translation>
+    </message>
+    <message>
         <source>Keyboard Shortcuts</source>
         <translation>Klavye Kısayolları</translation>
     </message>
@@ -515,6 +527,18 @@
     <message>
         <source>Monitor</source>
         <translation>İzleme</translation>
+    </message>
+    <message>
+        <source>Reset Demo</source>
+        <translation>Demoyu Sıfırla</translation>
+    </message>
+    <message>
+        <source>Reset Demo Data</source>
+        <translation>Demo Verisini Sıfırla</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>Masaüstü Uygulamasını İndir</translation>
     </message>
     <message>
         <source>Syncing…</source>
@@ -599,6 +623,10 @@
         <translation>Geçersiz filtre JSON&apos;u: %1</translation>
     </message>
     <message>
+        <source>Collection export is not supported over gateway or demo connection channels.</source>
+        <translation>Ağ geçidi veya demo bağlantı kanalları üzerinden koleksiyon dışa aktarma desteklenmiyor.</translation>
+    </message>
+    <message>
         <source>Cannot open output file for writing: %1</source>
         <translation>Çıktı dosyası yazmak için açılamıyor: %1</translation>
     </message>
@@ -609,6 +637,10 @@
     <message>
         <source>Cannot open input file for reading: %1</source>
         <translation>Girdi dosyası okumak için açılamıyor: %1</translation>
+    </message>
+    <message>
+        <source>Collection import is not supported over gateway or demo connection channels.</source>
+        <translation>Ağ geçidi veya demo bağlantı kanalları üzerinden koleksiyon içe aktarma desteklenmiyor.</translation>
     </message>
     <message>
         <source>Import cancelled.</source>
@@ -2868,6 +2900,18 @@
         <source>Close</source>
         <translation>Kapat</translation>
     </message>
+    <message>
+        <source>Reset Demo Data?</source>
+        <translation>Demo Verisi Sıfırlansın mı?</translation>
+    </message>
+    <message>
+        <source>Reset Demo Data</source>
+        <translation>Demo Verisini Sıfırla</translation>
+    </message>
+    <message>
+        <source>Restore the in-browser demo database to its initial sample collections and documents? Any changes made in this session will be discarded.</source>
+        <translation>Tarayıcı içi demo veritabanı başlangıçtaki örnek koleksiyon ve belgelere geri yüklensin mi? Bu oturumda yaptığınız değişiklikler silinecektir.</translation>
+    </message>
 </context>
 <context>
     <name>MainWorkspaceArea</name>
@@ -2880,8 +2924,16 @@
         <translation>Açık Sekme Yok</translation>
     </message>
     <message>
+        <source>Double-click any collection in Explorer to query, or open a new playground shell.</source>
+        <translation>Sorgulamak için Gezgin&apos;deki herhangi bir koleksiyona çift tıklayın veya yeni bir playground kabuğu açın.</translation>
+    </message>
+    <message>
         <source>Double-click any collection in Explorer to query, or open a new connection.</source>
         <translation>Sorgulamak için Gezgin&apos;de herhangi bir koleksiyona çift tıklayın veya yeni bir bağlantı açın.</translation>
+    </message>
+    <message>
+        <source>Open Playground Shell</source>
+        <translation>Playground Kabuğunu Aç</translation>
     </message>
     <message>
         <source>Welcome Guide</source>
@@ -4400,8 +4452,8 @@
         <translation>rs.status() çalıştırmak için erişilebilir bir replika kümesi üyesi bulunamadı.</translation>
     </message>
     <message>
-        <source>Shell tabs are not yet supported over gateway/demo connection channels.</source>
-        <translation>Shell sekmeleri, ağ geçidi/demo bağlantı kanallarında henüz desteklenmiyor.</translation>
+        <source>Direct replica-set member connections are not supported over gateway or demo channels.</source>
+        <translation>Ağ geçidi veya demo kanalları üzerinden doğrudan replika kümesi üyesi bağlantıları desteklenmiyor.</translation>
     </message>
     <message>
         <source>Server is not connected</source>
@@ -4410,6 +4462,10 @@
     <message>
         <source>Shell</source>
         <translation>Shell</translation>
+    </message>
+    <message>
+        <source>Demo data reset to defaults.</source>
+        <translation>Demo verisi varsayılanlara sıfırlandı.</translation>
     </message>
     <message>
         <source>The network changed. Checking the open connections…</source>
@@ -4486,6 +4542,10 @@
         <translation>Sunucu bağlı değil.</translation>
     </message>
     <message>
+        <source>Collection export is not supported over gateway or demo connection channels.</source>
+        <translation>Ağ geçidi veya demo bağlantı kanalları üzerinden koleksiyon dışa aktarma desteklenmiyor.</translation>
+    </message>
+    <message>
         <source>Exporting %1.%2…</source>
         <translation>%1.%2 dışa aktarılıyor…</translation>
     </message>
@@ -4500,6 +4560,10 @@
         <translation>
             <numerusform>%1.%2 içinden %n belge dışa aktarıldı.</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>Collection import is not supported over gateway or demo connection channels.</source>
+        <translation>Ağ geçidi veya demo bağlantı kanalları üzerinden koleksiyon içe aktarma desteklenmiyor.</translation>
     </message>
     <message>
         <source>Importing into %1.%2…</source>
@@ -6178,6 +6242,14 @@ Hata:
         <translation>Yeni Bağlantı (%1)</translation>
     </message>
     <message>
+        <source>Open Playground Shell</source>
+        <translation>Playground Kabuğunu Aç</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>Masaüstü Uygulamasını İndir</translation>
+    </message>
+    <message>
         <source>View Logs (%1)</source>
         <translation>Günlükleri Görüntüle (%1)</translation>
     </message>
@@ -6198,8 +6270,16 @@ Hata:
         <translation>BAŞLARKEN</translation>
     </message>
     <message>
+        <source>✦ In-Browser MongoDB Playground</source>
+        <translation>✦ Tarayıcı İçi MongoDB Playground</translation>
+    </message>
+    <message>
         <source>✦ Connect to MongoDB</source>
         <translation>✦ MongoDB&apos;ye Bağlanın</translation>
+    </message>
+    <message>
+        <source>Explore the sample &apos;catalog&apos; database directly in browser memory — no server setup required. Use &apos;Reset Demo&apos; in the top bar anytime, or download the desktop app to connect to your own MongoDB servers.</source>
+        <translation>Örnek &apos;catalog&apos; veritabanını sunucu kurulumu gerekmeden doğrudan tarayıcı belleğinde keşfedin. İstediğiniz zaman üst çubuktaki &apos;Demoyu Sıfırla&apos; düğmesini kullanabilir veya kendi MongoDB sunucularınıza bağlanmak için masaüstü uygulamasını indirebilirsiniz.</translation>
     </message>
     <message>
         <source>Click &apos;New Connection&apos; in the top bar or press Ctrl+N to configure Direct Connections, Replica Sets, SSH Tunnels, and TLS/SSL certificates.</source>

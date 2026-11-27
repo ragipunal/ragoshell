@@ -37,6 +37,7 @@
 #include "ragoshell/core/mongodb/MongoUriUtils.h"
 #include "ragoshell/core/mongodb/ReplicaSet.h"
 #include "ragoshell/core/settings/ConnectionSettings.h"
+#include "ragoshell/core/transport/InMemoryDemoTransport.h"
 #include "ragoshell/core/settings/CredentialSettings.h"
 #include "ragoshell/core/settings/ReplicaSetSettings.h"
 #include "ragoshell/core/settings/SettingsManager.h"
@@ -184,6 +185,14 @@ namespace RagoShell
         MongoServer *server = findServerByUuid(uuid);
         if (!server || !server->connectionRecord())
             return false;
+        if (server->connectionRecord()->hasTransport()) {
+#if defined(Q_OS_WASM)
+            if (server->connectionRecord()->transportKind() != "memory")
+                return false;
+#else
+            return false;
+#endif
+        }
         SettingsManager *settings = AppRegistry::instance().settingsManager();
         const QString own = QString::fromStdString(server->connectionRecord()->schemaCollectionMode());
         options->mode = !own.isEmpty() ? SettingsManager::schemaCollectionModeFromId(own)
@@ -547,8 +556,8 @@ namespace RagoShell
 
         HostAndPort hp(memberAddress.toStdString());
         if (server->connectionRecord()->hasTransport()) {
-            emit connectionError(uuid, tr("Shell tabs are not yet supported over "
-                                        "gateway/demo connection channels."));
+            emit connectionError(uuid, tr("Direct replica-set member connections are not "
+                                          "supported over gateway or demo channels."));
             return;
         }
         std::unique_ptr<ConnectionSettings> memberConn(server->connectionRecord()->clone());
@@ -572,6 +581,12 @@ namespace RagoShell
         if (!server || memberAddress.isEmpty())
             return;
 
+        if (server->connectionRecord()->hasTransport()) {
+            emit connectionError(uuid, tr("Direct replica-set member connections are not "
+                                          "supported over gateway or demo channels."));
+            return;
+        }
+
         HostAndPort hp(memberAddress.toStdString());
         ConnectionSettings *memberConn = server->connectionRecord()->clone();
         memberConn->setUuid(QUuid::createUuid().toString());
@@ -584,6 +599,48 @@ namespace RagoShell
 
         setStatus(tr("Connecting to %1...").arg(iso(QString::fromStdString(hp.toString()))));
         _app->openServer(memberConn, ConnectionPrimary);
+    }
+
+    bool QmlBackend::prepareShellConnection(const QString &uuid, MongoServer *server,
+                                            const QString &dbName,
+                                            std::unique_ptr<ConnectionSettings> *outConn)
+    {
+        if (!server || !server->connectionRecord() || !outConn)
+            return false;
+        std::unique_ptr<ConnectionSettings> shellConn(server->connectionRecord()->clone());
+        if (!dbName.isEmpty())
+            shellConn->setDefaultDatabase(QtUtils::toStdString(dbName));
+
+        // If the underlying stored connection is a "hosted" bridge record,
+        // refresh the in-memory bridge URL and entitlement JWT from CloudService
+        // so opening a Shell tab after JWT rotation never reuses a stale token (W4 M2).
+        if (auto *settings = AppRegistry::instance().settingsManager()) {
+            const QString lookupUuid = !uuid.isEmpty() ? uuid : shellConn->uuid();
+            if (ConnectionSettings *saved = settings->getConnectionSettingsByUuid(lookupUuid);
+                saved && saved->transportKind() == "hosted") {
+                CloudService *cloud = QmlSingletonInstance<CloudService>::get();
+                const QString bridgeUrl = cloud ? cloud->effectiveBridgeUrl() : QString();
+                if (!CloudClient::isAllowedBridgeUrl(bridgeUrl)) {
+                    const QString msg = (cloud && !cloud->errorMessage().isEmpty())
+                        ? cloud->errorMessage()
+                        : tr("Cloud service URL failed security validation.");
+                    emit connectionError(lookupUuid, msg);
+                    return false;
+                }
+                const QString jwt = cloud ? cloud->entitlementJwt() : QString();
+                if (jwt.isEmpty()) {
+                    emit connectionError(
+                        lookupUuid,
+                        cloud ? cloud->hostedTokenMissingMessage()
+                              : tr("Sign in to your cloud account to use the cloud gateway."));
+                    return false;
+                }
+                shellConn->setTransportKind(bridgeUrl.toStdString());
+                shellConn->setTransportToken(jwt.toStdString());
+            }
+        }
+        *outConn = std::move(shellConn);
+        return true;
     }
 
     void QmlBackend::openShell(const QString &uuid, const QString &dbName,
@@ -603,15 +660,9 @@ namespace RagoShell
             execute = true;
         }
 
-        if (server->connectionRecord()->hasTransport()) {
-            emit connectionError(uuid, tr("Shell tabs are not yet supported over "
-                                        "gateway/demo connection channels."));
+        std::unique_ptr<ConnectionSettings> shellConn;
+        if (!prepareShellConnection(uuid, server, dbName, &shellConn))
             return;
-        }
-
-        std::unique_ptr<ConnectionSettings> shellConn(server->connectionRecord()->clone());
-        if (!dbName.isEmpty())
-            shellConn->setDefaultDatabase(QtUtils::toStdString(dbName));
 
         QString title = !collection.isEmpty()
             ? collection
@@ -637,15 +688,9 @@ namespace RagoShell
             return;
         }
 
-        if (server->connectionRecord()->hasTransport()) {
-            emit connectionError(uuid, tr("Shell tabs are not yet supported over "
-                                        "gateway/demo connection channels."));
+        std::unique_ptr<ConnectionSettings> shellConn;
+        if (!prepareShellConnection(uuid, server, dbName, &shellConn))
             return;
-        }
-
-        std::unique_ptr<ConnectionSettings> shellConn(server->connectionRecord()->clone());
-        if (!dbName.isEmpty())
-            shellConn->setDefaultDatabase(QtUtils::toStdString(dbName));
 
         QString title = dbName.isEmpty()
             ? QtUtils::toQString(server->connectionRecord()->getReadableName())
@@ -686,6 +731,54 @@ namespace RagoShell
         if (SchemaCatalog *catalog = SchemaCatalog::instance())
             catalog->dropMemoryCache();
         LOG_MSG(QStringLiteral("Memory trimmed"), LogSeverity::Info, false);
+    }
+
+    void QmlBackend::resetPlaygroundData()
+    {
+        const QString doneText = tr("Demo data reset to defaults.");
+#if defined(Q_OS_WASM)
+        for (const QVariant &v : std::as_const(_shells)) {
+            auto *ctl = qobject_cast<ShellController *>(v.value<QObject *>());
+            if (!ctl || !ctl->busy())
+                continue;
+            const QString srvUuid = ctl->serverUuid().section(QLatin1Char('@'), 0, 0);
+            MongoServer *srv = findServerByUuid(srvUuid);
+            if (srv && srv->connectionRecord() && srv->connectionRecord()->transportKind() == "memory")
+                ctl->stop();
+        }
+
+        InMemoryDemoTransport::resetSharedStore();
+
+        QStringList memoryUuids;
+        if (auto *settings = AppRegistry::instance().settingsManager()) {
+            for (ConnectionSettings *conn : settings->connections()) {
+                if (conn && conn->transportKind() == "memory")
+                    memoryUuids.append(conn->uuid());
+            }
+        }
+        for (MongoServer *srv : _serverUuids.keys()) {
+            if (srv && srv->connectionRecord() && srv->connectionRecord()->transportKind() == "memory") {
+                const QString u = _serverUuids.value(srv);
+                if (!u.isEmpty() && !memoryUuids.contains(u))
+                    memoryUuids.append(u);
+            }
+        }
+        _pendingResetStatusUuids.clear();
+        _pendingResetStatusText.clear();
+        for (const QString &u : std::as_const(memoryUuids)) {
+            forgetSchema(u);
+            if (isServerConnected(u)) {
+                _pendingResetStatusUuids.insert(u);
+                refreshServer(u);
+            }
+        }
+        if (!_pendingResetStatusUuids.isEmpty())
+            _pendingResetStatusText = doneText;
+
+        setStatus(doneText, !_pendingResetStatusUuids.isEmpty());
+#else
+        Q_UNUSED(doneText);
+#endif
     }
 
     bool QmlBackend::autoRefreshing(const QString &uuid) const
@@ -753,9 +846,9 @@ namespace RagoShell
 
     void QmlBackend::openRecoveredDraft(MongoServer *server, const ScriptDraft &draft)
     {
-        std::unique_ptr<ConnectionSettings> shellConn(server->connectionRecord()->clone());
-        if (!draft.database.isEmpty())
-            shellConn->setDefaultDatabase(QtUtils::toStdString(draft.database));
+        std::unique_ptr<ConnectionSettings> shellConn;
+        if (!prepareShellConnection(draft.serverUuid, server, draft.database, &shellConn))
+            return;
 
         QString title = draft.title;
         if (title.isEmpty())

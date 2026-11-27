@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="referrer" content="no-referrer">
+    <title>@RAGO_PRODUCT_NAME@ — WebAssembly Playground</title>
+    <link rel="icon" type="image/png" href="app_icon.png">
+    <style>
+      html, body {
+        padding: 0;
+        margin: 0;
+        overflow: hidden;
+        width: 100%;
+        height: 100%;
+        background-color: #16191f;
+        color: #e6eaf0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      #screen {
+        width: 100%;
+        height: 100%;
+      }
+      #qtspinner {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        text-align: center;
+        padding: 24px;
+        box-sizing: border-box;
+      }
+      .is-hidden {
+        display: none !important;
+      }
+      .boot-icon {
+        width: 72px;
+        height: 72px;
+        border-radius: 16px;
+      }
+      .boot-title {
+        font-size: 18px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+      }
+      .boot-status {
+        font-size: 14px;
+        color: #9aa4b2;
+        max-width: 520px;
+        line-height: 1.5;
+        white-space: pre-line;
+      }
+      .boot-progress {
+        width: 220px;
+        height: 4px;
+        border-radius: 2px;
+        background-color: #262c36;
+        overflow: hidden;
+      }
+      .boot-progress-bar {
+        width: 35%;
+        height: 100%;
+        background-color: #3bba9c;
+        border-radius: 2px;
+        animation: boot-pulse 1.4s ease-in-out infinite;
+      }
+      @keyframes boot-pulse {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(300%); }
+      }
+      .boot-links {
+        margin-top: 8px;
+        font-size: 12px;
+        color: #7d8796;
+      }
+      .boot-links a {
+        color: #9aa4b2;
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <figure id="qtspinner">
+      <img class="boot-icon" src="app_icon.png" width="72" height="72" alt="@RAGO_PRODUCT_NAME@">
+      <div class="boot-title">@RAGO_PRODUCT_NAME@ Playground</div>
+      <div id="qtprogress" class="boot-progress" aria-hidden="true">
+        <div class="boot-progress-bar"></div>
+      </div>
+      <div id="qtstatus" class="boot-status" role="status" aria-live="polite">Initializing WebAssembly runtime...</div>
+      <noscript>
+        <div class="boot-status">JavaScript and WebAssembly are required to run @RAGO_PRODUCT_NAME@ Playground.</div>
+      </noscript>
+      <div class="boot-links">
+        <a href="licenses/THIRD-PARTY-NOTICES.txt" target="_blank" rel="noopener noreferrer">Open-Source Notices</a>
+      </div>
+    </figure>
+    <div id="screen" class="is-hidden"></div>
+
+    <script src="@RAGO_PRODUCT_ID@.js"></script>
+    <script src="qtloader.js"></script>
+    <script src="wasm-boot.js"></script>
+  </body>
+</html>

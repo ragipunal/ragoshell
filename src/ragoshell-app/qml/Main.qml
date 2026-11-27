@@ -555,10 +555,25 @@ ApplicationWindow {
     LazyDialog { id: historyDialog; sourceComponent: Component { HistoryDialog { app: root } } }
     LazyDialog { id: recoverDraftsDialog; sourceComponent: Component { RecoverDraftsDialog {} } }
     LazyDialog { id: hostKeyDialog; sourceComponent: Component { HostKeyDialog {} } }
+    property string _pendingPlaygroundShellUuid: ""
     Connections {
         target: Backend
         function onHostKeyRequested(id, host, port, keyType, fingerprint, changed) {
             hostKeyDialog.get().ask(id, host, port, keyType, fingerprint, changed)
+        }
+        function onStatusTextChanged() {
+            if (root._pendingPlaygroundShellUuid.length > 0
+                    && Backend.databasesListed
+                    && Backend.isServerConnected(root._pendingPlaygroundShellUuid)) {
+                var u = root._pendingPlaygroundShellUuid
+                root._pendingPlaygroundShellUuid = ""
+                if (Backend.shells.length === 0)
+                    Backend.openShell(u, "catalog", "products")
+            }
+        }
+        function onConnectionError(uuid) {
+            if (root._pendingPlaygroundShellUuid === uuid)
+                root._pendingPlaygroundShellUuid = ""
         }
     }
     LazyDialog { id: pipelineDialog; sourceComponent: Component { PipelineBuilderDialog {} } }
@@ -618,8 +633,48 @@ ApplicationWindow {
     }
 
     // ---- Actions shared by the command registry and the shortcuts below ----
-    function openNewConnection() { connDialog.get().openNew() }
-    function openCloudSync(startSetup) { cloudSyncDialog.get().openDialog(startSetup === true) }
+    function openNewConnection() {
+        if (Platform.isWasmPlayground)
+            return
+        connDialog.get().openNew()
+    }
+    function openDebugConnection() { connDialog.get().openNew() }
+    function requestResetPlaygroundData() {
+        if (Platform.isWasmPlayground)
+            serviceDialogs.openResetPlaygroundConfirm()
+    }
+    function openDesktopDownload() {
+        if (Brand.downloadUrl.length > 0 && Brand.isSafeHttpsUrl(Brand.downloadUrl))
+            Qt.openUrlExternally(Brand.downloadUrl)
+    }
+    function openPlaygroundShell() {
+        var uuid = Backend.firstConnectedUuid()
+        if (uuid.length > 0) {
+            Backend.openShell(uuid, "catalog", "products")
+            return
+        }
+        var targetUuid = ""
+        for (var i = 0; i < ConnectionModel.count; ++i) {
+            var rowMap = ConnectionModel.get(i)
+            if (rowMap && rowMap.uuid) {
+                if (rowMap.transportKind === "memory") {
+                    targetUuid = rowMap.uuid
+                    break
+                }
+                if (targetUuid.length === 0)
+                    targetUuid = rowMap.uuid
+            }
+        }
+        if (targetUuid.length > 0) {
+            root._pendingPlaygroundShellUuid = targetUuid
+            Backend.connectToServer(targetUuid)
+        }
+    }
+    function openCloudSync(startSetup) {
+        if (Platform.isWasmPlayground)
+            return
+        cloudSyncDialog.get().openDialog(startSetup === true)
+    }
     function openPreferences(section) {
         var dialog = prefsDialog.get()
         dialog.revealSection = section || ""
@@ -667,6 +722,8 @@ ApplicationWindow {
             openSchemaAnalysis(String(s.serverUuid).split("@")[0], s.activeDatabase, s.activeCollection)
     }
     function openAiAssistant(uuid: string, database: string, collection: string) {
+        if (Platform.isWasmPlayground)
+            return
         aiDialog.get().openFor(uuid, database, collection)
     }
     // Current shell tab's collection (menu / Ctrl+Shift+G; Ctrl+Shift+I is the
@@ -728,6 +785,8 @@ ApplicationWindow {
             Backend.duplicateShell(idx, p ? p.scriptText() : "")
     }
     function openMonitorForActiveServer() {
+        if (Platform.isWasmPlayground)
+            return
         var uuid = root.activeServerUuid()
         if (uuid.length > 0)
             Backend.openMonitor(uuid)

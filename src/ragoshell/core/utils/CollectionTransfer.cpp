@@ -428,6 +428,15 @@ namespace RagoShell
                     }
                 }
 
+                if (conn.hasTransport()) {
+                    if (errorOut) {
+                        *errorOut = QCoreApplication::translate(
+                            "CollectionTransfer",
+                            "Collection export is not supported over gateway or demo connection channels.");
+                    }
+                    return -1;
+                }
+
                 QFile file(filePath);
                 if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
                     if (errorOut)
@@ -679,6 +688,15 @@ namespace RagoShell
                                    QString *errorOut)
         {
             try {
+                if (conn.hasTransport()) {
+                    if (errorOut) {
+                        *errorOut = QCoreApplication::translate(
+                            "CollectionTransfer",
+                            "Collection import is not supported over gateway or demo connection channels.");
+                    }
+                    return -1;
+                }
+
                 // Replacing a collection is destructive: read the whole file once first (batch by batch,
                 // nothing kept) so that a broken file is reported before anything is dropped.
                 if (dropBeforeImport

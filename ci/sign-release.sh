@@ -375,6 +375,16 @@ EOF
     wipe_file "$sk_file"
 fi
 
+wasm_demo_archive="$dist_dir/wasm/${product_id}-wasm-demo.tar.gz"
+if [ -e "$wasm_demo_archive" ] || [ -L "$wasm_demo_archive" ]; then
+    wasm_sign_args=(--archive "$wasm_demo_archive" --version "$version")
+    [ "$verify_only" -eq 1 ] && wasm_sign_args+=(--verify-only)
+    [ "$verify_node_only" -eq 1 ] && wasm_sign_args+=(--verify-node-only)
+    [ "$allow_test_pubkey" -eq 1 ] && wasm_sign_args+=(--allow-test-pubkey)
+    [ -n "$timestamp_arg" ] && wasm_sign_args+=(--timestamp "$timestamp_arg")
+    "$root/ci/sign-wasm-demo.sh" "${wasm_sign_args[@]}"
+fi
+
 # Mandatory verification gate (`minisign -Vm` + cryptographic trusted-comment binding check).
 if [ "$verify_node_only" -eq 0 ]; then
     command -v minisign >/dev/null 2>&1 || {

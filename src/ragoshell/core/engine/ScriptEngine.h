@@ -14,6 +14,7 @@ class QString;
 namespace RagoShell
 {
     class ConnectionSettings;
+    class IMongoTransport;
 
     /// The synchronous shell API MongoWorker uses. The work is done by a ShellBackend (the
     /// embedded JavaScript engine, see ShellBackend.h).
@@ -24,6 +25,8 @@ namespace RagoShell
     public:
         ScriptEngine(ConnectionSettings *connection, int timeoutSec);
         ~ScriptEngine();
+
+        void setTransport(IMongoTransport *transport, const std::string &initError = std::string());
 
         void init(const std::string& serverAddr = "", const std::string& dbName = "");
         MongoShellExecResult exec(const std::string &script, const std::string &dbName = std::string(),
@@ -50,6 +53,8 @@ namespace RagoShell
         bool takeInterrupt();
 
         ConnectionSettings *_connection;
+        IMongoTransport *_transport = nullptr;
+        std::string _transportInitError;
         std::unique_ptr<ShellBackend> _backend;
         std::atomic<bool> _interruptRequested;
         int _batchSize = 50;

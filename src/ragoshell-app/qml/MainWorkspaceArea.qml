@@ -284,6 +284,8 @@ ColumnLayout {
             visible: workArea.app.tabs.currentKind === "welcome"
             onNewConnectionRequested: workArea.app.openNewConnection()
             onViewLogsRequested: workArea.app.showLog()
+            onOpenPlaygroundShellRequested: workArea.app.openPlaygroundShell()
+            onDownloadDesktopRequested: workArea.app.openDesktopDownload()
         }
 
         Repeater {
@@ -334,23 +336,31 @@ ColumnLayout {
                 color: Theme.textColor
                 wrapMode: Text.WordWrap
                 horizontalAlignment: Text.AlignHCenter
+                Layout.preferredWidth: 0
                 Layout.fillWidth: true
             }
 
             Label {
-                text: qsTr("Double-click any collection in Explorer to query, or open a new connection.")
+                text: Platform.isWasmPlayground
+                      ? qsTr("Double-click any collection in Explorer to query, or open a new playground shell.")
+                      : qsTr("Double-click any collection in Explorer to query, or open a new connection.")
                 font.pixelSize: 12
                 color: Theme.disabledTextColor
                 wrapMode: Text.WordWrap
                 horizontalAlignment: Text.AlignHCenter
+                Layout.preferredWidth: 0
                 Layout.fillWidth: true
             }
 
-            RowLayout {
+            GridLayout {
                 Layout.alignment: Qt.AlignHCenter
-                spacing: 10
+                columns: parent.width < 480 ? 1 : 2
+                columnSpacing: 10
+                rowSpacing: 8
 
                 RagoPillButton {
+                    visible: !Platform.isWasmPlayground
+                    Layout.alignment: Qt.AlignHCenter
                     text: qsTr("New Connection")
                     iconText: "✦"
                     primary: true
@@ -358,6 +368,16 @@ ColumnLayout {
                 }
 
                 RagoPillButton {
+                    visible: Platform.isWasmPlayground
+                    Layout.alignment: Qt.AlignHCenter
+                    text: qsTr("Open Playground Shell")
+                    iconText: ">_"
+                    primary: true
+                    onClicked: workArea.app.openPlaygroundShell()
+                }
+
+                RagoPillButton {
+                    Layout.alignment: Qt.AlignHCenter
                     text: qsTr("Welcome Guide")
                     iconText: "ⓘ"
                     onClicked: workArea.app.reopenWelcome()

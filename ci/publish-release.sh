@@ -419,6 +419,27 @@ r2_put_object() {
             --content-type "$content_type" >/dev/null
 }
 
+wasm_demo_archive="$dist_dir/wasm/${product_id}-wasm-demo.tar.gz"
+wasm_demo_sig="${wasm_demo_archive}.minisig"
+has_wasm_demo=0
+if [ -e "$wasm_demo_archive" ] || [ -L "$wasm_demo_archive" ]; then
+    if [ ! -f "$wasm_demo_archive" ] || [ -L "$wasm_demo_archive" ]; then
+        echo "error: WASM demo bundle must be a regular file (not a symlink): $wasm_demo_archive" >&2
+        exit 1
+    fi
+    node "$root/ci/package-wasm-demo.mjs" --verify-archive-only "$wasm_demo_archive"
+    if [ "$skip_sign" -eq 0 ]; then
+        if [ ! -f "$wasm_demo_sig" ] || [ -L "$wasm_demo_sig" ]; then
+            echo "error: missing or symlink WASM demo signature file: $wasm_demo_sig" >&2
+            exit 1
+        fi
+    elif [ -L "$wasm_demo_sig" ]; then
+        echo "error: refusing symlink WASM demo signature file: $wasm_demo_sig" >&2
+        exit 1
+    fi
+    has_wasm_demo=1
+fi
+
 # 3. Step A: Cloudflare R2 versioned immutable directory (`releases/<version>/*`)
 if [ "$want_r2" -eq 1 ]; then
     immutable_cc="public, max-age=31536000, immutable"
@@ -431,6 +452,12 @@ if [ "$want_r2" -eq 1 ]; then
             r2_put_object "$dist_dir/$meta" "releases/$version/$meta" "$immutable_cc"
         fi
     done
+    if [ "$has_wasm_demo" -eq 1 ]; then
+        r2_put_object "$wasm_demo_archive" "releases/$version/${product_id}-wasm-demo.tar.gz" "$immutable_cc"
+        if [ -f "$wasm_demo_sig" ] && [ ! -L "$wasm_demo_sig" ]; then
+            r2_put_object "$wasm_demo_sig" "releases/$version/${product_id}-wasm-demo.tar.gz.minisig" "$immutable_cc"
+        fi
+    fi
 fi
 
 # 4. Step B: GitHub Releases (`v<version>`)
@@ -450,6 +477,12 @@ if [ "$want_github" -eq 1 ]; then
             gh_assets+=("$dist_dir/$meta")
         fi
     done
+    if [ "$has_wasm_demo" -eq 1 ]; then
+        gh_assets+=("$wasm_demo_archive")
+        if [ -f "$wasm_demo_sig" ] && [ ! -L "$wasm_demo_sig" ]; then
+            gh_assets+=("$wasm_demo_sig")
+        fi
+    fi
 
     if [ "$dry_run" -eq 1 ]; then
         echo "==> [dry-run] GitHub Releases target: https://github.com/$gh_repo/releases/tag/$tag (prerelease=$is_prerelease)"
@@ -555,6 +588,11 @@ elif [ "$want_site" -eq 1 ]; then
     esac
     if [ "$dry_run" -eq 1 ]; then
         echo "==> [dry-run] static site hook: stream releases.json + releases.json.minisig -> ssh -- $ssh_target $site_cmd"
+        if [ "$has_wasm_demo" -eq 1 ]; then
+            demo_cmd="demo"
+            [ "$site_cmd" = "staging-releases" ] && demo_cmd="staging-demo"
+            echo "==> [dry-run] static WASM demo hook: stream $(basename "$wasm_demo_archive") -> ssh -- $ssh_target $demo_cmd"
+        fi
     else
         : "${RAGO_SITE_RELEASES_SSH:?error: RAGO_SITE_RELEASES_SSH (user@host) is required for site target}"
         [ -f "$dist_dir/releases.json.minisig" ] && [ ! -L "$dist_dir/releases.json.minisig" ] || {
@@ -563,6 +601,15 @@ elif [ "$want_site" -eq 1 ]; then
         }
         COPYFILE_DISABLE=1 tar -czf - -C "$dist_dir" releases.json releases.json.minisig \
             | ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -- "$RAGO_SITE_RELEASES_SSH" "$site_cmd"
+        if [ "$has_wasm_demo" -eq 1 ]; then
+            [ -f "$wasm_demo_sig" ] && [ ! -L "$wasm_demo_sig" ] || {
+                echo "error: $(basename "$wasm_demo_sig") is required for live WASM demo sync" >&2
+                exit 1
+            }
+            demo_cmd="demo"
+            [ "$site_cmd" = "staging-releases" ] && demo_cmd="staging-demo"
+            ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -- "$RAGO_SITE_RELEASES_SSH" "$demo_cmd" < "$wasm_demo_archive"
+        fi
     fi
 fi
 

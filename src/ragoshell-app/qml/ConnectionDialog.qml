@@ -30,15 +30,17 @@ RagoDialog {
 
     function rebuildChannels() {
         var kinds = ["memory"], labels = [qsTr("Demo (in-browser)")]
-        var hosted = typeof CloudService !== "undefined" && CloudService.hostedBridgeEnabled
-        if (hosted) {
-            kinds.push("hosted")
-            labels.push(CloudService.customServerActive
-                ? qsTr("Cloud Bridge (%1)").arg(CloudService.activeApiHost)
-                : qsTr("%1 Cloud").arg(Brand.productName))
+        if (!Platform.isWasmPlayground) {
+            var hosted = typeof CloudService !== "undefined" && CloudService.hostedBridgeEnabled
+            if (hosted) {
+                kinds.push("hosted")
+                labels.push(CloudService.customServerActive
+                    ? qsTr("Cloud Bridge (%1)").arg(CloudService.activeApiHost)
+                    : qsTr("%1 Cloud").arg(Brand.productName))
+            }
+            kinds.push("agent");  labels.push(qsTr("Local Agent (localhost)"))
+            kinds.push("custom"); labels.push(qsTr("Custom Gateway (ws://…)"))
         }
-        kinds.push("agent");  labels.push(qsTr("Local Agent (localhost)"))
-        kinds.push("custom"); labels.push(qsTr("Custom Gateway (ws://…)"))
         channelKinds = kinds
         channelLabels = labels
     }
@@ -46,6 +48,8 @@ RagoDialog {
     // Appends a selectable placeholder for a stored kind the live list hides
     // (hosted while signed out) so saving never silently rewrites the kind.
     function ensureChannelVisible(chan) {
+        if (Platform.isWasmPlayground && chan !== "memory")
+            return
         if (channelKinds.indexOf(chan) >= 0)
             return
         channelKinds = channelKinds.concat([chan])
@@ -305,15 +309,20 @@ RagoDialog {
 
         // Mod C/B channel — wasm only; desktop edits preserve stored values.
         if (Qt.platform.os === "wasm") {
-            var gw = gatewayUrlField.text.trim()
-            if (gw !== "" && !gw.startsWith("ws://") && !gw.startsWith("wss://"))
-                gw = "wss://" + gw
-            var kind = channelKinds[channelCombo.currentIndex] || "memory"
-            data.transportKind = kind === "custom" ? gw : kind
-            // Hosted auth comes from the cloud session — never persist a
-            // pairing token alongside it.
-            data.transportToken = kind === "hosted"
-                ? "" : transportTokenField.text.trim()
+            if (Platform.isWasmPlayground) {
+                data.transportKind = "memory"
+                data.transportToken = ""
+            } else {
+                var gw = gatewayUrlField.text.trim()
+                if (gw !== "" && !gw.startsWith("ws://") && !gw.startsWith("wss://"))
+                    gw = "wss://" + gw
+                var kind = channelKinds[channelCombo.currentIndex] || "memory"
+                data.transportKind = kind === "custom" ? gw : kind
+                // Hosted auth comes from the cloud session — never persist a
+                // pairing token alongside it.
+                data.transportToken = kind === "hosted"
+                    ? "" : transportTokenField.text.trim()
+            }
         }
 
         if (isRs) {
@@ -716,19 +725,19 @@ RagoDialog {
 
                         // Mod C/B channel picker — browser only (docs/LocalAgent.md §4).
                         Label {
-                            visible: Qt.platform.os === "wasm"
+                            visible: Platform.isWasm
                             text: qsTr("Channel:")
                             color: Theme.textColor; font.pixelSize: 13
                         }
                         RagoComboBox {
                             id: channelCombo
-                            visible: Qt.platform.os === "wasm"
+                            visible: Platform.isWasm
                             Layout.fillWidth: true
                             model: channelLabels
                         }
 
                         Label {
-                            visible: Qt.platform.os === "wasm"
+                            visible: Platform.isWasm
                                      && channelKinds[channelCombo.currentIndex] === "hosted"
                             text: qsTr("Signs in with your RagoShell account. Targets must use TLS (mongodb+srv:// or ?tls=true).")
                             color: Theme.textDimmedColor; font.pixelSize: 11
@@ -738,14 +747,14 @@ RagoDialog {
                         }
 
                         Label {
-                            visible: Qt.platform.os === "wasm"
+                            visible: Platform.isWasm
                                      && channelKinds[channelCombo.currentIndex] === "custom"
                             text: qsTr("Gateway URL:")
                             color: Theme.textColor; font.pixelSize: 13
                         }
                         RagoTextField {
                             id: gatewayUrlField
-                            visible: Qt.platform.os === "wasm"
+                            visible: Platform.isWasm
                                      && channelKinds[channelCombo.currentIndex] === "custom"
                             ltr: true
                             placeholderText: "wss://gateway.example.com"
@@ -753,14 +762,14 @@ RagoDialog {
                         }
 
                         Label {
-                            visible: Qt.platform.os === "wasm"
+                            visible: Platform.isWasm
                                      && ["agent", "custom"].indexOf(channelKinds[channelCombo.currentIndex]) >= 0
                             text: qsTr("Pairing Token:")
                             color: Theme.textColor; font.pixelSize: 13
                         }
                         RagoTextField {
                             id: transportTokenField
-                            visible: Qt.platform.os === "wasm"
+                            visible: Platform.isWasm
                                      && ["agent", "custom"].indexOf(channelKinds[channelCombo.currentIndex]) >= 0
                             ltr: true
                             echoMode: TextInput.PasswordEchoOnEdit

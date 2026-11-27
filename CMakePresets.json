@@ -40,6 +40,7 @@
       "displayName": "WebAssembly single-thread (Emscripten + Qt 6.12 wasm_singlethread)",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/wasm-single",
+      "installDir": "${sourceDir}/install/wasm-single",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
@@ -59,8 +60,15 @@
       "displayName": "WebAssembly multithread (Emscripten + Qt 6.12 wasm_multithread, pthreads)",
       "inherits": "wasm-single",
       "binaryDir": "${sourceDir}/build/wasm-multi",
+      "installDir": "${sourceDir}/install/wasm-multi",
       "cacheVariables": {
-        "CMAKE_THREAD_LIBS_INIT": "-lpthread"
+        "VCPKG_TARGET_TRIPLET": "wasm32-emscripten-threads",
+        "CMAKE_C_FLAGS": "-pthread",
+        "CMAKE_CXX_FLAGS": "-pthread",
+        "CMAKE_EXE_LINKER_FLAGS": "-pthread",
+        "CMAKE_THREAD_LIBS_INIT": "-lpthread",
+        "CMAKE_HAVE_THREADS_LIBRARY": "1",
+        "CMAKE_USE_PTHREADS_INIT": "1"
       }
     },
     {
@@ -247,6 +255,14 @@
     }
   ],
   "buildPresets": [
+    {
+      "name": "wasm-single",
+      "configurePreset": "wasm-single"
+    },
+    {
+      "name": "wasm-multi",
+      "configurePreset": "wasm-multi"
+    },
     {
       "name": "android-arm64-debug",
       "configurePreset": "android-arm64"

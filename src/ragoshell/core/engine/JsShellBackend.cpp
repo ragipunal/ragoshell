@@ -104,39 +104,49 @@ namespace RagoShell
 
         // The driver blocks until the server answers or the selection time is up. It runs on a thread of
         // its own so that a Stop is answered at once; a thread that is given up lets its client go when it
-        // is done.
+        // is done. Transport-backed connections (WASM demo or WebSocket gateway) execute on the worker
+        // thread directly so QWebSocket thread affinity is preserved (docs/TransportShell.md §2.2).
         _host->disconnect();
-        const std::string appName = ShellHost::newShellAppName();
-        auto pending = std::make_shared<PendingConnection>();
-        std::thread([pending, options, appName]() {
+        if (options.transport != nullptr) {
             QString error;
-            std::unique_ptr<mongocxx::client> client;
-            const bool ok = ShellHost::openClient(options, appName, &client, &error);
-            std::lock_guard<std::mutex> lock(pending->mutex);
-            pending->ok = ok;
-            pending->error = error;
-            pending->client = std::move(client);
-            pending->done = true;
-            pending->changed.notify_all();
-        }).detach();
+            if (!_host->connect(options, &error)) {
+                reply.status = ShellStatus::Failed;
+                reply.message = error;
+                return reply;
+            }
+        } else {
+            const std::string appName = ShellHost::newShellAppName();
+            auto pending = std::make_shared<PendingConnection>();
+            std::thread([pending, options, appName]() {
+                QString error;
+                std::unique_ptr<mongocxx::client> client;
+                const bool ok = ShellHost::openClient(options, appName, &client, &error);
+                std::lock_guard<std::mutex> lock(pending->mutex);
+                pending->ok = ok;
+                pending->error = error;
+                pending->client = std::move(client);
+                pending->done = true;
+                pending->changed.notify_all();
+            }).detach();
 
-        {
-            std::unique_lock<std::mutex> lock(pending->mutex);
-            while (!pending->done) {
-                pending->changed.wait_for(lock, std::chrono::milliseconds(25));
-                if (_interrupted.load()) {
-                    reply.status = ShellStatus::Interrupted;
-                    reply.message = interruptedText();
-                    return reply;
+            {
+                std::unique_lock<std::mutex> lock(pending->mutex);
+                while (!pending->done) {
+                    pending->changed.wait_for(lock, std::chrono::milliseconds(25));
+                    if (_interrupted.load()) {
+                        reply.status = ShellStatus::Interrupted;
+                        reply.message = interruptedText();
+                        return reply;
+                    }
                 }
             }
+            if (!pending->ok) {
+                reply.status = ShellStatus::Failed;
+                reply.message = pending->error;
+                return reply;
+            }
+            _host->adopt(std::move(pending->client), appName, options);
         }
-        if (!pending->ok) {
-            reply.status = ShellStatus::Failed;
-            reply.message = pending->error;
-            return reply;
-        }
-        _host->adopt(std::move(pending->client), appName, options);
 
         QJSValue config = _engine->newObject();
         config.setProperty(QStringLiteral("dbName"), options.dbName);
@@ -181,7 +191,8 @@ namespace RagoShell
             running = _running;
             target = _killTarget;
         }
-        std::thread([running, target]() { ShellHost::killOperations(target, *running); }).detach();
+        if (!target.appName.empty())
+            std::thread([running, target]() { ShellHost::killOperations(target, *running); }).detach();
     }
 
     void JsShellBackend::interrupt()
@@ -291,6 +302,7 @@ namespace RagoShell
         _timedOut = false;
         _host->setOperationTimeoutMs(request.timeoutMs);
 
+#if !defined(__EMSCRIPTEN__) || defined(__EMSCRIPTEN_PTHREADS__)
         // The time limit of the script (the shell timeout): a timer that stops it.
         auto watch = std::make_shared<Watchdog>();
         std::thread watchdog([this, watch, limit = request.timeoutMs]() {
@@ -301,6 +313,7 @@ namespace RagoShell
             _timedOut = true;
             stopRunningScript();
         });
+#endif
 
         QElapsedTimer timer;
         timer.start();
@@ -309,12 +322,14 @@ namespace RagoShell
                                             QJSValue(request.batchSize) });
         reply.elapsedMs = timer.elapsed();
 
+#if !defined(__EMSCRIPTEN__) || defined(__EMSCRIPTEN_PTHREADS__)
         {
             std::lock_guard<std::mutex> lock(watch->mutex);
             watch->finished = true;
         }
         watch->changed.notify_all();
         watchdog.join();
+#endif
         running->store(false);
 
         if (_timedOut.load()) {

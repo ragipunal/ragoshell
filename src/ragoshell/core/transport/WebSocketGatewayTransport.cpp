@@ -5,6 +5,7 @@
 #include <QTimer>
 #include <QWebSocket>
 
+#include "ragoshell/core/BrandInfo.h"
 #include "ragoshell/core/transport/GatewayProtocol.h"
 
 namespace RagoShell
@@ -42,6 +43,7 @@ namespace RagoShell
         const quint32 id = _nextId++;
         QString reply;
         QString closed;
+        bool gotReply = false;
         // The receiver must be &loop, not _socket: connections auto-disconnect
         // when the loop leaves scope; with _socket as receiver the lambda would
         // quit() a dead stack loop on the next frame (use-after-scope crash).
@@ -50,15 +52,15 @@ namespace RagoShell
                          &loop, [&](const QString &frame) {
                              QString ejson, err;
                              qint64 gotId = -1;
-                             // One request is in flight, but an earlier call that
-                             // timed out is still answered by the gateway later —
-                             // that late reply (older, non-zero id) must not fail
-                             // this call (2026-11-04 review R10). Id 0 is the
-                             // session's own close error and still ends the call.
+                             // Ignore any non-zero mismatched id (late reply to a
+                             // timed-out earlier call OR reply to a nested/pipelined
+                             // call on the same QThread). Id 0 is the session's own
+                             // close error and still ends the call (R10 + W4 H1).
                              if (GatewayProtocol::decodeResponse(frame, id, &ejson, &err, &gotId)) {
                                  reply = ejson;
+                                 gotReply = true;
                                  loop.quit();
-                             } else if (gotId > 0 && gotId < static_cast<qint64>(id)) {
+                             } else if (gotId > 0 && gotId != static_cast<qint64>(id)) {
                                  return;
                              } else if (!err.isEmpty()) {
                                  closed = err;
@@ -82,6 +84,10 @@ namespace RagoShell
             r.error = closed;
             return r;
         }
+        if (!gotReply) {
+            r.error = QStringLiteral("Gateway request interrupted before reply.");
+            return r;
+        }
         r.ok = true;
         r.ejson = reply;
         return r;
@@ -93,7 +99,7 @@ namespace RagoShell
         if (!_socket || _socket->state() == QAbstractSocket::UnconnectedState
                       || _socket->state() == QAbstractSocket::ClosingState) {
             _socket = std::make_unique<QWebSocket>(
-                QStringLiteral("https://ragoshell.com.tr"),
+                QString::fromUtf8(BrandInfo::productUrl),
                 QWebSocketProtocol::VersionLatest);
             // Qt accepts ~2 GiB per message by default; a hostile or broken
             // gateway must not be able to make the client buffer that
@@ -138,16 +144,19 @@ namespace RagoShell
         {
             QEventLoop loop;
             QString ejson, err;
+            bool gotHello = false;
             const quint32 id = _nextId++;
             QObject::connect(_socket.get(), &QWebSocket::textMessageReceived,
                              &loop, [&](const QString &frame) {
                                  qint64 gotId = -1;
-                                 if (GatewayProtocol::decodeResponse(frame, id, &ejson, &err, &gotId))
+                                 if (GatewayProtocol::decodeResponse(frame, id, &ejson, &err, &gotId)) {
+                                     gotHello = true;
                                      loop.quit();
-                                 else if (gotId > 0 && gotId < static_cast<qint64>(id))
-                                     err.clear(); // late reply on a reused link (R10)
-                                 else if (!err.isEmpty())
+                                 } else if (gotId > 0 && gotId != static_cast<qint64>(id)) {
+                                     err.clear(); // late/mismatched reply on a reused link (R10 + W4 H1)
+                                 } else if (!err.isEmpty()) {
                                      loop.quit();
+                                 }
                              });
             QObject::connect(_socket.get(), &QWebSocket::disconnected, &loop, [&] {
                 err = QStringLiteral("Gateway closed during handshake.");
@@ -162,8 +171,8 @@ namespace RagoShell
                 GatewayProtocol::encodeRequest(id, QString::fromUtf8(GatewayProtocol::Op::Hello),
                                                params));
             loop.exec();
-            if (!err.isEmpty()) {
-                r.error = err;
+            if (!err.isEmpty() || !gotHello) {
+                r.error = err.isEmpty() ? QStringLiteral("Gateway handshake interrupted.") : err;
                 return r;
             }
         }

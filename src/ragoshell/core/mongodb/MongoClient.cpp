@@ -1,5 +1,10 @@
 #include "ragoshell/core/mongodb/MongoClient.h"
 
+#include <cmath>
+#include <cstdint>
+
+#include <QRegularExpression>
+
 #include <bsoncxx/builder/basic/document.hpp>
 #include <bsoncxx/builder/basic/array.hpp>
 #include <bsoncxx/builder/basic/kvp.hpp>
@@ -110,6 +115,50 @@ namespace
                roleName == "restore" ||
                roleName == "root";
     }
+
+    void checkWriteReply(bsoncxx::document::view reply)
+    {
+        if (const auto we = reply["writeErrors"]; we && we.type() == bsoncxx::type::k_array) {
+            const auto arr = we.get_array().value;
+            if (!arr.empty() && arr.begin()->type() == bsoncxx::type::k_document) {
+                const auto first = arr.begin()->get_document().value;
+                const std::string msg = RagoShell::BsonUtils::getField<std::string>(first, "errmsg");
+                throw std::runtime_error(msg.empty() ? std::string("Write operation failed.") : msg);
+            }
+        }
+        if (const auto wce = reply["writeConcernError"]; wce && wce.type() == bsoncxx::type::k_document) {
+            const std::string msg = RagoShell::BsonUtils::getField<std::string>(
+                wce.get_document().value, "errmsg");
+            throw std::runtime_error(msg.empty() ? std::string("Write concern error.") : msg);
+        }
+    }
+
+    std::int64_t cursorIdOf(bsoncxx::document::view cursorObj)
+    {
+        const auto idEl = cursorObj["id"];
+        if (!idEl)
+            return 0;
+        if (idEl.type() == bsoncxx::type::k_int64)
+            return idEl.get_int64().value;
+        if (idEl.type() == bsoncxx::type::k_int32)
+            return idEl.get_int32().value;
+        if (idEl.type() == bsoncxx::type::k_double) {
+            const double d = idEl.get_double().value;
+            if (!std::isfinite(d) || d <= -9223372036854775808.0 || d >= 9223372036854774784.0)
+                return 0;
+            return static_cast<std::int64_t>(std::trunc(d));
+        }
+        return 0;
+    }
+
+    QString redactMongoUriUserinfo(const QString &raw)
+    {
+        QString msg = raw;
+        static const QRegularExpression uriUserinfo(
+            QStringLiteral("mongodb(\\+srv)?://[^/\\s@]+@"));
+        msg.replace(uriUserinfo, QStringLiteral("mongodb\\1://***@"));
+        return msg;
+    }
 }
 
 namespace RagoShell
@@ -129,9 +178,10 @@ namespace RagoShell
                 QString::fromStdString(
                     bsoncxx::to_json(cmd.view(), bsoncxx::ExtendedJsonMode::k_canonical)));
             if (!res.ok) {
+                const QString cleanErr = redactMongoUriUserinfo(res.error);
                 const QString msg = res.codeName.isEmpty()
-                    ? res.error
-                    : QStringLiteral("%1 (%2 %3)").arg(res.error).arg(res.codeName).arg(res.code);
+                    ? cleanErr
+                    : QStringLiteral("%1 (%2 %3)").arg(cleanErr).arg(res.codeName).arg(res.code);
                 throw std::runtime_error(msg.toStdString());
             }
             return bsoncxx::from_json(res.ejson.toStdString());
@@ -148,12 +198,41 @@ namespace RagoShell
         const std::string &db, bsoncxx::document::view_or_value cmd) const
     {
         std::vector<bsoncxx::document::value> docs;
-        const auto res = runCommandChecked(db, std::move(cmd));
-        const auto batch = res.view()["cursor"]["firstBatch"];
-        if (batch && batch.type() == bsoncxx::type::k_array) {
+        auto res = runCommandChecked(db, std::move(cmd));
+        const auto cursorEl = res.view()["cursor"];
+        if (!cursorEl || cursorEl.type() != bsoncxx::type::k_document)
+            return docs;
+        auto cv = cursorEl.get_document().value;
+        if (const auto batch = cv["firstBatch"]; batch && batch.type() == bsoncxx::type::k_array) {
             for (auto const& e : batch.get_array().value) {
                 if (e.type() == bsoncxx::type::k_document)
                     docs.emplace_back(e.get_document().view());
+            }
+        }
+        std::int64_t cursorId = cursorIdOf(cv);
+        std::string collName;
+        if (const auto nsEl = cv["ns"]; nsEl && nsEl.type() == bsoncxx::type::k_string) {
+            const std::string ns(nsEl.get_string().value);
+            const auto dot = ns.find('.');
+            if (dot != std::string::npos && dot + 1 < ns.size())
+                collName = ns.substr(dot + 1);
+        }
+        namespace basic = bsoncxx::builder::basic;
+        while (cursorId != 0 && !collName.empty()) {
+            res = runCommandChecked(db, basic::make_document(
+                basic::kvp("getMore", cursorId),
+                basic::kvp("collection", collName)));
+            const auto nextCur = res.view()["cursor"];
+            if (!nextCur || nextCur.type() != bsoncxx::type::k_document)
+                break;
+            cv = nextCur.get_document().value;
+            cursorId = cursorIdOf(cv);
+            if (const auto nextBatch = cv["nextBatch"];
+                nextBatch && nextBatch.type() == bsoncxx::type::k_array) {
+                for (auto const& e : nextBatch.get_array().value) {
+                    if (e.type() == bsoncxx::type::k_document)
+                        docs.emplace_back(e.get_document().view());
+                }
             }
         }
         return docs;
@@ -658,9 +737,10 @@ namespace RagoShell
             auto insertDoc = [&] {
                 basic::array docs;
                 docs.append(obj.view());
-                runCommandChecked(dbName, basic::make_document(
+                const auto reply = runCommandChecked(dbName, basic::make_document(
                     basic::kvp("insert", "system.js"),
                     basic::kvp("documents", docs.extract())));
+                checkWriteReply(reply.view());
             };
             if (existingFunctionName.empty() || existingFunctionName != fun.name()) {
                 insertDoc();
@@ -670,9 +750,10 @@ namespace RagoShell
                         basic::kvp("q", basic::make_document(
                             basic::kvp("_id", existingFunctionName))),
                         basic::kvp("limit", 1)));
-                    runCommandChecked(dbName, basic::make_document(
+                    const auto reply = runCommandChecked(dbName, basic::make_document(
                         basic::kvp("delete", "system.js"),
                         basic::kvp("deletes", dels.extract())));
+                    checkWriteReply(reply.view());
                 }
             } else {  // same _id: replace upsert
                 basic::array ups;
@@ -680,9 +761,10 @@ namespace RagoShell
                     basic::kvp("q", basic::make_document(basic::kvp("_id", fun.name()))),
                     basic::kvp("u", obj.view()),
                     basic::kvp("upsert", true)));
-                runCommandChecked(dbName, basic::make_document(
+                const auto reply = runCommandChecked(dbName, basic::make_document(
                     basic::kvp("update", "system.js"),
                     basic::kvp("updates", ups.extract())));
+                checkWriteReply(reply.view());
             }
             return;
         }
@@ -852,9 +934,10 @@ namespace RagoShell
                 basic::array arr;
                 for (auto const& d : docs)
                     arr.append(d.view());
-                runCommandChecked(ns.databaseName(), basic::make_document(
+                const auto reply = runCommandChecked(ns.databaseName(), basic::make_document(
                     basic::kvp("insert", newCollectionName),
                     basic::kvp("documents", arr.extract())));
+                checkWriteReply(reply.view());
             }
             return;
         }
@@ -898,9 +981,10 @@ namespace RagoShell
             namespace basic = bsoncxx::builder::basic;
             basic::array docs;
             docs.append(obj.view());
-            runCommandChecked(ns.databaseName(), basic::make_document(
+            const auto reply = runCommandChecked(ns.databaseName(), basic::make_document(
                 basic::kvp("insert", ns.collectionName()),
                 basic::kvp("documents", docs.extract())));
+            checkWriteReply(reply.view());
             return;
         }
         _client->database(ns.databaseName()).collection(ns.collectionName())
@@ -920,9 +1004,10 @@ namespace RagoShell
                 basic::kvp("q", basic::make_document(basic::kvp("_id", id.get_value()))),
                 basic::kvp("u", obj.view()),
                 basic::kvp("upsert", true)));
-            runCommandChecked(ns.databaseName(), basic::make_document(
+            const auto reply = runCommandChecked(ns.databaseName(), basic::make_document(
                 basic::kvp("update", ns.collectionName()),
                 basic::kvp("updates", ups.extract())));
+            checkWriteReply(reply.view());
             return;
         }
         mongocxx::options::replace updateOpts;
@@ -942,9 +1027,10 @@ namespace RagoShell
             dels.append(basic::make_document(
                 basic::kvp("q", query.view()),
                 basic::kvp("limit", justOne ? 1 : 0)));
-            runCommandChecked(ns.databaseName(), basic::make_document(
+            const auto reply = runCommandChecked(ns.databaseName(), basic::make_document(
                 basic::kvp("delete", ns.collectionName()),
                 basic::kvp("deletes", dels.extract())));
+            checkWriteReply(reply.view());
             return;
         }
         auto coll = _client->database(ns.databaseName()).collection(ns.collectionName());

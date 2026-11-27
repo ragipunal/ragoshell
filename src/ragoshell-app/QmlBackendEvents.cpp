@@ -393,13 +393,19 @@ namespace RagoShell
             return;
         }
         _tree->setServerDatabases(server, event->list);
-        setDatabaseListStatus(QtUtils::toQString(server->connectionRecord()->getReadableName()),
-                              static_cast<int>(event->list.size()));
+        const QString uuid = _serverUuids.value(server);
+        if (_pendingResetStatusUuids.remove(uuid) && !_pendingResetStatusText.isEmpty()) {
+            setStatus(_pendingResetStatusText, true);
+            if (_pendingResetStatusUuids.isEmpty())
+                _pendingResetStatusText.clear();
+        } else {
+            setDatabaseListStatus(QtUtils::toQString(server->connectionRecord()->getReadableName()),
+                                  static_cast<int>(event->list.size()));
+        }
 
         // WholeDatabase mode: every database comes into use now.
         SchemaCollector::Options options;
         std::shared_ptr<const ConnectionSettings> connection;
-        const QString uuid = _serverUuids.value(server);
         if (_schemaCollector && schemaOptions(uuid, &options, &connection)) {
             QStringList names;
             for (MongoDatabase *db : event->list) {

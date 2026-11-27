@@ -69,10 +69,10 @@ Linking & Relinking Information (GNU LGPLv3 Section 4 / GNU GPLv3 Section 6):
   Source Code against any modified Qt 6 installation by passing
   -DCMAKE_PREFIX_PATH=/path/to/Qt (or Qt6_DIR) to CMake using the presets in
   CMakePresets.json and build scripts in ci/.
-- On iOS / iPadOS, Qt is linked statically into the application binary and
-  conveyed together with RagoShell's Complete Corresponding Source Code and CMake
-  build configuration (ios-release preset) under the GNU General Public License
-  version 3 (GPLv3).
+- On iOS / iPadOS and WebAssembly (WASM), Qt is linked statically into the
+  application binary and conveyed together with RagoShell's Complete Corresponding
+  Source Code and CMake build configuration (ios-release and wasm-multi presets)
+  under the GNU General Public License version 3 (GPLv3).
 - Qt itself incorporates third-party open-source components (such as PCRE2,
   HarfBuzz, FreeType, libpng, libjpeg-turbo, double-conversion, and zlib) under
   their respective permissive licenses; see Qt's official documentation at:
@@ -284,7 +284,7 @@ the Terms of Use in https://www.unicode.org/copyright.html.
 
 
 ===============================================================================
-9. DejaVu Sans Font (Mobile Builds: Android & iOS / iPadOS)
+9. DejaVu Sans Font (Mobile & WebAssembly Builds: Android, iOS / iPadOS & WASM)
 ===============================================================================
 
 Source path: assets/fonts/DejaVuSans.ttf (full license in assets/fonts/DEJAVU-LICENSE)

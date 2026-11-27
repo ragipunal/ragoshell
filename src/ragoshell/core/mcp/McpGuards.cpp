@@ -174,6 +174,10 @@ namespace RagoShell
 
     QString McpGuards::unsupportedReason(const ConnectionSettings &connection)
     {
+        if (connection.hasTransport()) {
+            return QStringLiteral(
+                "Gateway and demo transport connections are not supported by the MCP server.");
+        }
         if (connection.sshSettings() && connection.sshSettings()->enabled())
             return QStringLiteral("SSH tunnel connections are not supported by the MCP server.");
         const SslSettings *ssl = connection.sslSettings();

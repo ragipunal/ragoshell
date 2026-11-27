@@ -230,9 +230,32 @@ namespace RagoShell
      * @brief Execute javascript
      */
     void MongoWorker::handle(ExecuteScriptRequest *event)
-    {        
-        try {           
-            ScriptEngine *engine = nullptr;
+    {
+        struct ScriptFlightGuard
+        {
+            MongoWorker *self;
+            explicit ScriptFlightGuard(MongoWorker *w) : self(w)
+            {
+                ++self->_inFlightOps;
+                self->_scriptRunning = true;
+            }
+            ~ScriptFlightGuard()
+            {
+                self->_scriptRunning = false;
+                --self->_inFlightOps;
+                self->applyPendingPortUpdate();
+            }
+        } flightGuard(this);
+
+        try {
+            if (isOpCancelled(event->opGen)) {
+                reply(event->sender(),
+                    new ExecuteScriptResponse(this, EventError("Operation cancelled by user."),
+                                              false, /*cancelled=*/true, event->opGen));
+                return;
+            }
+
+            ScriptEngine *engine = ensureScriptEngine();
             {
                 QMutexLocker lock(&_engineMutex);
                 if (isOpCancelled(event->opGen)) {
@@ -241,19 +264,7 @@ namespace RagoShell
                                                   false, /*cancelled=*/true, event->opGen));
                     return;
                 }
-                if (!_scriptEngine) {
-                    auto eng = std::make_unique<ScriptEngine>(_connSettings, _shellTimeoutSec);
-                    eng->setBatchSize(_batchSize);
-                    eng->setStartupScript(_startupScript);
-                    _scriptEngine = std::move(eng);
-                }
-                _scriptEngine->clearInterrupt();
-                engine = _scriptEngine.get();
-            }
-
-            if (_timerId == -1) {
-                constexpr int PING_INTERVAL_MSEC { 60 * 1000 }; // 60 seconds
-                _timerId = startTimer(PING_INTERVAL_MSEC);
+                engine->clearInterrupt();
             }
 
             const std::string targetDb = !event->databaseName.empty()
@@ -320,11 +331,12 @@ namespace RagoShell
             return;
         }
 
+        ScriptEngine *engine = ensureScriptEngine();
         const std::string targetDb = !event->databaseName.empty()
             ? event->databaseName
             : _connSettings->defaultDatabase();
         MongoShellExecResult result {
-            _scriptEngine->exec(event->script, targetDb, event->aggrInfo)
+            engine->exec(event->script, targetDb, event->aggrInfo)
         };
         if (isOpCancelled(event->opGen) || result.interrupted()) {
             reply(event->sender(),
@@ -360,6 +372,19 @@ namespace RagoShell
 
     void MongoWorker::handle(AutocompleteRequest *event)
     {
+        // Never re-enter QJSEngine while a script is already evaluating inside a
+        // nested transport QEventLoop on this thread (W4 review H1).
+        if (_scriptRunning) {
+            reply(event->sender(), new AutocompleteResponse(this, QStringList(), event->prefix));
+            return;
+        }
+        struct InFlightGuard
+        {
+            MongoWorker *self;
+            explicit InFlightGuard(MongoWorker *w) : self(w) { ++self->_inFlightOps; }
+            ~InFlightGuard() { --self->_inFlightOps; self->applyPendingPortUpdate(); }
+        } opGuard(this);
+
         try {
             ScriptEngine *engine = ensureScriptEngine();
             QStringList list = engine->complete(event->prefix, event->mode);

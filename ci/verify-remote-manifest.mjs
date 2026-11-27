@@ -18,6 +18,7 @@ import {
   validateManifestObject,
 } from './generate-releases-json.mjs';
 import { verifyMinisigFile } from './lib/minisign.mjs';
+import { MAX_DEMO_TGZ_BYTES, verifyWasmDemoArchive } from './package-wasm-demo.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_REPO_ROOT = path.resolve(__dirname, '..');
@@ -183,6 +184,135 @@ export function verifySignedManifestFiles(options = {}) {
   };
 }
 
+/**
+ * Validates `rawTag` as a strict `v<SemVer>` tag (`vMAJOR.MINOR.PATCH`, plus pre-release tags when
+ * `allowPrerelease` is enabled for staging or preview syncs).
+ */
+export function normalizeDemoReleaseTag(rawTag, { allowPrerelease = false } = {}) {
+  if (!allowPrerelease) {
+    return normalizeStableReleaseTag(rawTag);
+  }
+  if (typeof rawTag !== 'string' || !rawTag.trim().startsWith('v')) {
+    throw new Error('Release tag must start with "v" (e.g. v2.1.2 or v2.2.0-rc.1).');
+  }
+  const trimmed = rawTag.trim();
+  const version = normalizeAndValidateVersion(trimmed.slice(1), 'release tag');
+  return { tag: `v${version}`, version };
+}
+
+/**
+ * Builds canonical GitHub Releases download URLs for the signed WASM Playground bundle.
+ */
+export function buildWasmDemoSyncUrls(rawTag = '', repoRoot = DEFAULT_REPO_ROOT, { allowPrerelease = false } = {}) {
+  const brand = readBrandDefaults(repoRoot);
+  const githubRepo = `${brand.githubOwner}/${brand.productId}`;
+  const latestApiUrl = `https://api.github.com/repos/${githubRepo}/releases/latest`;
+  const liveManifestUrl = `${brand.defaultDlBaseUrl}/releases.json`;
+  const archiveName = `${brand.productId}-wasm-demo.tar.gz`;
+  const demoUrl = `https://demo.${brand.domain}/`;
+
+  if (!rawTag) {
+    return { brand, githubRepo, latestApiUrl, liveManifestUrl, demoUrl, archiveName };
+  }
+
+  const { tag, version } = normalizeDemoReleaseTag(rawTag, { allowPrerelease });
+  const baseDownloadUrl = `https://github.com/${githubRepo}/releases/download/${encodeURIComponent(tag)}`;
+  return {
+    brand,
+    githubRepo,
+    tag,
+    version,
+    latestApiUrl,
+    liveManifestUrl,
+    demoUrl,
+    archiveName,
+    archiveUrl: `${baseDownloadUrl}/${archiveName}`,
+    minisigUrl: `${baseDownloadUrl}/${archiveName}.minisig`,
+  };
+}
+
+/**
+ * Cryptographically verifies a downloaded `<product>-wasm-demo.tar.gz` + `.minisig` pair,
+ * enforces anti-downgrade against `currentManifestPath` when present, AND validates every
+ * USTAR / size / regular-file / required-asset rule before SSH `demo` deployment.
+ */
+export async function verifySignedWasmDemoFiles(options = {}) {
+  const {
+    archivePath,
+    sigPath,
+    expectedTag,
+    repoRoot = DEFAULT_REPO_ROOT,
+    currentManifestPath = '',
+    allowRollback = false,
+    allowPrerelease = false,
+    allowTestPubkey = false,
+    pubKeyOverride = '',
+    checkClockSkew = true,
+  } = options;
+
+  const { tag, version } = normalizeDemoReleaseTag(expectedTag, { allowPrerelease });
+  const brand = readBrandDefaults(repoRoot);
+  const expectedFile = `${brand.productId}-wasm-demo.tar.gz`;
+
+  let pubKey = brand.minisignPubKey;
+  if (pubKeyOverride) {
+    if (!allowTestPubkey) {
+      throw new Error('pubKeyOverride is forbidden unless allowTestPubkey is explicitly enabled for unit tests.');
+    }
+    pubKey = pubKeyOverride;
+  }
+  if (!pubKey) {
+    throw new Error('RAGO_MINISIGN_PUBKEY is empty in cmake/RagoShellDefaults.cmake.');
+  }
+
+  const resolvedArchive = assertRegularFileWithinBounds(archivePath, MAX_DEMO_TGZ_BYTES, expectedFile);
+  const resolvedSig = assertRegularFileWithinBounds(sigPath, 8192, `${expectedFile}.minisig`);
+
+  // 1. Ed25519 + BLAKE2b-512 + global signature over trusted comment (`release`, `timestamp`, `file`).
+  const sigResult = verifyMinisigFile(resolvedArchive, resolvedSig, pubKey, {
+    expectedVersion: version,
+    expectedFile,
+    checkClockSkew,
+  });
+
+  // 2. Anti-downgrade guard against currently live manifest (unless operator explicitly set allowRollback).
+  let previousVersion = null;
+  if (currentManifestPath) {
+    const resolvedCurrent = path.resolve(currentManifestPath);
+    if (fs.existsSync(resolvedCurrent)) {
+      const curStat = fs.lstatSync(resolvedCurrent);
+      if (curStat.isSymbolicLink() || !curStat.isFile()) {
+        throw new Error(`Current live manifest snapshot is not a regular file: ${resolvedCurrent}`);
+      }
+      if (curStat.size > 0 && curStat.size <= 65536) {
+        const curObj = JSON.parse(fs.readFileSync(resolvedCurrent, 'utf8'));
+        if (curObj && typeof curObj.latestVersion === 'string') {
+          previousVersion = normalizeAndValidateVersion(curObj.latestVersion, 'current.latestVersion');
+          if (!allowRollback && compareSemVer(version, previousVersion) < 0) {
+            throw new Error(
+              `Refusing WASM demo downgrade: requested ${version} is older than live ${previousVersion} (pass --allow-rollback to override intentionally).`
+            );
+          }
+        }
+      }
+    }
+  }
+
+  // 3. Full USTAR structure, 64/160 MiB ceilings, symlink/dotfile refusal, and required assets check.
+  const archiveInfo = await verifyWasmDemoArchive(resolvedArchive, { repoRoot });
+
+  return {
+    tag,
+    version,
+    previousVersion,
+    keyIdHex: sigResult.keyIdHex,
+    timestamp: sigResult.tokens.timestamp,
+    compressedBytes: archiveInfo.compressedBytes,
+    unpackedBytes: archiveInfo.unpackedBytes,
+    sha256: archiveInfo.sha256,
+  };
+}
+
 function parseArgs(argv) {
   const out = { cmd: argv[0] || '', flags: Object.create(null) };
   for (let i = 1; i < argv.length; i += 1) {
@@ -225,8 +355,31 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
       process.stdout.write(
         `[release-sync-verify] OK: ${res.tag} (keyId=${res.keyIdHex}, signedAt=${res.timestamp}, live=${res.previousVersion || 'none'})\n`
       );
+    } else if (cmd === 'print-demo-urls') {
+      const info = buildWasmDemoSyncUrls(flags.tag || '', flags['repo-root'] || DEFAULT_REPO_ROOT, {
+        allowPrerelease: flags['allow-prerelease'] === 'true',
+      });
+      process.stdout.write(`${JSON.stringify(info)}\n`);
+    } else if (cmd === 'verify-demo') {
+      if (!flags.archive || !flags.sig || !flags.tag) {
+        throw new Error(
+          'Usage: node ci/verify-remote-manifest.mjs verify-demo --archive <wasm-demo.tar.gz> --sig <wasm-demo.tar.gz.minisig> --tag <vX.Y.Z> [--current-manifest <live.json>] [--allow-rollback] [--allow-prerelease]'
+        );
+      }
+      const res = await verifySignedWasmDemoFiles({
+        archivePath: flags.archive,
+        sigPath: flags.sig,
+        expectedTag: flags.tag,
+        repoRoot: flags['repo-root'] || DEFAULT_REPO_ROOT,
+        currentManifestPath: flags['current-manifest'] || '',
+        allowRollback: flags['allow-rollback'] === 'true',
+        allowPrerelease: flags['allow-prerelease'] === 'true',
+      });
+      process.stdout.write(
+        `[wasm-demo-sync-verify] OK: ${res.tag} (keyId=${res.keyIdHex}, signedAt=${res.timestamp}, live=${res.previousVersion || 'none'}, sha256=${res.sha256}, size=${res.compressedBytes}B)\n`
+      );
     } else {
-      throw new Error(`Unknown command "${cmd}". Expected: print-urls | verify`);
+      throw new Error(`Unknown command "${cmd}". Expected: print-urls | verify | print-demo-urls | verify-demo`);
     }
   } catch (err) {
     process.stderr.write(`error: ${err instanceof Error ? err.message : String(err)}\n`);

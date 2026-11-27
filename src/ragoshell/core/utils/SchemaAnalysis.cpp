@@ -2,11 +2,15 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
+#include <cstdint>
 #include <exception>
 #include <set>
 #include <string>
 
+#include <bsoncxx/builder/basic/array.hpp>
 #include <bsoncxx/builder/basic/document.hpp>
+#include <bsoncxx/builder/basic/kvp.hpp>
 #include <bsoncxx/json.hpp>
 #include <bsoncxx/types.hpp>
 #include <mongocxx/client.hpp>
@@ -17,6 +21,9 @@
 #include <mongocxx/uri.hpp>
 
 #include "ragoshell/core/mongodb/MongoUriUtils.h"
+#include "ragoshell/core/settings/ConnectionSettings.h"
+#include "ragoshell/core/transport/IMongoTransport.h"
+#include "ragoshell/core/transport/InMemoryDemoTransport.h"
 #include "ragoshell/core/utils/BsonUtils.h"
 #include "ragoshell/core/utils/QtUtils.h"
 
@@ -97,6 +104,115 @@ namespace RagoShell
             if (withLetters < 3)
                 return {};
             return upper ? QStringLiteral("upper") : lower ? QStringLiteral("lower") : QString();
+        }
+
+        std::int64_t cursorIdFromDoc(bsoncxx::document::view cursorObj)
+        {
+            const auto idEl = cursorObj["id"];
+            if (!idEl)
+                return 0;
+            if (idEl.type() == bsoncxx::type::k_int64)
+                return idEl.get_int64().value;
+            if (idEl.type() == bsoncxx::type::k_int32)
+                return idEl.get_int32().value;
+            if (idEl.type() == bsoncxx::type::k_double) {
+                const double d = idEl.get_double().value;
+                if (std::isfinite(d) && d > -9223372036854775808.0 && d < 9223372036854774784.0)
+                    return static_cast<std::int64_t>(std::trunc(d));
+            }
+            return 0;
+        }
+
+        std::vector<bsoncxx::document::value> drainTransportCursor(
+            IMongoTransport &transport, const QString &database, const QString &defaultColl,
+            bsoncxx::document::view firstReply, std::size_t maxDocs, std::int32_t maxTimeMs)
+        {
+            namespace basic = bsoncxx::builder::basic;
+            using basic::kvp;
+            using basic::make_array;
+            using basic::make_document;
+
+            std::vector<bsoncxx::document::value> out;
+            const auto cursorEl = firstReply["cursor"];
+            if (!cursorEl || cursorEl.type() != bsoncxx::type::k_document)
+                return out;
+            auto cv = cursorEl.get_document().value;
+            QString collName = defaultColl;
+            if (const auto nsEl = cv["ns"]; nsEl && nsEl.type() == bsoncxx::type::k_string) {
+                const QString ns = QString::fromUtf8(
+                    nsEl.get_string().value.data(),
+                    static_cast<qsizetype>(nsEl.get_string().value.size()));
+                const qsizetype dot = ns.indexOf(QLatin1Char('.'));
+                if (dot >= 0 && dot + 1 < ns.size())
+                    collName = ns.mid(dot + 1);
+            }
+            auto appendBatch = [&](const char *key) {
+                if (const auto b = cv[key]; b && b.type() == bsoncxx::type::k_array) {
+                    for (const auto &el : b.get_array().value) {
+                        if (out.size() >= maxDocs)
+                            break;
+                        if (el.type() == bsoncxx::type::k_document)
+                            out.emplace_back(el.get_document().value);
+                    }
+                }
+            };
+            appendBatch("firstBatch");
+            std::int64_t cursorId = cursorIdFromDoc(cv);
+
+            auto killRemote = [&]() noexcept {
+                if (cursorId == 0 || collName.isEmpty())
+                    return;
+                const std::int64_t toKill = cursorId;
+                cursorId = 0;
+                try {
+                    const auto killCmd = make_document(
+                        kvp("killCursors", collName.toStdString()),
+                        kvp("cursors", make_array(toKill)));
+                    transport.runCommand(
+                        database,
+                        QString::fromStdString(
+                            bsoncxx::to_json(killCmd.view(), bsoncxx::ExtendedJsonMode::k_canonical)));
+                } catch (...) {
+                }
+            };
+
+            try {
+                while (cursorId != 0 && out.size() < maxDocs && !collName.isEmpty()) {
+                    basic::document gm;
+                    gm.append(kvp("getMore", cursorId),
+                              kvp("collection", collName.toStdString()));
+                    if (maxTimeMs > 0)
+                        gm.append(kvp("maxTimeMS", maxTimeMs));
+                    const auto res = transport.runCommand(
+                        database,
+                        QString::fromStdString(
+                            bsoncxx::to_json(gm.view(), bsoncxx::ExtendedJsonMode::k_canonical)));
+                    if (!res.ok) {
+                        cursorId = 0;
+                        throw std::runtime_error(res.error.toStdString());
+                    }
+                    const auto gmDoc = bsoncxx::from_json(res.ejson.toStdString());
+                    const auto nextCur = gmDoc.view()["cursor"];
+                    if (!nextCur || nextCur.type() != bsoncxx::type::k_document) {
+                        cursorId = 0;
+                        break;
+                    }
+                    cv = nextCur.get_document().value;
+                    cursorId = cursorIdFromDoc(cv);
+                    const std::size_t before = out.size();
+                    appendBatch("nextBatch");
+                    if (out.size() == before && cursorId != 0) {
+                        killRemote();
+                        break;
+                    }
+                }
+            } catch (...) {
+                killRemote();
+                throw;
+            }
+            if (cursorId != 0)
+                killRemote();
+            return out;
         }
     }
 
@@ -253,11 +369,132 @@ namespace RagoShell
         return result;
     }
 
+    SchemaResult SchemaAnalysis::analyzeCollection(IMongoTransport &transport,
+                                                   const QString &database, const QString &collection,
+                                                   int sampleSize, int maxTimeMs,
+                                                   UUIDEncoding uuidEncoding, SupportedTimes timeZone)
+    {
+        namespace basic = bsoncxx::builder::basic;
+        using basic::kvp;
+        using basic::make_array;
+        using basic::make_document;
+
+        auto runCmd = [&](bsoncxx::document::view cmd) -> bsoncxx::document::value {
+            const auto res = transport.runCommand(
+                database,
+                QString::fromStdString(bsoncxx::to_json(cmd, bsoncxx::ExtendedJsonMode::k_canonical)));
+            if (!res.ok)
+                throw std::runtime_error(res.error.toStdString());
+            return bsoncxx::from_json(res.ejson.toStdString());
+        };
+
+        SchemaAccumulator accumulator(uuidEncoding, timeZone);
+        qint64 total = estimatedDocumentCount(transport, database, collection, maxTimeMs);
+        bool fullScan = false;
+        QStringList indexes;
+        const std::int32_t clampedTimeMs = std::max<std::int32_t>(1, maxTimeMs);
+
+        try {
+            if (total >= 0 && total <= kFullScanLimit) {
+                fullScan = true;
+                const auto reply = runCmd(make_document(
+                    kvp("find", collection.toStdString()),
+                    kvp("filter", make_document()),
+                    kvp("maxTimeMS", clampedTimeMs)).view());
+                for (const auto &doc : drainTransportCursor(
+                         transport, database, collection, reply.view(),
+                         static_cast<std::size_t>(kFullScanLimit), clampedTimeMs)) {
+                    accumulator.add(doc.view());
+                }
+            } else {
+                std::set<std::string> recentIds;
+                const int recentWanted = static_cast<int>(sampleSize * kRecentShare);
+                if (recentWanted > 0) {
+                    const auto reply = runCmd(make_document(
+                        kvp("find", collection.toStdString()),
+                        kvp("filter", make_document()),
+                        kvp("sort", make_document(kvp("_id", -1))),
+                        kvp("limit", recentWanted),
+                        kvp("maxTimeMS", clampedTimeMs)).view());
+                    for (const auto &docVal : drainTransportCursor(
+                             transport, database, collection, reply.view(),
+                             static_cast<std::size_t>(recentWanted), clampedTimeMs)) {
+                        const auto doc = docVal.view();
+                        const auto id = doc["_id"];
+                        if (!id || id.type() != bsoncxx::type::k_oid)
+                            break;
+                        recentIds.insert(id.get_oid().value.to_string());
+                        accumulator.add(doc, /*recent=*/true);
+                    }
+                }
+                const int wantSample = std::max(1, sampleSize - static_cast<int>(recentIds.size()));
+                const auto sampleReply = runCmd(make_document(
+                    kvp("aggregate", collection.toStdString()),
+                    kvp("pipeline", make_array(
+                        make_document(kvp("$sample", make_document(kvp("size", wantSample)))))),
+                    kvp("cursor", make_document()),
+                    kvp("maxTimeMS", clampedTimeMs)).view());
+                for (const auto &docVal : drainTransportCursor(
+                         transport, database, collection, sampleReply.view(),
+                         static_cast<std::size_t>(wantSample), clampedTimeMs)) {
+                    const auto doc = docVal.view();
+                    const auto id = doc["_id"];
+                    if (id && id.type() == bsoncxx::type::k_oid
+                        && recentIds.count(id.get_oid().value.to_string()))
+                        continue;
+                    accumulator.add(doc);
+                }
+            }
+
+            try {
+                const auto idxReply = runCmd(
+                    make_document(kvp("listIndexes", collection.toStdString())).view());
+                for (const auto &idxDoc : drainTransportCursor(
+                         transport, database, collection, idxReply.view(), 256, clampedTimeMs)) {
+                    const auto index = idxDoc.view();
+                    const auto name = index["name"];
+                    const auto key = index["key"];
+                    if (!key || key.type() != bsoncxx::type::k_document
+                        || (name && name.type() == bsoncxx::type::k_string
+                            && name.get_string().value == "_id_"))
+                        continue;
+                    indexes << QString::fromStdString(bsoncxx::to_json(
+                        key.get_document().value, bsoncxx::ExtendedJsonMode::k_relaxed));
+                }
+            } catch (const std::exception &) {
+            }
+        } catch (const std::exception &ex) {
+            SchemaResult failed;
+            failed.error = QString::fromUtf8(ex.what());
+            return failed;
+        }
+
+        SchemaResult result = accumulator.result();
+        result.totalDocuments = total;
+        result.fullScan = fullScan;
+        result.indexes = indexes;
+        result.analyzedAt = QDateTime::currentDateTimeUtc();
+        return result;
+    }
+
     SchemaResult SchemaAnalysis::analyzeCollection(const ConnectionSettings &connection,
                                                    const QString &database, const QString &collection,
                                                    int sampleSize, int maxTimeMs,
                                                    UUIDEncoding uuidEncoding, SupportedTimes timeZone)
     {
+        if (connection.hasTransport()) {
+#if defined(Q_OS_WASM)
+            if (connection.transportKind() == "memory") {
+                InMemoryDemoTransport demo(InMemoryDemoTransport::sharedStore());
+                demo.connect(QStringLiteral("{}"));
+                return analyzeCollection(demo, database, collection, sampleSize, maxTimeMs,
+                                         uuidEncoding, timeZone);
+            }
+#endif
+            SchemaResult failed;
+            failed.error = QStringLiteral("Schema sampling is not available over gateway channels.");
+            return failed;
+        }
         SchemaAccumulator accumulator(uuidEncoding, timeZone);
         qint64 total = -1;
         bool fullScan = false;
@@ -339,9 +576,52 @@ namespace RagoShell
         return result;
     }
 
+    qint64 SchemaAnalysis::estimatedDocumentCount(IMongoTransport &transport, const QString &database,
+                                                  const QString &collection, int maxTimeMs)
+    {
+        try {
+            namespace basic = bsoncxx::builder::basic;
+            const auto cmd = basic::make_document(
+                basic::kvp("count", collection.toStdString()),
+                basic::kvp("maxTimeMS", std::max<std::int32_t>(1, maxTimeMs)));
+            const auto res = transport.runCommand(
+                database,
+                QString::fromStdString(bsoncxx::to_json(cmd.view(), bsoncxx::ExtendedJsonMode::k_canonical)));
+            if (!res.ok)
+                return -1;
+            const auto doc = bsoncxx::from_json(res.ejson.toStdString());
+            const auto n = doc.view()["n"];
+            if (!n)
+                return -1;
+            if (n.type() == bsoncxx::type::k_int32)
+                return n.get_int32().value;
+            if (n.type() == bsoncxx::type::k_int64)
+                return n.get_int64().value;
+            if (n.type() == bsoncxx::type::k_double) {
+                const double d = n.get_double().value;
+                if (!std::isfinite(d) || d < 0.0 || d >= 9223372036854774784.0)
+                    return -1;
+                return static_cast<qint64>(std::trunc(d));
+            }
+            return -1;
+        } catch (const std::exception &) {
+            return -1;
+        }
+    }
+
     qint64 SchemaAnalysis::estimatedDocumentCount(const ConnectionSettings &connection, const QString &database,
                                                   const QString &collection, int maxTimeMs)
     {
+        if (connection.hasTransport()) {
+#if defined(Q_OS_WASM)
+            if (connection.transportKind() == "memory") {
+                InMemoryDemoTransport demo(InMemoryDemoTransport::sharedStore());
+                demo.connect(QStringLiteral("{}"));
+                return estimatedDocumentCount(demo, database, collection, maxTimeMs);
+            }
+#endif
+            return -1;
+        }
         try {
             mongocxx::client client{mongocxx::uri{buildMongoUri(connection)},
                                     buildMongoClientOptions(connection)};
@@ -354,9 +634,63 @@ namespace RagoShell
         }
     }
 
+    SchemaAnalysis::CollectionList SchemaAnalysis::listCollections(IMongoTransport &transport,
+                                                                   const QString &database, int maxTimeMs)
+    {
+        CollectionList list;
+        try {
+            namespace basic = bsoncxx::builder::basic;
+            const std::int32_t clampedTimeMs = std::max<std::int32_t>(1, maxTimeMs);
+            const auto cmd = basic::make_document(
+                basic::kvp("listCollections", 1),
+                basic::kvp("maxTimeMS", clampedTimeMs));
+            const auto res = transport.runCommand(
+                database,
+                QString::fromStdString(bsoncxx::to_json(cmd.view(), bsoncxx::ExtendedJsonMode::k_canonical)));
+            if (!res.ok) {
+                list.error = res.error;
+                return list;
+            }
+            const auto doc = bsoncxx::from_json(res.ejson.toStdString());
+            for (const auto &infoDoc : drainTransportCursor(
+                     transport, database, QStringLiteral("$cmd.listCollections"),
+                     doc.view(), 4096, clampedTimeMs)) {
+                const auto info = infoDoc.view();
+                CollectionEntry entry;
+                if (const auto name = info["name"]; name && name.type() == bsoncxx::type::k_string)
+                    entry.name = QtUtils::toQString(std::string(name.get_string().value));
+                if (const auto type = info["type"]; type && type.type() == bsoncxx::type::k_string)
+                    entry.type = QtUtils::toQString(std::string(type.get_string().value));
+                if (!entry.name.isEmpty())
+                    list.collections.push_back(entry);
+            }
+            for (CollectionEntry &entry : list.collections) {
+                if (entry.type == QLatin1String("view"))
+                    continue;
+                entry.documents = estimatedDocumentCount(transport, database, entry.name, maxTimeMs);
+            }
+            list.ok = true;
+        } catch (const std::exception &ex) {
+            list.error = QString::fromUtf8(ex.what());
+        }
+        return list;
+    }
+
     SchemaAnalysis::CollectionList SchemaAnalysis::listCollections(const ConnectionSettings &connection,
                                                                    const QString &database, int maxTimeMs)
     {
+        if (connection.hasTransport()) {
+#if defined(Q_OS_WASM)
+            if (connection.transportKind() == "memory") {
+                InMemoryDemoTransport demo(InMemoryDemoTransport::sharedStore());
+                demo.connect(QStringLiteral("{}"));
+                return listCollections(demo, database, maxTimeMs);
+            }
+#endif
+            CollectionList denied;
+            denied.error = QStringLiteral("Schema sampling is not available over gateway channels.");
+            return denied;
+        }
         CollectionList list;
         try {
             mongocxx::client client{mongocxx::uri{buildMongoUri(connection)},
@@ -371,12 +705,12 @@ namespace RagoShell
                 if (!entry.name.isEmpty())
                     list.collections.push_back(entry);
             }
-            mongocxx::options::estimated_document_count opts;
-            opts.max_time(std::chrono::milliseconds(maxTimeMs));
             for (CollectionEntry &entry : list.collections) {
                 if (entry.type == QLatin1String("view"))
-                    continue;   // no count metadata
+                    continue;
                 try {
+                    mongocxx::options::estimated_document_count opts;
+                    opts.max_time(std::chrono::milliseconds(maxTimeMs));
                     entry.documents = db.collection(entry.name.toStdString()).estimated_document_count(opts);
                 } catch (const std::exception &) {
                 }

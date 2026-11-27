@@ -604,7 +604,7 @@ function scanDistReleasePackages(distDir, brand, version) {
       throw new Error(`Refusing symbolic link inside dist/: "${entryName}"`);
     }
     if (st.isDirectory()) {
-      if (entryName.startsWith(prefix)) continue;
+      if (entryName.startsWith(prefix) || entryName === 'wasm') continue;
       throw new Error(`Unexpected directory inside dist/: "${entryName}"`);
     }
     if (!st.isFile()) {

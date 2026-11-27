@@ -557,6 +557,12 @@ namespace RagoShell
             emit transferFinished(false, 0, tr("Server is not connected."));
             return;
         }
+        if (server->connectionRecord()->hasTransport()) {
+            emit transferFinished(
+                false, 0,
+                tr("Collection export is not supported over gateway or demo connection channels."));
+            return;
+        }
 
         if (_transferThread && _transferThread->joinable())
             _transferThread->join();
@@ -624,6 +630,12 @@ namespace RagoShell
         MongoServer *server = findServerByUuid(uuid);
         if (!server || !server->connectionRecord()) {
             emit transferFinished(false, 0, tr("Server is not connected."));
+            return;
+        }
+        if (server->connectionRecord()->hasTransport()) {
+            emit transferFinished(
+                false, 0,
+                tr("Collection import is not supported over gateway or demo connection channels."));
             return;
         }
 

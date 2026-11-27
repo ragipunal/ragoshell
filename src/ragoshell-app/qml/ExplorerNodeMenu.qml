@@ -10,6 +10,7 @@ RagoMenu {
     required property var pane
     readonly property bool _isViewCollection:
         Boolean(nodeMenu.pane._ctxIndexMeta && nodeMenu.pane._ctxIndexMeta.storageType === "view")
+    readonly property bool _pg: Platform.isWasmPlayground
 
     component ActionItem: RagoMenuItem {}
     component ActionSeparator: RagoMenuSeparator {}
@@ -24,7 +25,7 @@ RagoMenu {
     }
     ActionItem {
         text: qsTr("Server Monitor")
-        visible: nodeMenu.pane._menuNodeType === "server"
+        visible: nodeMenu.pane._menuNodeType === "server" && !nodeMenu._pg
         enabled: nodeMenu.pane._ctxOnline
         onTriggered: Backend.openMonitor(nodeMenu.pane._ctxUuid)
     }
@@ -48,7 +49,7 @@ RagoMenu {
     }
     ActionItem {
         text: qsTr("Users & Roles…")
-        visible: nodeMenu.pane._menuNodeType === "server"
+        visible: nodeMenu.pane._menuNodeType === "server" && !nodeMenu._pg
         enabled: nodeMenu.pane._ctxOnline
         onTriggered: nodeMenu.pane.openManageUsers(nodeMenu.pane._ctxUuid, "admin")
     }
@@ -72,13 +73,13 @@ RagoMenu {
     }
     ActionItem {
         text: qsTr("Feature Compatibility (FCV)")
-        visible: nodeMenu.pane._menuNodeType === "server" && (nodeMenu.pane._ctxServerVer <= 0.0 || nodeMenu.pane._ctxServerVer >= 3.4)
+        visible: nodeMenu.pane._menuNodeType === "server" && !nodeMenu._pg && (nodeMenu.pane._ctxServerVer <= 0.0 || nodeMenu.pane._ctxServerVer >= 3.4)
         enabled: nodeMenu.pane._ctxOnline
         onTriggered: Backend.openShellWithScript(nodeMenu.pane._ctxUuid, "", "db.getFeatureCompatibilityVersion()", true)
     }
     ActionItem {
         text: qsTr("Connection Pool Stats")
-        visible: nodeMenu.pane._menuNodeType === "server"
+        visible: nodeMenu.pane._menuNodeType === "server" && !nodeMenu._pg
         enabled: nodeMenu.pane._ctxOnline
         onTriggered: Backend.openShellWithScript(nodeMenu.pane._ctxUuid, "", "db.connPoolStats()", true)
     }
@@ -88,10 +89,10 @@ RagoMenu {
         enabled: nodeMenu.pane._ctxOnline
         onTriggered: Backend.openShellWithScript(nodeMenu.pane._ctxUuid, "", "show log", true)
     }
-    ActionSeparator { visible: nodeMenu.pane._menuNodeType === "server" }
+    ActionSeparator { visible: nodeMenu.pane._menuNodeType === "server" && !nodeMenu._pg }
     ActionItem {
         text: qsTr("Disconnect")
-        visible: nodeMenu.pane._menuNodeType === "server"
+        visible: nodeMenu.pane._menuNodeType === "server" && !nodeMenu._pg
         danger: true
         onTriggered: nodeMenu.pane.requestDisconnectServer(nodeMenu.pane._ctxUuid, nodeMenu.pane._ctxRawName)
     }
@@ -178,28 +179,28 @@ RagoMenu {
     }
     ActionItem {
         text: qsTr("Create Read-Only View… (3.4+)")
-        visible: nodeMenu.pane._menuNodeType === "database" && (nodeMenu.pane._ctxServerVer <= 0.0 || nodeMenu.pane._ctxServerVer >= 3.4)
+        visible: nodeMenu.pane._menuNodeType === "database" && !nodeMenu._pg && (nodeMenu.pane._ctxServerVer <= 0.0 || nodeMenu.pane._ctxServerVer >= 3.4)
         onTriggered: nodeMenu.pane.openCreateCollection(nodeMenu.pane._ctxUuid, nodeMenu.pane._ctxDb, "view")
     }
     ActionItem {
         text: qsTr("Create Time Series… (5.0+)")
-        visible: nodeMenu.pane._menuNodeType === "database" && (nodeMenu.pane._ctxServerVer <= 0.0 || nodeMenu.pane._ctxServerVer >= 5.0)
+        visible: nodeMenu.pane._menuNodeType === "database" && !nodeMenu._pg && (nodeMenu.pane._ctxServerVer <= 0.0 || nodeMenu.pane._ctxServerVer >= 5.0)
         onTriggered: nodeMenu.pane.openCreateCollection(nodeMenu.pane._ctxUuid, nodeMenu.pane._ctxDb, "timeseries")
     }
     ActionItem {
         text: qsTr("Create Clustered Collection… (5.3+)")
-        visible: nodeMenu.pane._menuNodeType === "database" && (nodeMenu.pane._ctxServerVer <= 0.0 || nodeMenu.pane._ctxServerVer >= 5.3)
+        visible: nodeMenu.pane._menuNodeType === "database" && !nodeMenu._pg && (nodeMenu.pane._ctxServerVer <= 0.0 || nodeMenu.pane._ctxServerVer >= 5.3)
         onTriggered: nodeMenu.pane.openCreateCollection(nodeMenu.pane._ctxUuid, nodeMenu.pane._ctxDb, "clustered")
     }
-    ActionSeparator { visible: nodeMenu.pane._menuNodeType === "database" }
+    ActionSeparator { visible: nodeMenu.pane._menuNodeType === "database" && !nodeMenu._pg }
     ActionItem {
         text: qsTr("Users & Roles…")
-        visible: nodeMenu.pane._menuNodeType === "database"
+        visible: nodeMenu.pane._menuNodeType === "database" && !nodeMenu._pg
         onTriggered: nodeMenu.pane.openManageUsers(nodeMenu.pane._ctxUuid, nodeMenu.pane._ctxDb)
     }
     ActionItem {
         text: qsTr("Add Stored Function (system.js — Deprecated)…")
-        visible: nodeMenu.pane._menuNodeType === "database"
+        visible: nodeMenu.pane._menuNodeType === "database" && !nodeMenu._pg
         onTriggered: nodeMenu.pane.openAddFunction(nodeMenu.pane._ctxUuid, nodeMenu.pane._ctxDb)
     }
     ActionSeparator { visible: nodeMenu.pane._menuNodeType === "database" }
@@ -225,12 +226,12 @@ RagoMenu {
     }
     ActionItem {
         text: qsTr("Profiling Status")
-        visible: nodeMenu.pane._menuNodeType === "database"
+        visible: nodeMenu.pane._menuNodeType === "database" && !nodeMenu._pg
         onTriggered: Backend.openShellWithScript(nodeMenu.pane._ctxUuid, nodeMenu.pane._ctxDb, "db.getProfilingStatus()", true)
     }
     ActionItem {
         text: qsTr("Server Monitor & Operations")
-        visible: nodeMenu.pane._menuNodeType === "database"
+        visible: nodeMenu.pane._menuNodeType === "database" && !nodeMenu._pg
         onTriggered: Backend.openMonitor(nodeMenu.pane._ctxUuid)
     }
     ActionItem {
@@ -241,7 +242,7 @@ RagoMenu {
     // Removed in MongoDB 4.2+: only expose on legacy < 4.2 servers with explicit warning
     ActionItem {
         text: qsTr("Repair Database… (< 4.2)")
-        visible: nodeMenu.pane._menuNodeType === "database" && nodeMenu.pane._ctxServerVer > 0.0 && nodeMenu.pane._ctxServerVer < 4.2
+        visible: nodeMenu.pane._menuNodeType === "database" && !nodeMenu._pg && nodeMenu.pane._ctxServerVer > 0.0 && nodeMenu.pane._ctxServerVer < 4.2
         onTriggered: {
             nodeMenu.pane.openDestructiveConfirm({
                 action: "repairDb",
@@ -359,17 +360,17 @@ RagoMenu {
     }
     ActionItem {
         text: qsTr("Ask AI for a Query…")
-        visible: nodeMenu.pane._menuNodeType === "collection"
+        visible: nodeMenu.pane._menuNodeType === "collection" && !nodeMenu._pg
         onTriggered: nodeMenu.pane.aiAssistantRequested(nodeMenu.pane._ctxUuid, nodeMenu.pane._ctxDb, nodeMenu.pane._ctxColl)
     }
     ActionItem {
         text: qsTr("Export Collection…")
-        visible: nodeMenu.pane._menuNodeType === "collection"
+        visible: nodeMenu.pane._menuNodeType === "collection" && !nodeMenu._pg
         onTriggered: nodeMenu.pane.openExportDialog(nodeMenu.pane._ctxUuid, nodeMenu.pane._ctxDb, nodeMenu.pane._ctxColl, "{}")
     }
     ActionItem {
         text: qsTr("Import Data…")
-        visible: nodeMenu.pane._menuNodeType === "collection" && !nodeMenu._isViewCollection
+        visible: nodeMenu.pane._menuNodeType === "collection" && !nodeMenu._isViewCollection && !nodeMenu._pg
         onTriggered: nodeMenu.pane.openImportDialog(nodeMenu.pane._ctxUuid, nodeMenu.pane._ctxDb, nodeMenu.pane._ctxColl)
     }
     ActionItem {
@@ -411,7 +412,7 @@ RagoMenu {
     }
     ActionItem {
         text: qsTr("Latency Histogram ($collStats)")
-        visible: nodeMenu.pane._menuNodeType === "collection" && !nodeMenu._isViewCollection && (nodeMenu.pane._ctxServerVer <= 0.0 || nodeMenu.pane._ctxServerVer >= 3.2)
+        visible: nodeMenu.pane._menuNodeType === "collection" && !nodeMenu._isViewCollection && !nodeMenu._pg && (nodeMenu.pane._ctxServerVer <= 0.0 || nodeMenu.pane._ctxServerVer >= 3.2)
         onTriggered: Backend.openShellWithScript(
             nodeMenu.pane._ctxUuid, nodeMenu.pane._ctxDb,
             "db.getCollection('" + nodeMenu.pane.escapeSingleQuotes(nodeMenu.pane._ctxColl) + "').latencyStats()",
@@ -419,7 +420,7 @@ RagoMenu {
     }
     ActionItem {
         text: qsTr("Validate Collection")
-        visible: nodeMenu.pane._menuNodeType === "collection" && !nodeMenu._isViewCollection
+        visible: nodeMenu.pane._menuNodeType === "collection" && !nodeMenu._isViewCollection && !nodeMenu._pg
         onTriggered: Backend.openShellWithScript(
             nodeMenu.pane._ctxUuid, nodeMenu.pane._ctxDb,
             "db.getCollection('" + nodeMenu.pane.escapeSingleQuotes(nodeMenu.pane._ctxColl) + "').validate()",
@@ -443,7 +444,7 @@ RagoMenu {
     }
     ActionItem {
         text: qsTr("Shard Distribution")
-        visible: nodeMenu.pane._menuNodeType === "collection" && !nodeMenu._isViewCollection
+        visible: nodeMenu.pane._menuNodeType === "collection" && !nodeMenu._isViewCollection && !nodeMenu._pg
         onTriggered: Backend.openShellWithScript(
             nodeMenu.pane._ctxUuid, nodeMenu.pane._ctxDb,
             "db.getCollection('" + nodeMenu.pane.escapeSingleQuotes(nodeMenu.pane._ctxColl) + "').getShardDistribution()",
@@ -451,7 +452,7 @@ RagoMenu {
     }
     ActionItem {
         text: qsTr("Compact Collection…")
-        visible: nodeMenu.pane._menuNodeType === "collection" && !nodeMenu._isViewCollection
+        visible: nodeMenu.pane._menuNodeType === "collection" && !nodeMenu._isViewCollection && !nodeMenu._pg
         onTriggered: {
             nodeMenu.pane.openDestructiveConfirm({
                 action: "compactColl",
@@ -552,6 +553,7 @@ RagoMenu {
               ? qsTr("Unhide Index (4.4+)")
               : qsTr("Hide Index from Planner… (4.4+)")
         visible: nodeMenu.pane._menuNodeType === "index" &&
+                 !nodeMenu._pg &&
                  nodeMenu.pane._ctxRawName !== "_id_" &&
                  (nodeMenu.pane._ctxServerVer <= 0.0 || nodeMenu.pane._ctxServerVer >= 4.4)
         onTriggered: {

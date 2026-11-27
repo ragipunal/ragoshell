@@ -46,6 +46,10 @@ namespace RagoShell
 
     mongocxx::client &MongoMcpBackend::client(const ConnectionSettings &connection)
     {
+        if (connection.hasTransport()) {
+            throw std::runtime_error(
+                "Gateway and demo transport connections are not supported by the MCP server.");
+        }
         auto &slot = _clients[connection.uuid()];
         if (!slot) {
             slot = std::make_unique<mongocxx::client>(mongocxx::uri{buildMongoUri(connection)},

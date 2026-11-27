@@ -40,6 +40,10 @@
         <translation>Yangilanishlarni tekshirish</translation>
     </message>
     <message>
+        <source>Download Desktop App</source>
+        <translation>Ish stoli ilovasini yuklab olish</translation>
+    </message>
+    <message>
         <source>Open-Source Licenses…</source>
         <translation>Ochiq manbali litsenziyalar…</translation>
     </message>
@@ -447,6 +451,14 @@
         <translation>Hozir sinxronlash</translation>
     </message>
     <message>
+        <source>Reset Demo Data…</source>
+        <translation>Demo maʼlumotlarini tiklash…</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>Ish stoli ilovasini yuklab olish</translation>
+    </message>
+    <message>
         <source>Keyboard Shortcuts</source>
         <translation>Tezkor tugmalar</translation>
     </message>
@@ -516,6 +528,18 @@
     <message>
         <source>Monitor</source>
         <translation>Monitor</translation>
+    </message>
+    <message>
+        <source>Reset Demo</source>
+        <translation>Demoni tiklash</translation>
+    </message>
+    <message>
+        <source>Reset Demo Data</source>
+        <translation>Demo maʼlumotlarini tiklash</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>Ish stoli ilovasini yuklab olish</translation>
     </message>
     <message>
         <source>Syncing…</source>
@@ -600,6 +624,10 @@
         <translation>Filtr JSON formati notoʻgʻri: %1</translation>
     </message>
     <message>
+        <source>Collection export is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Cannot open output file for writing: %1</source>
         <translation>Chiqish faylini yozish uchun ochib boʻlmadi: %1</translation>
     </message>
@@ -610,6 +638,10 @@
     <message>
         <source>Cannot open input file for reading: %1</source>
         <translation>Kirish faylini oʻqish uchun ochib boʻlmadi: %1</translation>
+    </message>
+    <message>
+        <source>Collection import is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Import cancelled.</source>
@@ -2873,6 +2905,18 @@
         <source>Close</source>
         <translation>Yopish</translation>
     </message>
+    <message>
+        <source>Reset Demo Data?</source>
+        <translation>Demo maʼlumotlari tiklansinmi?</translation>
+    </message>
+    <message>
+        <source>Reset Demo Data</source>
+        <translation>Demo maʼlumotlarini tiklash</translation>
+    </message>
+    <message>
+        <source>Restore the in-browser demo database to its initial sample collections and documents? Any changes made in this session will be discarded.</source>
+        <translation>Brauzerdagi demo maʼlumotlar bazasi dastlabki namunaviy toʻplam va hujjatlariga tiklansinmi? Ushbu seansda kiritilgan barcha oʻzgarishlar bekor qilinadi.</translation>
+    </message>
 </context>
 <context>
     <name>MainWorkspaceArea</name>
@@ -2885,8 +2929,16 @@
         <translation>Ochiq varaqlar yoʻq</translation>
     </message>
     <message>
+        <source>Double-click any collection in Explorer to query, or open a new playground shell.</source>
+        <translation>Soʻrov yuborish uchun Eksplorerdagi istalgan toʻplamni ikki marta bosing yoki yangi playground qobigʻini oching.</translation>
+    </message>
+    <message>
         <source>Double-click any collection in Explorer to query, or open a new connection.</source>
         <translation>Soʻrov yuborish uchun Explorer dagi istalgan kolleksiyani ikki marta bosing yoki yangi ulanish oching.</translation>
+    </message>
+    <message>
+        <source>Open Playground Shell</source>
+        <translation>Playground qobigʻini ochish</translation>
     </message>
     <message>
         <source>Welcome Guide</source>
@@ -4408,8 +4460,8 @@
         <translation>rs.status() ni bajarish uchun erishish mumkin boʻlgan replika toʻplami aʼzosi topilmadi.</translation>
     </message>
     <message>
-        <source>Shell tabs are not yet supported over gateway/demo connection channels.</source>
-        <translation>Shell yorliqlari shlyuz/demo ulanish kanallari orqali hozircha qoʻllab-quvvatlanmaydi.</translation>
+        <source>Direct replica-set member connections are not supported over gateway or demo channels.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Server is not connected</source>
@@ -4418,6 +4470,10 @@
     <message>
         <source>Shell</source>
         <translation>Shell</translation>
+    </message>
+    <message>
+        <source>Demo data reset to defaults.</source>
+        <translation>Demo maʼlumotlari standart holatga tiklandi.</translation>
     </message>
     <message>
         <source>The network changed. Checking the open connections…</source>
@@ -4495,6 +4551,10 @@
         <translation>Server ulanmagan.</translation>
     </message>
     <message>
+        <source>Collection export is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Exporting %1.%2…</source>
         <translation>%1.%2 eksport qilinmoqda…</translation>
     </message>
@@ -4511,6 +4571,10 @@
             <numerusform>%1.%2 dan %n ta hujjat eksport qilindi.</numerusform>
             <numerusform>%1.%2 dan %n ta hujjat eksport qilindi.</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>Collection import is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Importing into %1.%2…</source>
@@ -6202,6 +6266,14 @@ Xato:
         <translation>Yangi ulanish (%1)</translation>
     </message>
     <message>
+        <source>Open Playground Shell</source>
+        <translation>Playground qobigʻini ochish</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>Ish stoli ilovasini yuklab olish</translation>
+    </message>
+    <message>
         <source>View Logs (%1)</source>
         <translation>Jurnallarni koʻrish (%1)</translation>
     </message>
@@ -6222,8 +6294,16 @@ Xato:
         <translation>BOSHLASH</translation>
     </message>
     <message>
+        <source>✦ In-Browser MongoDB Playground</source>
+        <translation>✦ Brauzerdagi MongoDB Playground</translation>
+    </message>
+    <message>
         <source>✦ Connect to MongoDB</source>
         <translation>✦ MongoDB ga ulanish</translation>
+    </message>
+    <message>
+        <source>Explore the sample &apos;catalog&apos; database directly in browser memory — no server setup required. Use &apos;Reset Demo&apos; in the top bar anytime, or download the desktop app to connect to your own MongoDB servers.</source>
+        <translation>Namunaviy &apos;catalog&apos; maʼlumotlar bazasini server sozlamasdan bevosita brauzer xotirasida sinab koʻring. Istalgan vaqtda yuqori paneldagi &apos;Demoni tiklash&apos; tugmasidan foydalaning yoki oʻz MongoDB serverlaringizga ulanish uchun ish stoli ilovasini yuklab oling.</translation>
     </message>
     <message>
         <source>Click &apos;New Connection&apos; in the top bar or press Ctrl+N to configure Direct Connections, Replica Sets, SSH Tunnels, and TLS/SSL certificates.</source>

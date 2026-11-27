@@ -105,12 +105,12 @@ RagoMenu {
     }
 
     RagoMenuSeparator {
-        visible: resultContextMenu.page.shell ? resultContextMenu.page.shell.activeCollection.length > 0 : false
+        visible: !Platform.isWasm && (resultContextMenu.page.shell ? resultContextMenu.page.shell.activeCollection.length > 0 : false)
     }
 
     RagoMenuItem {
         text: qsTr("Export Collection…")
-        visible: resultContextMenu.page.shell ? resultContextMenu.page.shell.activeCollection.length > 0 : false
+        visible: !Platform.isWasm && (resultContextMenu.page.shell ? resultContextMenu.page.shell.activeCollection.length > 0 : false)
         onTriggered: {
             var dlg = resultContextMenu.page._ensureImportExportDialog()
             if (dlg)
@@ -123,7 +123,7 @@ RagoMenu {
     }
     RagoMenuItem {
         text: qsTr("Import Data…")
-        visible: resultContextMenu.page.shell ? resultContextMenu.page.shell.activeCollection.length > 0 : false
+        visible: !Platform.isWasm && (resultContextMenu.page.shell ? resultContextMenu.page.shell.activeCollection.length > 0 : false)
         onTriggered: {
             var dlg = resultContextMenu.page._ensureImportExportDialog()
             if (dlg)

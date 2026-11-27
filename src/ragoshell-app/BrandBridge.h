@@ -6,6 +6,7 @@
 
 #include "ragoshell/core/BrandInfo.h"
 #include "ragoshell/core/utils/UpdatePulse.h"
+#include "ragoshell/core/utils/WasmMode.h"
 #include "ragoshell-app/QmlSingleton.h"
 
 namespace RagoShell
@@ -26,6 +27,7 @@ namespace RagoShell
         Q_PROPERTY(QString domain READ domain CONSTANT FINAL)
         Q_PROPERTY(QString url READ url CONSTANT FINAL)
         Q_PROPERTY(QString productUrl READ productUrl CONSTANT FINAL)
+        Q_PROPERTY(QString downloadUrl READ downloadUrl CONSTANT FINAL)
         Q_PROPERTY(QString donateUrl READ donateUrl CONSTANT FINAL)
         Q_PROPERTY(QString apiUrl READ apiUrl CONSTANT FINAL)
         Q_PROPERTY(QString portalUrl READ portalUrl CONSTANT FINAL)
@@ -68,6 +70,10 @@ namespace RagoShell
         QString productUrl() const
         {
             return url();
+        }
+        QString downloadUrl() const
+        {
+            return WasmMode::resolveDownloadPageUrl(QString::fromUtf8(BrandInfo::productUrl));
         }
         QString donateUrl() const
         {

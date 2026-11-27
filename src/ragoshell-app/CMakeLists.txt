@@ -405,20 +405,109 @@ elseif(SYSTEM_LINUX)
         "${CMAKE_SOURCE_DIR}/THIRD-PARTY-NOTICES.txt"
         DESTINATION "${CMAKE_INSTALL_DOCDIR}")
 elseif(SYSTEM_WASM)
-    # IDBFS persistence (docs/WebStorage.md §1, roadmap 8.2): --pre-js mounts
-    # IDBFS on /persist and delays main() until IndexedDB is populated.
-    target_link_options(ragoshell PRIVATE
-        "SHELL:--pre-js ${CMAKE_CURRENT_SOURCE_DIR}/wasm/persist-pre.js"
-        "-lidbfs.js")
-    # Mod A playground (docs/WebAssembly.md): brotli-compress the .wasm next to
-    # ragoshell.js/.html so the site can serve precompressed output.
-    find_program(RAGO_BROTLI_EXECUTABLE NAMES brotli)
-    if(RAGO_BROTLI_EXECUTABLE)
-        add_custom_command(TARGET ragoshell POST_BUILD
-            COMMAND "${RAGO_BROTLI_EXECUTABLE}" -9 -k -f
-                "$<TARGET_FILE_DIR:ragoshell>/ragoshell.wasm"
-            COMMENT "Brotli-compressing ragoshell.wasm -> ragoshell.wasm.br")
-    else()
-        message(WARNING "brotli not found — ragoshell.wasm.br will not be generated")
+    set(RAGO_WASM_MODE "playground" CACHE STRING "Default WASM runtime mode embedded in wasm-boot.js (playground or gateway)")
+    if(NOT RAGO_WASM_MODE STREQUAL "playground" AND NOT RAGO_WASM_MODE STREQUAL "gateway")
+        message(FATAL_ERROR "RAGO_WASM_MODE must be 'playground' or 'gateway' (got '${RAGO_WASM_MODE}').")
     endif()
+
+    string(REGEX REPLACE "[^a-zA-Z0-9_]" "_" _rago_wasm_ident "${RAGO_PRODUCT_ID}")
+    if(_rago_wasm_ident MATCHES "^[0-9]")
+        set(_rago_wasm_ident "_${_rago_wasm_ident}")
+    endif()
+    set(RAGO_WASM_EXPORT_NAME "${_rago_wasm_ident}_entry")
+    string(TOUPPER "${RAGO_PRODUCT_ID}" _rago_upper_product_id)
+    set(RAGO_WASM_MODE_ENV_KEY "${_rago_upper_product_id}_WASM_MODE")
+    set(RAGO_WASM_DEFAULT_MODE "${RAGO_WASM_MODE}")
+    if(QT_FEATURE_thread)
+        set(RAGO_WASM_REQUIRES_THREADS "true")
+    else()
+        set(RAGO_WASM_REQUIRES_THREADS "false")
+    endif()
+
+    set_target_properties(ragoshell PROPERTIES
+        OUTPUT_NAME "${RAGO_PRODUCT_ID}"
+        QT_WASM_EXPORT_NAME "${RAGO_WASM_EXPORT_NAME}"
+        QT_WASM_EXTRA_EXPORTED_METHODS "ENV")
+
+    # IDBFS persistence (docs/WebStorage.md §1, roadmap 8.2) + strict CSP compatibility
+    # (50-demo.conf.template forbids 'unsafe-eval'; -s DYNAMIC_EXECUTION=0 keeps embind eval-free).
+    set(_rago_wasm_pre_js "${CMAKE_CURRENT_SOURCE_DIR}/wasm/persist-pre.js")
+    target_link_options(ragoshell PRIVATE
+        "SHELL:--pre-js \"${_rago_wasm_pre_js}\""
+        "SHELL:-s DYNAMIC_EXECUTION=0"
+        "-lidbfs.js")
+    set_property(TARGET ragoshell APPEND PROPERTY LINK_DEPENDS "${_rago_wasm_pre_js}")
+
+    set(_rago_wasm_gen_dir "${CMAKE_CURRENT_BINARY_DIR}/wasm-generated")
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/wasm/index.html.in"
+        "${_rago_wasm_gen_dir}/index.html"
+        @ONLY)
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/wasm/wasm-boot.js.in"
+        "${_rago_wasm_gen_dir}/wasm-boot.js"
+        @ONLY)
+
+    set(_rago_wasm_out_dir "${CMAKE_CURRENT_BINARY_DIR}")
+    set(_rago_wasm_staged_files
+        "${_rago_wasm_out_dir}/index.html"
+        "${_rago_wasm_out_dir}/wasm-boot.js"
+        "${_rago_wasm_out_dir}/app_icon.png")
+
+    add_custom_command(
+        OUTPUT
+            "${_rago_wasm_out_dir}/index.html"
+            "${_rago_wasm_out_dir}/wasm-boot.js"
+            "${_rago_wasm_out_dir}/app_icon.png"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+            "${_rago_wasm_gen_dir}/index.html"
+            "${_rago_wasm_out_dir}/index.html"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+            "${_rago_wasm_gen_dir}/wasm-boot.js"
+            "${_rago_wasm_out_dir}/wasm-boot.js"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+            "${CMAKE_CURRENT_SOURCE_DIR}/resources/app_icon.png"
+            "${_rago_wasm_out_dir}/app_icon.png"
+        DEPENDS
+            ragoshell
+            "${_rago_wasm_gen_dir}/index.html"
+            "${_rago_wasm_gen_dir}/wasm-boot.js"
+            "${CMAKE_CURRENT_SOURCE_DIR}/resources/app_icon.png"
+        COMMENT "Staging CSP-compliant WASM loader (index.html, wasm-boot.js, app_icon.png)")
+
+    # Mod A playground (docs/WebAssembly.md): brotli-compress the .wasm next to
+    # index.html so 50-demo.conf.template can serve precompressed .wasm.br bytes.
+    find_program(RAGO_BROTLI_EXECUTABLE NAMES brotli)
+    find_program(RAGO_NODE_EXECUTABLE NAMES node)
+    if(RAGO_BROTLI_EXECUTABLE)
+        add_custom_command(
+            OUTPUT "${_rago_wasm_out_dir}/${RAGO_PRODUCT_ID}.wasm.br"
+            COMMAND "${RAGO_BROTLI_EXECUTABLE}" -9 -k -f
+                -o "${_rago_wasm_out_dir}/${RAGO_PRODUCT_ID}.wasm.br"
+                "$<TARGET_FILE_DIR:ragoshell>/${RAGO_PRODUCT_ID}.wasm"
+            DEPENDS ragoshell
+            COMMENT "Brotli-compressing ${RAGO_PRODUCT_ID}.wasm -> ${RAGO_PRODUCT_ID}.wasm.br")
+        list(APPEND _rago_wasm_staged_files "${_rago_wasm_out_dir}/${RAGO_PRODUCT_ID}.wasm.br")
+    elseif(RAGO_NODE_EXECUTABLE)
+        add_custom_command(
+            OUTPUT "${_rago_wasm_out_dir}/${RAGO_PRODUCT_ID}.wasm.br"
+            COMMAND "${RAGO_NODE_EXECUTABLE}"
+                "${CMAKE_SOURCE_DIR}/ci/compress-brotli.mjs" --quality 9
+                "$<TARGET_FILE_DIR:ragoshell>/${RAGO_PRODUCT_ID}.wasm"
+                "${_rago_wasm_out_dir}/${RAGO_PRODUCT_ID}.wasm.br"
+            DEPENDS
+                ragoshell
+                "${CMAKE_SOURCE_DIR}/ci/compress-brotli.mjs"
+            COMMENT "Brotli-compressing ${RAGO_PRODUCT_ID}.wasm -> ${RAGO_PRODUCT_ID}.wasm.br (via Node zlib)")
+        list(APPEND _rago_wasm_staged_files "${_rago_wasm_out_dir}/${RAGO_PRODUCT_ID}.wasm.br")
+    else()
+        message(WARNING "Neither brotli nor node found — ${RAGO_PRODUCT_ID}.wasm.br will not be generated")
+    endif()
+
+    add_custom_target(${RAGO_PRODUCT_ID}_wasm_assets ALL
+        DEPENDS ${_rago_wasm_staged_files}
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+            "${_rago_wasm_gen_dir}/index.html"
+            "${_rago_wasm_out_dir}/${RAGO_PRODUCT_ID}.html"
+        COMMENT "Ensuring WASM HTML/JS/Brotli assets are up to date")
 endif()

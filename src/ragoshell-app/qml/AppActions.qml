@@ -61,10 +61,13 @@ QtObject {
     //   shortcut         key text shown next to the title: a function returning Platform.keyLabel("Ctrl+N")
     //                    (the portable spelling); it is shown only where shortcuts are (Platform.shortcutsVisible)
     //   desktopOnly      not offered on a phone or tablet (Quit)
+    //   noWasm           not offered in WebAssembly browser builds (Quit, Open Log Folder)
+    //   noPlayground     hidden in WASM Mod A Playground (New Connection, Cloud & Sync, AI, Server Monitor)
+    //   playgroundOnly   offered only in WASM Mod A Playground (Reset Demo Data, Download Desktop App)
     //   keyboardOnly     offered where a keyboard is: on desktop, or on a phone or tablet with one attached
     //   enabled          function; absent means always available
     readonly property var definitions: [
-        { id: "file.new", section: "file",
+        { id: "file.new", section: "file", noPlayground: true,
           title: function() { return qsTr("New Connection…") },
           shortcut: function() { return Platform.keyLabel("Ctrl+N") },
           run: function() { app.openNewConnection() } },
@@ -87,14 +90,14 @@ QtObject {
           title: function() { return qsTr("Recover Unsaved Scripts…") },
           enabled: function() { return Drafts.count > 0 },
           run: function() { app.openRecoverDrafts() } },
-        { id: "file.cloudSync", section: "file", separatorBefore: true, cloudOnly: true,
+        { id: "file.cloudSync", section: "file", separatorBefore: true, cloudOnly: true, noPlayground: true,
           title: function() { return qsTr("Cloud & Sync…") },
           run: function() { app.openCloudSync(false) } },
         { id: "file.preferences", section: "file",
           title: function() { return qsTr("Preferences…") },
           shortcut: function() { return Platform.keyLabel("Ctrl+,") },
           run: function() { app.openPreferences() } },
-        { id: "file.quit", section: "file", separatorBefore: true, desktopOnly: true,
+        { id: "file.quit", section: "file", separatorBefore: true, desktopOnly: true, noWasm: true,
           title: function() { return qsTr("Quit") },
           shortcut: function() { return Platform.keyLabel("Ctrl+Q") },
           run: function() { app.close() } },
@@ -220,29 +223,36 @@ QtObject {
           title: function() { return qsTr("Schema Analysis…") },
           enabled: function() { return hasCollection },
           run: function() { app.openSchemaAnalysisForCurrent() } },
-        { id: "tools.ai", section: "tools", needs: "collection",
+        { id: "tools.ai", section: "tools", needs: "collection", noPlayground: true,
           title: function() { return qsTr("AI Query Assistant…") },
           shortcut: function() { return Platform.keyLabel("Ctrl+Shift+G") },
           enabled: function() { return hasCollection },
           run: function() { app.openAiAssistantForCurrent() } },
-        { id: "tools.monitor", section: "tools", needs: "connection",
+        { id: "tools.monitor", section: "tools", needs: "connection", noPlayground: true,
           title: function() { return qsTr("Server Monitor") },
           shortcut: function() { return Platform.keyLabel("Ctrl+Shift+M") },
           enabled: function() { return hasConnection },
           run: function() { app.openMonitorForActiveServer() } },
-        { id: "tools.syncNow", section: "tools", separatorBefore: true, cloudOnly: true, needs: "sync",
+        { id: "tools.syncNow", section: "tools", separatorBefore: true, cloudOnly: true, noPlayground: true, needs: "sync",
           title: function() { return qsTr("Sync Now") },
           enabled: function() {
               return CloudService.signedIn && CloudService.syncActive
                      && !CloudService.syncBusy && !CloudService.policyInvalid
           },
           run: function() { CloudService.syncNow() } },
+        { id: "tools.resetDemo", section: "tools", separatorBefore: true, playgroundOnly: true,
+          title: function() { return qsTr("Reset Demo Data…") },
+          run: function() { app.requestResetPlaygroundData() } },
 
+        { id: "help.downloadDesktop", section: "help", playgroundOnly: true,
+          title: function() { return qsTr("Download Desktop App") },
+          enabled: function() { return Brand.downloadUrl.length > 0 },
+          run: function() { app.openDesktopDownload() } },
         { id: "help.shortcuts", section: "help", keyboardOnly: true,
           title: function() { return qsTr("Keyboard Shortcuts") },
           shortcut: function() { return "F1" },
           run: function() { app.openShortcuts() } },
-        { id: "help.logFolder", section: "help",
+        { id: "help.logFolder", section: "help", noWasm: true,
           title: function() { return Platform.isMobile ? qsTr("Share Log File…") : qsTr("Open Log Folder") },
           run: function() { Backend.openLogFolder() } },
         { id: "help.licenses", section: "help", separatorBefore: true,
@@ -282,6 +292,12 @@ QtObject {
     function shownHere(d) {
         var showShortcuts = Platform.shortcutsVisible
         if (d.desktopOnly && Platform.isMobile)
+            return false
+        if (d.noWasm && Platform.isWasm)
+            return false
+        if (d.noPlayground && Platform.isWasmPlayground)
+            return false
+        if (d.playgroundOnly && !Platform.isWasmPlayground)
             return false
         if (d.keyboardOnly && !showShortcuts)
             return false

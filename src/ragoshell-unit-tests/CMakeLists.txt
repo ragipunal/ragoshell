@@ -63,6 +63,7 @@ set(SOURCES_TEST
     ${RAGO_SRC_DIR}/core/utils/AiQueryAssistant_test.cpp
     ${RAGO_SRC_DIR}/core/utils/AppLog_test.cpp
     ${RAGO_SRC_DIR}/core/utils/AppPaths_test.cpp
+    ${RAGO_SRC_DIR}/core/utils/WasmMode_test.cpp
     ${RAGO_SRC_DIR}/core/utils/BackgroundPolicy_test.cpp
     ${RAGO_SRC_DIR}/core/utils/LocalNetwork_test.cpp
     ${RAGO_SRC_DIR}/core/utils/Minisign_test.cpp

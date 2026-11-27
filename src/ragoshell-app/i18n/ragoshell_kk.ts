@@ -40,6 +40,10 @@
         <translation>Жаңартуды тексеру</translation>
     </message>
     <message>
+        <source>Download Desktop App</source>
+        <translation>Жұмыс үстелі қолданбасын жүктеп алу</translation>
+    </message>
+    <message>
         <source>Open-Source Licenses…</source>
         <translation>Ашық бастапқы код лицензиялары…</translation>
     </message>
@@ -447,6 +451,14 @@
         <translation>Қазір синхрондау</translation>
     </message>
     <message>
+        <source>Reset Demo Data…</source>
+        <translation>Демо деректерін қалпына келтіру…</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>Жұмыс үстелі қолданбасын жүктеп алу</translation>
+    </message>
+    <message>
         <source>Keyboard Shortcuts</source>
         <translation>Тіркесімдер</translation>
     </message>
@@ -516,6 +528,18 @@
     <message>
         <source>Monitor</source>
         <translation>Монитор</translation>
+    </message>
+    <message>
+        <source>Reset Demo</source>
+        <translation>Демоны қалпына келтіру</translation>
+    </message>
+    <message>
+        <source>Reset Demo Data</source>
+        <translation>Демо деректерін қалпына келтіру</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>Жұмыс үстелі қолданбасын жүктеп алу</translation>
     </message>
     <message>
         <source>Syncing…</source>
@@ -600,6 +624,10 @@
         <translation>Сүзгінің JSON жарамсыз: %1</translation>
     </message>
     <message>
+        <source>Collection export is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Cannot open output file for writing: %1</source>
         <translation>Шығыс файлын жазу үшін ашу мүмкін емес: %1</translation>
     </message>
@@ -610,6 +638,10 @@
     <message>
         <source>Cannot open input file for reading: %1</source>
         <translation>Кіріс файлын оқу үшін ашу мүмкін емес: %1</translation>
+    </message>
+    <message>
+        <source>Collection import is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Import cancelled.</source>
@@ -2872,6 +2904,18 @@
         <source>Close</source>
         <translation>Жабу</translation>
     </message>
+    <message>
+        <source>Reset Demo Data?</source>
+        <translation>Демо деректерін қалпына келтіру керек пе?</translation>
+    </message>
+    <message>
+        <source>Reset Demo Data</source>
+        <translation>Демо деректерін қалпына келтіру</translation>
+    </message>
+    <message>
+        <source>Restore the in-browser demo database to its initial sample collections and documents? Any changes made in this session will be discarded.</source>
+        <translation>Браузердегі демо дерекқорын бастапқы үлгі жинақтары мен құжаттарына қайтару керек пе? Осы сеанста жасалған өзгерістер жойылады.</translation>
+    </message>
 </context>
 <context>
     <name>MainWorkspaceArea</name>
@@ -2884,8 +2928,16 @@
         <translation>Ашық қойындылар жоқ</translation>
     </message>
     <message>
+        <source>Double-click any collection in Explorer to query, or open a new playground shell.</source>
+        <translation>Сұрау салу үшін Шолушыдағы кез келген жинақты екі рет басыңыз немесе жаңа playground қабығын ашыңыз.</translation>
+    </message>
+    <message>
         <source>Double-click any collection in Explorer to query, or open a new connection.</source>
         <translation>Сұрау жасау үшін Explorer-дегі кез келген коллекцияны екі рет шертіңіз немесе жаңа қосылым ашыңыз.</translation>
+    </message>
+    <message>
+        <source>Open Playground Shell</source>
+        <translation>Playground қабығын ашу</translation>
     </message>
     <message>
         <source>Welcome Guide</source>
@@ -4407,8 +4459,8 @@
         <translation>rs.status() орындау үшін қолжетімді replica set мүшесі табылмады.</translation>
     </message>
     <message>
-        <source>Shell tabs are not yet supported over gateway/demo connection channels.</source>
-        <translation>Shell қойындыларына шлюз/демо қосылым арналары арқылы әзірге қолдау көрсетілмейді.</translation>
+        <source>Direct replica-set member connections are not supported over gateway or demo channels.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Server is not connected</source>
@@ -4417,6 +4469,10 @@
     <message>
         <source>Shell</source>
         <translation>Shell</translation>
+    </message>
+    <message>
+        <source>Demo data reset to defaults.</source>
+        <translation>Демо деректері әдепкі қалпына келтірілді.</translation>
     </message>
     <message>
         <source>The network changed. Checking the open connections…</source>
@@ -4494,6 +4550,10 @@
         <translation>Сервер қосылмаған.</translation>
     </message>
     <message>
+        <source>Collection export is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Exporting %1.%2…</source>
         <translation>%1.%2 экспортталуда…</translation>
     </message>
@@ -4510,6 +4570,10 @@
             <numerusform>%1.%2 ішінен %n құжат экспортталды.</numerusform>
             <numerusform>%1.%2 ішінен %n құжат экспортталды.</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>Collection import is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Importing into %1.%2…</source>
@@ -6196,6 +6260,14 @@ Error:
         <translation>Жаңа қосылым (%1)</translation>
     </message>
     <message>
+        <source>Open Playground Shell</source>
+        <translation>Playground қабығын ашу</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>Жұмыс үстелі қолданбасын жүктеп алу</translation>
+    </message>
+    <message>
         <source>View Logs (%1)</source>
         <translation>Журналдарды қарау (%1)</translation>
     </message>
@@ -6216,8 +6288,16 @@ Error:
         <translation>БАСТАУ</translation>
     </message>
     <message>
+        <source>✦ In-Browser MongoDB Playground</source>
+        <translation>✦ Браузердегі MongoDB Playground</translation>
+    </message>
+    <message>
         <source>✦ Connect to MongoDB</source>
         <translation>✦ MongoDB-ге қосылу</translation>
+    </message>
+    <message>
+        <source>Explore the sample &apos;catalog&apos; database directly in browser memory — no server setup required. Use &apos;Reset Demo&apos; in the top bar anytime, or download the desktop app to connect to your own MongoDB servers.</source>
+        <translation>Үлгі &apos;catalog&apos; дерекқорын серверді баптамай-ақ тікелей браузер жадында зерттеңіз. Кез келген уақытта жоғарғы жолақтағы &apos;Демоны қалпына келтіру&apos; түймесін пайдаланыңыз немесе өз MongoDB серверлеріңізге қосылу үшін жұмыс үстелі қолданбасын жүктеп алыңыз.</translation>
     </message>
     <message>
         <source>Click &apos;New Connection&apos; in the top bar or press Ctrl+N to configure Direct Connections, Replica Sets, SSH Tunnels, and TLS/SSL certificates.</source>

@@ -4,14 +4,18 @@
 #include <chrono>
 #include <exception>
 
+#include <bsoncxx/builder/basic/array.hpp>
 #include <bsoncxx/builder/basic/document.hpp>
 #include <bsoncxx/builder/basic/kvp.hpp>
+#include <bsoncxx/json.hpp>
 #include <mongocxx/client.hpp>
 #include <mongocxx/options/aggregate.hpp>
 #include <mongocxx/pipeline.hpp>
 #include <mongocxx/uri.hpp>
 
 #include "ragoshell/core/mongodb/MongoUriUtils.h"
+#include "ragoshell/core/settings/ConnectionSettings.h"
+#include "ragoshell/core/transport/InMemoryDemoTransport.h"
 #include "ragoshell/core/utils/MongoJsonUtils.h"
 
 namespace RagoShell
@@ -134,6 +138,51 @@ namespace RagoShell
         const std::vector<bsoncxx::document::value> &stages, int limit, int maxTimeMs)
     {
         PreviewResult result;
+        if (connection.hasTransport()) {
+#if defined(Q_OS_WASM)
+            if (connection.transportKind() == "memory") {
+                InMemoryDemoTransport demo(InMemoryDemoTransport::sharedStore());
+                if (demo.connect(QStringLiteral("{}")).ok) {
+                    try {
+                        namespace basic = bsoncxx::builder::basic;
+                        basic::array pipe;
+                        for (const auto &stage : stages)
+                            pipe.append(stage.view());
+                        if (limit > 0)
+                            pipe.append(basic::make_document(basic::kvp("$limit", limit)));
+                        const auto cmd = basic::make_document(
+                            basic::kvp("aggregate", collection.toStdString()),
+                            basic::kvp("pipeline", pipe.extract()),
+                            basic::kvp("cursor", basic::make_document()),
+                            basic::kvp("maxTimeMS", std::max<std::int32_t>(1, maxTimeMs)));
+                        const auto res = demo.runCommand(
+                            database,
+                            QString::fromStdString(
+                                bsoncxx::to_json(cmd.view(), bsoncxx::ExtendedJsonMode::k_canonical)));
+                        if (!res.ok) {
+                            result.error = res.error;
+                            return result;
+                        }
+                        const auto doc = bsoncxx::from_json(res.ejson.toStdString());
+                        if (const auto batch = doc.view()["cursor"]["firstBatch"];
+                            batch && batch.type() == bsoncxx::type::k_array) {
+                            for (const auto &el : batch.get_array().value) {
+                                if (el.type() == bsoncxx::type::k_document)
+                                    result.documents.emplace_back(el.get_document().value);
+                            }
+                        }
+                        result.ok = true;
+                        return result;
+                    } catch (const std::exception &ex) {
+                        result.error = QString::fromUtf8(ex.what());
+                        return result;
+                    }
+                }
+            }
+#endif
+            result.error = QStringLiteral("Live preview is not available over gateway channels.");
+            return result;
+        }
         try {
             mongocxx::client client{mongocxx::uri{buildMongoUri(connection)},
                                     buildMongoClientOptions(connection)};

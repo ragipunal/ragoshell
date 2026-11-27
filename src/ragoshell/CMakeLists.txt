@@ -8,6 +8,8 @@ set(CORE_SOURCES
     core/utils/KeyLabel.cpp
     core/utils/StdUtils.cpp
     core/utils/AppPaths.cpp
+    core/utils/WasmMode.cpp
+    core/utils/WasmMode.h
     core/utils/WasmPersist.cpp
     core/utils/HostKeyPrompter.cpp
     core/utils/AppLog.cpp

@@ -22,7 +22,7 @@ Item {
     // ---- Cross-Platform Global Shortcuts (StandardKey + OS-aware) -----------
     // Backend.keySequences de-duplicates: a key listed twice never fires.
     Shortcut {
-        enabled: shortcutsHost.wsEnabled
+        enabled: shortcutsHost.wsEnabled && !Platform.isWasmPlayground
         sequences: Backend.keySequences(StandardKey.New, ["Ctrl+N"])
         onActivated: shortcutsHost.app.openNewConnection()
     }
@@ -47,7 +47,7 @@ Item {
         onActivated: shortcutsHost.app.exportCurrentQuery()
     }
     Shortcut {
-        enabled: shortcutsHost.wsEnabled
+        enabled: shortcutsHost.wsEnabled && !Platform.isWasmPlayground
         sequence: "Ctrl+Shift+G"
         onActivated: shortcutsHost.app.openAiAssistantForCurrent()
     }
@@ -62,6 +62,7 @@ Item {
         onActivated: shortcutsHost.app.triggerSaveCurrentScript(true)
     }
     Shortcut {
+        enabled: !Platform.isWasm
         sequences: Backend.keySequences(StandardKey.Quit, ["Ctrl+Q"])
         onActivated: shortcutsHost.app.close()
     }
@@ -96,7 +97,7 @@ Item {
         onActivated: shortcutsHost.app.reopenWelcome()
     }
     Shortcut {
-        enabled: shortcutsHost.wsEnabled
+        enabled: shortcutsHost.wsEnabled && !Platform.isWasmPlayground
         sequence: "Ctrl+Shift+M"
         onActivated: shortcutsHost.app.openMonitorForActiveServer()
     }
@@ -166,7 +167,7 @@ Item {
         onActivated: shortcutsHost.app.toggleFullScreen()
     }
     Shortcut {
-        enabled: shortcutsHost.wsEnabled
+        enabled: shortcutsHost.wsEnabled && !Platform.isWasm
         sequence: "Ctrl+M"
         onActivated: shortcutsHost.app.showMinimized()
     }

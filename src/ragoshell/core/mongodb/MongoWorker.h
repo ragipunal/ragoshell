@@ -157,6 +157,7 @@ namespace RagoShell
         /// Ownership stays with the caller; when the worker creates one from
         /// ConnectionSettings::transportKind it goes into _ownedTransport.
         void setTransport(IMongoTransport *transport);
+        IMongoTransport *ensureTransportConnected(std::string *outError = nullptr);
 
         /**
         *@brief Builds the mongocxx connection URI from current connection settings.
@@ -185,12 +186,21 @@ namespace RagoShell
         */
         void pingDatabase(mongocxx::client *client) const;
         ScriptEngine *ensureScriptEngine();
+        void applyPendingPortUpdate();
 
         QThread *_thread;
         QMutex _firstConnectionMutex;
         mutable QMutex _engineMutex;
 
+        // Destroyed AFTER _scriptEngine (C++ reverse member destruction order) so
+        // ShellHost::~ShellHost -> CursorState::closeRemote never touches a freed
+        // _ownedTransport (W4 security review C2).
+        ConnectionSettings *_connSettings;
+        std::unique_ptr<mongocxx::client> _client;
+        std::unique_ptr<IMongoTransport> _ownedTransport;
+        IMongoTransport *_transport = nullptr;  // non-owning, may be null
         std::unique_ptr<ScriptEngine> _scriptEngine;
+
         std::atomic<uint64_t> _latestOpGen { 0 };
         std::atomic<uint64_t> _cancelledOpGen { 0 };
 
@@ -200,12 +210,9 @@ namespace RagoShell
         double _mongoTimeoutSec;
         int _shellTimeoutSec;
         QAtomicInteger<int> _isQuiting;
-
-        std::unique_ptr<mongocxx::client> _client;
-        IMongoTransport *_transport = nullptr;  // non-owning, may be null
-        std::unique_ptr<IMongoTransport> _ownedTransport;
-
-        ConnectionSettings *_connSettings;
+        int _inFlightOps = 0;
+        bool _scriptRunning = false;
+        int _pendingPort = 0;
 
         // Collection of created databases.
         // Starting from 3.0, MongoDB drops empty databases.

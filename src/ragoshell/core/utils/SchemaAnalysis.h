@@ -14,6 +14,7 @@
 namespace RagoShell
 {
     class ConnectionSettings;
+    class IMongoTransport;
 
     /**
      * @brief Statistics for one field path across the sampled documents.
@@ -127,9 +128,16 @@ namespace RagoShell
                                        const QString &database, const QString &collection,
                                        int sampleSize, int maxTimeMs,
                                        UUIDEncoding uuidEncoding, SupportedTimes timeZone);
+        SchemaResult analyzeCollection(IMongoTransport &transport,
+                                       const QString &database, const QString &collection,
+                                       int sampleSize, int maxTimeMs,
+                                       UUIDEncoding uuidEncoding = DefaultEncoding,
+                                       SupportedTimes timeZone = Utc);
 
         /// Estimated document count (collection metadata, cheap); -1 on error.
         qint64 estimatedDocumentCount(const ConnectionSettings &connection, const QString &database,
+                                      const QString &collection, int maxTimeMs);
+        qint64 estimatedDocumentCount(IMongoTransport &transport, const QString &database,
                                       const QString &collection, int maxTimeMs);
 
         struct CollectionEntry
@@ -150,6 +158,8 @@ namespace RagoShell
         /// (listCollections plus one count per collection). Blocking: call
         /// from a worker thread.
         CollectionList listCollections(const ConnectionSettings &connection, const QString &database,
+                                       int maxTimeMs);
+        CollectionList listCollections(IMongoTransport &transport, const QString &database,
                                        int maxTimeMs);
     }
 }

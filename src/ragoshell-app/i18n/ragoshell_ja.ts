@@ -40,6 +40,10 @@
         <translation>アップデートを確認</translation>
     </message>
     <message>
+        <source>Download Desktop App</source>
+        <translation>デスクトップ版をダウンロード</translation>
+    </message>
+    <message>
         <source>Open-Source Licenses…</source>
         <translation>オープンソースライセンス…</translation>
     </message>
@@ -446,6 +450,14 @@
         <translation>今すぐ同期</translation>
     </message>
     <message>
+        <source>Reset Demo Data…</source>
+        <translation>デモデータをリセット…</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>デスクトップ版をダウンロード</translation>
+    </message>
+    <message>
         <source>Keyboard Shortcuts</source>
         <translation>キーボードショートカット</translation>
     </message>
@@ -515,6 +527,18 @@
     <message>
         <source>Monitor</source>
         <translation>モニター</translation>
+    </message>
+    <message>
+        <source>Reset Demo</source>
+        <translation>デモをリセット</translation>
+    </message>
+    <message>
+        <source>Reset Demo Data</source>
+        <translation>デモデータをリセット</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>デスクトップ版をダウンロード</translation>
     </message>
     <message>
         <source>Syncing…</source>
@@ -599,6 +623,10 @@
         <translation>フィルターの JSON が無効です: %1</translation>
     </message>
     <message>
+        <source>Collection export is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Cannot open output file for writing: %1</source>
         <translation>書き込み用の出力ファイルを開けません: %1</translation>
     </message>
@@ -609,6 +637,10 @@
     <message>
         <source>Cannot open input file for reading: %1</source>
         <translation>読み取り用の入力ファイルを開けません: %1</translation>
+    </message>
+    <message>
+        <source>Collection import is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Import cancelled.</source>
@@ -2868,6 +2900,18 @@
         <source>Close</source>
         <translation>閉じる</translation>
     </message>
+    <message>
+        <source>Reset Demo Data?</source>
+        <translation>デモデータをリセットしますか？</translation>
+    </message>
+    <message>
+        <source>Reset Demo Data</source>
+        <translation>デモデータをリセット</translation>
+    </message>
+    <message>
+        <source>Restore the in-browser demo database to its initial sample collections and documents? Any changes made in this session will be discarded.</source>
+        <translation>ブラウザ内のデモデータベースを初期のサンプルコレクションとドキュメントに戻しますか？このセッションで行った変更は破棄されます。</translation>
+    </message>
 </context>
 <context>
     <name>MainWorkspaceArea</name>
@@ -2880,8 +2924,16 @@
         <translation>開いているタブはありません</translation>
     </message>
     <message>
+        <source>Double-click any collection in Explorer to query, or open a new playground shell.</source>
+        <translation>エクスプローラー内のコレクションをダブルクリックしてクエリを実行するか、新しいプレイグラウンド シェルを開いてください。</translation>
+    </message>
+    <message>
         <source>Double-click any collection in Explorer to query, or open a new connection.</source>
         <translation>エクスプローラーでコレクションをダブルクリックしてクエリを実行するか、新しい接続を開いてください。</translation>
+    </message>
+    <message>
+        <source>Open Playground Shell</source>
+        <translation>プレイグラウンド シェルを開く</translation>
     </message>
     <message>
         <source>Welcome Guide</source>
@@ -4400,8 +4452,8 @@
         <translation>rs.status() を実行できる、到達可能なレプリカセットメンバーが見つかりません。</translation>
     </message>
     <message>
-        <source>Shell tabs are not yet supported over gateway/demo connection channels.</source>
-        <translation>ゲートウェイ/デモ接続チャネルでは、シェルタブはまだサポートされていません。</translation>
+        <source>Direct replica-set member connections are not supported over gateway or demo channels.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Server is not connected</source>
@@ -4410,6 +4462,10 @@
     <message>
         <source>Shell</source>
         <translation>シェル</translation>
+    </message>
+    <message>
+        <source>Demo data reset to defaults.</source>
+        <translation>デモデータを初期状態にリセットしました。</translation>
     </message>
     <message>
         <source>The network changed. Checking the open connections…</source>
@@ -4486,6 +4542,10 @@
         <translation>サーバーに接続されていません。</translation>
     </message>
     <message>
+        <source>Collection export is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Exporting %1.%2…</source>
         <translation>%1.%2 をエクスポートしています…</translation>
     </message>
@@ -4500,6 +4560,10 @@
         <translation>
             <numerusform>%1.%2 から %n 件のドキュメントをエクスポートしました。</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>Collection import is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Importing into %1.%2…</source>
@@ -6178,6 +6242,14 @@ Error:
         <translation>新しい接続 (%1)</translation>
     </message>
     <message>
+        <source>Open Playground Shell</source>
+        <translation>プレイグラウンド シェルを開く</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>デスクトップ版をダウンロード</translation>
+    </message>
+    <message>
         <source>View Logs (%1)</source>
         <translation>ログを表示 (%1)</translation>
     </message>
@@ -6198,8 +6270,16 @@ Error:
         <translation>はじめに</translation>
     </message>
     <message>
+        <source>✦ In-Browser MongoDB Playground</source>
+        <translation>✦ ブラウザ内 MongoDB プレイグラウンド</translation>
+    </message>
+    <message>
         <source>✦ Connect to MongoDB</source>
         <translation>✦ MongoDB に接続</translation>
+    </message>
+    <message>
+        <source>Explore the sample &apos;catalog&apos; database directly in browser memory — no server setup required. Use &apos;Reset Demo&apos; in the top bar anytime, or download the desktop app to connect to your own MongoDB servers.</source>
+        <translation>サーバー構築不要で、サンプルの &apos;catalog&apos; データベースをブラウザメモリ上で直接試せます。上部の「デモをリセット」でいつでも初期化でき、デスクトップ版をダウンロードすればご自身の MongoDB サーバーに接続できます。</translation>
     </message>
     <message>
         <source>Click &apos;New Connection&apos; in the top bar or press Ctrl+N to configure Direct Connections, Replica Sets, SSH Tunnels, and TLS/SSL certificates.</source>

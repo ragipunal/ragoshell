@@ -15,6 +15,8 @@
 
 namespace RagoShell
 {
+    class IMongoTransport;
+
     /// What a backend needs to connect: filled by ScriptEngine from ConnectionSettings.
     struct ShellConnectOptions
     {
@@ -27,6 +29,11 @@ namespace RagoShell
         int operationTimeoutMs = 0;
         bool directConnection = false;
         QString startupScript;
+
+        /// Non-owning transport seam (WASM demo or WebSocket gateway) bound to the backend thread.
+        /// When non-null, ShellHost executes commands over this transport instead of mongocxx::client.
+        IMongoTransport *transport = nullptr;
+        QString transportAddress;
 
         bool tls = false;
         bool tlsAllowInvalidCertificates = false;

@@ -10,6 +10,8 @@
 #include <algorithm>
 #include <exception>
 
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QRegularExpression>
 #include <QThread>
 
@@ -82,20 +84,29 @@ namespace RagoShell
             }
             return false;
         }
+
+        std::string redactUriUserinfo(const QString &raw)
+        {
+            QString msg = raw;
+            static const QRegularExpression uriUserinfo(
+                QStringLiteral("mongodb(\\+srv)?://[^/\\s@]+@"));
+            msg.replace(uriUserinfo, QStringLiteral("mongodb\\1://***@"));
+            return msg.toStdString();
+        }
     }
 
     MongoWorker::MongoWorker(ConnectionSettings *connection, const QString &startupScript, int batchSize,
                              double mongoTimeoutSec, int shellTimeoutSec, QObject *parent) 
         : QObject(parent),
+        _connSettings(connection),
+        _client(nullptr),
         _scriptEngine(nullptr),
         _startupScript(startupScript),
         _batchSize(batchSize),
         _timerId(-1),
         _mongoTimeoutSec(mongoTimeoutSec),
         _shellTimeoutSec(shellTimeoutSec),
-        _isQuiting(0),
-        _client(nullptr),
-        _connSettings(connection)
+        _isQuiting(0)
     {
         // Whitespace removed from the start and the end of host string
         _connSettings->setServerHost(QString::fromStdString(_connSettings->serverHost()).trimmed().toStdString());
@@ -124,12 +135,19 @@ namespace RagoShell
 
     void MongoWorker::keepAlive()
     {
+        // Never re-enter ScriptEngine or WebSocketGatewayTransport while an operation
+        // is suspended inside a nested QEventLoop on this worker thread (W4 review H1).
+        if (_inFlightOps > 0 || _scriptRunning)
+            return;
+
         try {
             if (_client)
                 pingDatabase(_client.get());
 
             if (_scriptEngine)
                 _scriptEngine->ping();
+            else if (_transport)
+                (void)_transport->ping();
 
         } 
         catch(std::exception &ex) {
@@ -150,6 +168,11 @@ namespace RagoShell
 
     ScriptEngine *MongoWorker::ensureScriptEngine()
     {
+        IMongoTransport *transport = _transport;
+        std::string transportErr;
+        if (_connSettings->hasTransport() && !transport)
+            transport = ensureTransportConnected(&transportErr);
+
         ScriptEngine *engine = nullptr;
         {
             QMutexLocker lock(&_engineMutex);
@@ -159,6 +182,8 @@ namespace RagoShell
                 eng->setStartupScript(_startupScript);
                 _scriptEngine = std::move(eng);
             }
+            if (_connSettings->hasTransport() || transport != nullptr)
+                _scriptEngine->setTransport(transport, transportErr);
             engine = _scriptEngine.get();
         }
         if (_timerId == -1) {
@@ -198,7 +223,14 @@ namespace RagoShell
         if (_timerId != -1)
             killTimer(_timerId);
 
+        // Tear down ScriptEngine (and any open ShellHost cursors) BEFORE
+        // destroying _ownedTransport, _client, or _connSettings (W4 review C2).
+        _scriptEngine.reset();
+        _transport = nullptr;
+        _ownedTransport.reset();
+        _client.reset();
         delete _connSettings;
+        _connSettings = nullptr;
 
         // QThread "_thread" and MongoWorker itself will be deleted later
         // (see MongoWorker() constructor)
@@ -216,6 +248,20 @@ namespace RagoShell
         _thread->quit();
     }
 
+    void MongoWorker::applyPendingPortUpdate()
+    {
+        if (_inFlightOps > 0 || _scriptRunning || _pendingPort <= 0 || !_connSettings)
+            return;
+        const int newPort = _pendingPort;
+        _pendingPort = 0;
+        if (_connSettings->serverPort() == newPort)
+            return;
+        _connSettings->setServerPort(newPort);
+        _client.reset();
+        QMutexLocker lock(&_engineMutex);
+        _scriptEngine.reset();
+    }
+
     void MongoWorker::updateLocalServerPort(int newPort)
     {
         if (_isQuiting || newPort <= 0)
@@ -224,12 +270,8 @@ namespace RagoShell
         QMetaObject::invokeMethod(this, [this, newPort]() {
             if (_isQuiting || !_connSettings)
                 return;
-            if (_connSettings->serverPort() == newPort)
-                return;
-            _connSettings->setServerPort(newPort);
-            _client.reset();
-            QMutexLocker lock(&_engineMutex);
-            _scriptEngine.reset();
+            _pendingPort = newPort;
+            applyPendingPortUpdate();
         }, Qt::QueuedConnection);
     }
 
@@ -246,6 +288,13 @@ namespace RagoShell
      */
     bool MongoWorker::handle(EstablishConnectionRequest *event)
     {
+        struct InFlightGuard
+        {
+            MongoWorker *self;
+            explicit InFlightGuard(MongoWorker *w) : self(w) { ++self->_inFlightOps; }
+            ~InFlightGuard() { --self->_inFlightOps; self->applyPendingPortUpdate(); }
+        } opGuard(this);
+
         QMutexLocker lock(&_firstConnectionMutex);
 
         if (event->connectionType == ConnectionSecondary) {
@@ -269,97 +318,20 @@ namespace RagoShell
             return true;
         }
 
-        // Create the transport implied by the connection's transportKind
-        // (docs/TransportSeam.md §4). "memory" is the Mod A demo catalog;
-        // "agent"/"ws://…"/"wss://…" are the Mod C/B gateway path
-        // (docs/LocalAgent.md §3).
-        if (!_transport && _connSettings->hasTransport()) {
-            const std::string kind = _connSettings->transportKind();
-            const QString token =
-                QString::fromStdString(_connSettings->transportToken());
-            if (kind == "memory") {
-#if defined(Q_OS_WASM)
-                _ownedTransport = std::make_unique<InMemoryDemoTransport>();
-#else
-                // The demo catalog must never masquerade as a real server:
-                // a synced/imported "memory" record on desktop would serve
-                // canned data under the stored name (8.6 review M3).
-                _ownedTransport = nullptr;
-#endif
-            } else if (kind == "agent" || kind == "hosted"
-                       || kind.rfind("ws://", 0) == 0
-                       || kind.rfind("wss://", 0) == 0) {
-                // "hosted" is the named Pro target: wss:// on the portal
-                // domain, hello token = entitlement+jwt injected at
-                // connect time (docs/HostedGateway.md §5).
-                const QString url =
-                    kind == "agent"
-                        ? QStringLiteral("ws://127.0.0.1:%1")
-                              .arg(GatewayProtocol::kDefaultAgentPort)
-                        : kind == "hosted"
-                            ? CloudClient::deriveBridgeUrlFromPortal(
-                                  QString::fromUtf8(BrandInfo::portalUrl))
-                            : QString::fromStdString(kind);
-                // Cleartext ws:// would carry the Mongo URI and pairing token
-                // readable on the wire — only loopback is allowed; remote
-                // gateways must go over wss://.
-                const QString h = QUrl(url).host().toLower();
-                const bool cleartext = url.startsWith(QStringLiteral("ws://"));
-                const bool loopback = h == QLatin1String("localhost")
-                                      || h == QLatin1String("127.0.0.1")
-                                      || h == QLatin1String("::1")
-                                      || h == QLatin1String("[::1]");
-                if (cleartext && !loopback) {
-                    reply(event->sender(), new EstablishConnectionResponse(this,
-                          EventError("Refusing cleartext ws:// gateway to a "
-                                     "non-loopback host; use wss://",
-                                     EventError::ErrorCode::Unknown),
-                          event->connectionType, ConnectionInfo(event->uuid),
-                          ReplicaSet(), EstablishConnectionResponse::MongoConnection));
-                    return false;
-                }
-                // TLS file options (custom CA / X.509 client cert / CRL)
-                // cannot cross the wire protocol — the connect frame only
-                // carries the URI. Fail loudly instead of silently ignoring
-                // them on the gateway (8.6 review L5).
-                if (const auto *ssl = _connSettings->sslSettings();
-                    ssl && (!ssl->caFile().empty() || !ssl->pemKeyFile().empty()
-                            || !ssl->pemPassPhrase().empty()
-                            || !ssl->crlFile().empty())) {
-                    reply(event->sender(), new EstablishConnectionResponse(this,
-                          EventError("Custom CA / client-certificate / CRL "
-                                     "TLS options are not supported over "
-                                     "gateway channels (agent/self-hosted/hosted)",
-                                     EventError::ErrorCode::Unknown),
-                          event->connectionType, ConnectionInfo(event->uuid),
-                          ReplicaSet(), EstablishConnectionResponse::MongoConnection));
-                    return false;
-                }
-                _ownedTransport =
-                    std::make_unique<WebSocketGatewayTransport>(url, token);
-            }
-            if (!_ownedTransport) {
+        // Transport mode (WASM demo / gateway): connect through IMongoTransport
+        // instead of building a mongocxx client — docs/TransportSeam.md §4,
+        // docs/TransportShell.md §2.1.
+        if (_connSettings->hasTransport() || _transport) {
+            std::string transportErr;
+            if (!ensureTransportConnected(&transportErr)) {
                 reply(event->sender(), new EstablishConnectionResponse(this,
-                      EventError("Unsupported transportKind '" +
-                                 _connSettings->transportKind() + "'",
-                                 EventError::ErrorCode::Unknown),
+                      EventError(transportErr, EventError::ErrorCode::Unknown),
                       event->connectionType, ConnectionInfo(event->uuid), ReplicaSet(),
                       EstablishConnectionResponse::MongoConnection));
+                sendLog(this, LogEvent::RBM_ERROR, transportErr);
                 return false;
             }
-            _transport = _ownedTransport.get();
-        }
-
-        // Transport mode (WASM demo / gateway): connect through IMongoTransport
-        // instead of building a mongocxx client — docs/TransportSeam.md §4.
-        if (_transport) {
             try {
-                const QString payload = QStringLiteral("{\"uri\":\"%1\"}")
-                    .arg(QString::fromStdString(buildUri()));
-                const auto r = _transport->connect(payload);
-                if (!r.ok)
-                    throw std::runtime_error(r.error.toStdString());
-
                 std::unique_ptr<MongoClient> client(getClient());
                 std::vector<std::string> const dbNames = getDatabaseNamesSafe(event);
                 const std::string verStr = client->dbVersionStr();
@@ -370,18 +342,12 @@ namespace RagoShell
                       event->connectionType, ReplicaSet()));
                 return true;
             } catch (const std::exception &ex) {
-                // Driver/transport errors may echo the submitted URI —
-                // strip embedded credentials before the text reaches the UI
-                // and the on-disk log (8.6 review L7).
-                QString msg = QString::fromUtf8(ex.what());
-                static const QRegularExpression uriUserinfo(
-                    QStringLiteral("mongodb(\\+srv)?://[^/\\s@]+@"));
-                msg.replace(uriUserinfo, QStringLiteral("mongodb\\1://***@"));
+                const std::string safeMsg = redactUriUserinfo(QString::fromUtf8(ex.what()));
                 reply(event->sender(), new EstablishConnectionResponse(this,
-                      EventError(msg.toStdString(), EventError::ErrorCode::Unknown),
+                      EventError(safeMsg, EventError::ErrorCode::Unknown),
                       event->connectionType, ConnectionInfo(event->uuid), ReplicaSet(),
                       EstablishConnectionResponse::MongoConnection));
-                sendLog(this, LogEvent::RBM_ERROR, ex.what());
+                sendLog(this, LogEvent::RBM_ERROR, safeMsg);
                 return false;
             }
         }
@@ -602,6 +568,13 @@ namespace RagoShell
 
     std::pair<mongocxx::client*, std::string> MongoWorker::getConnection(bool mayReturnNull /* = false */)
     {
+        if (_connSettings && _connSettings->hasTransport()) {
+            const std::string msg = "Direct driver connection refused on transport-backed channel.";
+            if (mayReturnNull)
+                return { nullptr, msg };
+            throw std::runtime_error(msg);
+        }
+
         if (_client)
             return { _client.get(), "" };
 
@@ -631,11 +604,106 @@ namespace RagoShell
         return { _client.get(), "" };
     }
 
+    IMongoTransport *MongoWorker::ensureTransportConnected(std::string *outError)
+    {
+        if (_transport)
+            return _transport;
+        if (!_connSettings || !_connSettings->hasTransport())
+            return nullptr;
+
+        const std::string kind = _connSettings->transportKind();
+        const QString token = QString::fromStdString(_connSettings->transportToken());
+        std::unique_ptr<IMongoTransport> created;
+
+        if (kind == "memory") {
+#if defined(Q_OS_WASM)
+            created = std::make_unique<InMemoryDemoTransport>(
+                InMemoryDemoTransport::sharedStore());
+#else
+            // The demo catalog must never masquerade as a real server:
+            // a synced/imported "memory" record on desktop would serve
+            // canned data under the stored name (8.6 review M3).
+            created = nullptr;
+#endif
+        } else if (kind == "agent" || kind == "hosted"
+                   || kind.rfind("ws://", 0) == 0
+                   || kind.rfind("wss://", 0) == 0) {
+            const QString url =
+                kind == "agent"
+                    ? QStringLiteral("ws://127.0.0.1:%1")
+                          .arg(GatewayProtocol::kDefaultAgentPort)
+                    : kind == "hosted"
+                        ? CloudClient::deriveBridgeUrlFromPortal(
+                              QString::fromUtf8(BrandInfo::portalUrl))
+                        : QString::fromStdString(kind);
+            const QString h = QUrl(url).host().toLower();
+            const bool cleartext = url.startsWith(QStringLiteral("ws://"));
+            const bool loopback = h == QLatin1String("localhost")
+                                  || h == QLatin1String("127.0.0.1")
+                                  || h == QLatin1String("::1")
+                                  || h == QLatin1String("[::1]");
+            if (cleartext && !loopback) {
+                if (outError) {
+                    *outError = "Refusing cleartext ws:// gateway to a "
+                                "non-loopback host; use wss://";
+                }
+                return nullptr;
+            }
+            if (const auto *ssl = _connSettings->sslSettings();
+                ssl && (!ssl->caFile().empty() || !ssl->pemKeyFile().empty()
+                        || !ssl->pemPassPhrase().empty()
+                        || !ssl->crlFile().empty())) {
+                if (outError) {
+                    *outError = "Custom CA / client-certificate / CRL "
+                                "TLS options are not supported over "
+                                "gateway channels (agent/self-hosted/hosted)";
+                }
+                return nullptr;
+            }
+            created = std::make_unique<WebSocketGatewayTransport>(url, token);
+        }
+
+        if (!created) {
+            if (outError)
+                *outError = "Unsupported transportKind '" + kind + "'";
+            return nullptr;
+        }
+
+        try {
+            const QString payload = kind == "memory"
+                ? QStringLiteral("{}")
+                : QString::fromUtf8(QJsonDocument(QJsonObject{
+                      {QStringLiteral("uri"), QString::fromStdString(buildUri())}
+                  }).toJson(QJsonDocument::Compact));
+            const auto r = created->connect(payload);
+            if (!r.ok) {
+                if (outError)
+                    *outError = redactUriUserinfo(r.error);
+                return nullptr;
+            }
+            _ownedTransport = std::move(created);
+            _transport = _ownedTransport.get();
+            return _transport;
+        } catch (const std::exception &ex) {
+            if (outError)
+                *outError = redactUriUserinfo(QString::fromUtf8(ex.what()));
+            return nullptr;
+        }
+    }
+
     MongoClient *MongoWorker::getClient()
     {
         // Transport mode (WASM demo/gateway): commands travel as EJSON through
-        // IMongoTransport instead of the driver's socket path.
-        // docs/TransportSeam.md §4.
+        // IMongoTransport instead of the driver's socket path. Fail closed if
+        // transport initialization fails so secondary shell workers never
+        // bypass the configured channel (docs/TransportShell.md §2.1, T1).
+        if (_connSettings && _connSettings->hasTransport()) {
+            std::string err;
+            IMongoTransport *t = ensureTransportConnected(&err);
+            if (!t)
+                throw std::runtime_error(err.empty() ? "Transport is not connected." : err);
+            return new MongoClient(t);
+        }
         if (_transport)
             return new MongoClient(_transport);
         return new MongoClient(getConnection().first);

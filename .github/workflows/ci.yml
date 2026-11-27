@@ -26,12 +26,21 @@ on:
         required: false
         type: boolean
         default: true
+      publish_wasm_demo:
+        description: 'Sign, attach to release & sync ONLY the WebAssembly Playground (no desktop rebuild)'
+        required: false
+        type: boolean
+        default: false
+      wasm_demo_target:
+        description: 'Target server environment for publish_wasm_demo (production or staging)'
+        required: false
+        default: 'production'
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.publish_wasm_demo && 'wasm-demo' || 'default' }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' && github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/v') }}
 
 env:
@@ -77,6 +86,9 @@ jobs:
       - name: Run SBOM & license bundle test suite
         run: node ci/test-sbom-and-licenses.mjs
 
+      - name: Run WASM demo bundle & CSP test suite
+        run: node ci/test-wasm-bundle.mjs
+
       - name: Cache OSV-Scanner binary
         uses: actions/cache@v6
         with:
@@ -110,6 +122,7 @@ jobs:
     name: Linux x64 (Build, Tests & QML)
     runs-on: ubuntu-latest
     needs: [i18n]
+    if: github.event_name != 'workflow_dispatch' || inputs.publish_wasm_demo != true || inputs.publish_release == true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -190,6 +203,7 @@ jobs:
     name: macOS arm64 (Build, Tests & QML)
     runs-on: macos-latest
     needs: [i18n]
+    if: github.event_name != 'workflow_dispatch' || inputs.publish_wasm_demo != true || inputs.publish_release == true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -262,6 +276,7 @@ jobs:
     name: Windows x64 (Build, Tests & QML)
     runs-on: windows-latest
     needs: [i18n]
+    if: github.event_name != 'workflow_dispatch' || inputs.publish_wasm_demo != true || inputs.publish_release == true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -404,6 +419,7 @@ jobs:
     name: Android arm64 APK & AAB
     runs-on: ubuntu-latest
     needs: [i18n]
+    if: github.event_name != 'workflow_dispatch' || inputs.publish_wasm_demo != true || inputs.publish_release == true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -509,10 +525,100 @@ jobs:
             dist/ragoshell-*-android-arm64.aab
           if-no-files-found: error
 
+  wasm:
+    name: WebAssembly Playground (wasm-multi)
+    runs-on: ubuntu-latest
+    needs: [i18n]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential ninja-build cmake pkg-config autoconf automake libtool \
+            brotli perl python3 curl ca-certificates unzip zip
+
+      - name: Install Emscripten SDK
+        uses: emscripten-core/setup-emsdk@v16
+        with:
+          version: '5.0.5'
+          actions-cache-folder: emsdk-cache
+
+      - name: Install Qt 6 Host
+        id: qt-host
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
+          host: linux
+          target: desktop
+          dir: ${{ runner.temp }}/QtHost
+          set-env: false
+          cache: true
+          cache-key-prefix: qt-host-v2-${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
+
+      - name: Install Qt 6 WebAssembly (wasm_multithread)
+        id: qt-wasm
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
+          host: all_os
+          target: wasm
+          arch: wasm_multithread
+          modules: 'qt5compat qtimageformats qtwebsockets'
+          dir: ${{ runner.temp }}/QtWasm
+          set-env: false
+          cache: true
+          cache-key-prefix: qt-wasm-v1-${{ inputs.qt_version || vars.QT_VERSION || env.QT_DEFAULT_VERSION }}
+
+      - name: Setup vcpkg binary cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/vcpkg/archives
+          key: vcpkg-wasm-multi-${{ hashFiles('vcpkg.json', 'vcpkg-overlays/**') }}
+          restore-keys: |
+            vcpkg-wasm-multi-
+
+      - name: Checkout & bootstrap vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git "$HOME/vcpkg"
+          "$HOME/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
+          echo "VCPKG_ROOT=$HOME/vcpkg" >> "$GITHUB_ENV"
+
+      - name: Build & Package WebAssembly Playground (ci/build-wasm.sh)
+        env:
+          Qt6_DIR: ${{ steps.qt-host.outputs.qt-root-dir }}
+          QT_WASM_PATH: ${{ steps.qt-wasm.outputs.qt-root-dir }}
+        run: |
+          chmod +x ci/build-wasm.sh
+          wasm_args=()
+          if [ -n "${CI_BUILD_VERSION:-}" ]; then
+            wasm_args+=(-- "$CI_BUILD_VERSION")
+          fi
+          ./ci/build-wasm.sh "${wasm_args[@]}"
+
+      - name: Upload WebAssembly Playground Bundle
+        uses: actions/upload-artifact@v7
+        if: success()
+        with:
+          name: wasm-demo-bundle
+          path: |
+            dist/wasm/*-wasm-demo.tar.gz
+            dist/wasm/*-wasm-demo.tar.gz.sha256
+          if-no-files-found: error
+
   release-dry-run:
     name: Release Manifest & Minisign (Dry Run)
     runs-on: ubuntu-latest
-    needs: [linux, macos, windows, android]
+    needs: [linux, macos, windows, android, wasm]
     if: (github.event_name == 'workflow_dispatch' && inputs.publish_release == true && inputs.dry_run_release == true) || (startsWith(github.ref, 'refs/tags/v') && vars.RELEASE_DRY_RUN == '1')
     permissions:
       contents: read
@@ -539,12 +645,18 @@ jobs:
           path: dist
           merge-multiple: true
 
+      - name: Download WebAssembly Playground bundle into dist/wasm/
+        uses: actions/download-artifact@v8
+        with:
+          name: wasm-demo-bundle
+          path: dist/wasm
+
       - name: Generate releases.json & SHA256SUMS.txt, sign with ephemeral key & verify dry-run plan
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
-          chmod +x ci/sign-release.sh ci/publish-release.sh ci/gitea-release.sh
+          chmod +x ci/sign-release.sh ci/sign-wasm-demo.sh ci/publish-release.sh ci/gitea-release.sh
 
           ephem_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/rago-dryrun-key.XXXXXX")"
           chmod 700 "$ephem_dir"
@@ -572,12 +684,13 @@ jobs:
             dist/SHA256SUMS.txt
             dist/SHA256SUMS.txt.minisig
             dist/*-sbom.spdx.json
+            dist/wasm/*-wasm-demo.tar.gz.minisig
           if-no-files-found: error
 
   release:
     name: Release Manifest, Minisign & Publish
     runs-on: ubuntu-latest
-    needs: [linux, macos, windows, android]
+    needs: [linux, macos, windows, android, wasm]
     if: (startsWith(github.ref, 'refs/tags/v') && vars.RELEASE_DRY_RUN != '1') || (github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && inputs.publish_release == true && inputs.dry_run_release == false)
     environment: release
     permissions:
@@ -605,6 +718,12 @@ jobs:
           path: dist
           merge-multiple: true
 
+      - name: Download WebAssembly Playground bundle into dist/wasm/
+        uses: actions/download-artifact@v8
+        with:
+          name: wasm-demo-bundle
+          path: dist/wasm
+
       - name: Generate releases.json & SHA256SUMS.txt, sign with minisign, verify & publish
         env:
           GH_TOKEN: ${{ github.token }}
@@ -630,7 +749,7 @@ jobs:
           RAGO_MIN_SUPPORTED_VERSION: ${{ secrets.RAGO_MIN_SUPPORTED_VERSION }}
         run: |
           set -euo pipefail
-          chmod +x ci/sign-release.sh ci/publish-release.sh ci/gitea-release.sh
+          chmod +x ci/sign-release.sh ci/sign-wasm-demo.sh ci/publish-release.sh ci/gitea-release.sh
 
           ssh_cleanup=""
           trap '[ -z "$ssh_cleanup" ] || rm -rf "$ssh_cleanup"' EXIT
@@ -728,7 +847,34 @@ jobs:
           )"
 
           if [ "$wf_status" = "204" ] || [ "$wf_status" = "200" ]; then
-            echo "Triggered Gitea workflow_dispatch successfully (HTTP $wf_status)."
+            echo "Triggered Gitea sync-releases-manifest.yml workflow_dispatch successfully (HTTP $wf_status)."
+            demo_payload="$(TAG="$tag" node -e 'process.stdout.write(JSON.stringify({ ref: "main", inputs: { tag: process.env.TAG, target_env: "production" } }))')"
+            demo_status="$(curl --silent --show-error --proto '=https' --tlsv1.2 --config - \
+              -o "$dispatch_tmp/demo-wf.out" -w '%{http_code}' \
+              -X POST "$host/api/v1/repos/$GITEA_SYNC_REPO/actions/workflows/sync-wasm-demo.yml/dispatches" \
+              -H 'Content-Type: application/json' \
+              -d "$demo_payload" <<EOF
+          header = "Authorization: token ${SYNC_TOKEN}"
+          EOF
+            )"
+            if [ "$demo_status" = "204" ] || [ "$demo_status" = "200" ]; then
+              echo "Triggered Gitea sync-wasm-demo.yml workflow_dispatch successfully (HTTP $demo_status)."
+            else
+              demo_repo_payload="$(TAG="$tag" node -e 'process.stdout.write(JSON.stringify({ event_type: "wasm-demo-published", client_payload: { tag: process.env.TAG, target_env: "production" } }))')"
+              demo_repo_status="$(curl --silent --show-error --proto '=https' --tlsv1.2 --config - \
+                -o "$dispatch_tmp/demo-repo.out" -w '%{http_code}' \
+                -X POST "$host/api/v1/repos/$GITEA_SYNC_REPO/dispatches" \
+                -H 'Content-Type: application/json' \
+                -d "$demo_repo_payload" <<EOF
+          header = "Authorization: token ${SYNC_TOKEN}"
+          EOF
+              )"
+              if [ "$demo_repo_status" = "204" ] || [ "$demo_repo_status" = "200" ]; then
+                echo "Triggered Gitea wasm-demo-published repository_dispatch successfully (HTTP $demo_repo_status)."
+              else
+                echo "::warning::sync-wasm-demo dispatch returned HTTP $demo_status / $demo_repo_status (ensure sync-wasm-demo.yml is on $GITEA_SYNC_REPO main)."
+              fi
+            fi
             exit 0
           fi
 
@@ -762,4 +908,233 @@ jobs:
             dist/SHA256SUMS.txt
             dist/SHA256SUMS.txt.minisig
             dist/*-sbom.spdx.json
+            dist/wasm/*-wasm-demo.tar.gz.minisig
           if-no-files-found: error
+
+  publish-wasm-demo-dry-run:
+    name: Sign & Sync WebAssembly Playground (Dry Run)
+    runs-on: ubuntu-latest
+    needs: [wasm]
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_wasm_demo == true && inputs.publish_release != true && inputs.dry_run_release == true
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Install minisign & Python 3
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends minisign jq curl ca-certificates python3
+
+      - name: Download WebAssembly Playground bundle into dist/wasm/
+        uses: actions/download-artifact@v8
+        with:
+          name: wasm-demo-bundle
+          path: dist/wasm
+
+      - name: Dry-run sign & verify WASM Playground bundle with ephemeral Minisign key
+        env:
+          INPUT_RELEASE_VER: ${{ inputs.release_version }}
+        run: |
+          set -euo pipefail
+          chmod +x ci/sign-wasm-demo.sh
+
+          ephem_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/rago-wasm-dryrun.XXXXXX")"
+          chmod 700 "$ephem_dir"
+          trap 'rm -rf "$ephem_dir"' EXIT
+
+          minisign -G -W -p "$ephem_dir/dryrun.pub" -s "$ephem_dir/dryrun.key" >/dev/null
+          export RAGO_MINISIGN_SECRET_KEY_FILE="$ephem_dir/dryrun.key"
+          export RAGO_MINISIGN_PUBKEY="$(tail -n 1 "$ephem_dir/dryrun.pub" | tr -d '[:space:]')"
+
+          ver_args=(--allow-test-pubkey)
+          if [ -n "${INPUT_RELEASE_VER:-}" ]; then
+            ver_args+=(--version "$INPUT_RELEASE_VER")
+          fi
+          ./ci/sign-wasm-demo.sh "${ver_args[@]}"
+          echo "[dry-run] WASM Playground signature & USTAR archive verified cleanly."
+
+  publish-wasm-demo:
+    name: Sign & Sync WebAssembly Playground
+    runs-on: ubuntu-latest
+    needs: [wasm]
+    if: github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && inputs.publish_wasm_demo == true && inputs.publish_release != true && inputs.dry_run_release == false
+    environment: release
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Install minisign, curl & Python 3
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends minisign jq curl ca-certificates python3
+
+      - name: Download WebAssembly Playground bundle into dist/wasm/
+        uses: actions/download-artifact@v8
+        with:
+          name: wasm-demo-bundle
+          path: dist/wasm
+
+      - name: Sign WASM Playground bundle, attach to GitHub Release & trigger Gitea sync-wasm-demo
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          INPUT_RELEASE_VER: ${{ inputs.release_version }}
+          TARGET_ENV: ${{ inputs.wasm_demo_target || 'production' }}
+          RAGO_MINISIGN_SECRET_KEY: ${{ secrets.RAGO_MINISIGN_SECRET_KEY || secrets.MINISIGN_SECRET_KEY }}
+          RAGO_MINISIGN_PASSWORD: ${{ secrets.RAGO_MINISIGN_PASSWORD || secrets.MINISIGN_PASSWORD }}
+          RAGO_MINISIGN_PUBKEY: ${{ secrets.RAGO_MINISIGN_PUBKEY }}
+          SYNC_TOKEN: ${{ secrets.GITEA_RELEASE_SYNC_TOKEN || secrets.GITEA_TOKEN }}
+          GITEA_HOST: ${{ secrets.GITEA_HOST || vars.GITEA_HOST }}
+          GITEA_SYNC_REPO: ${{ secrets.GITEA_SYNC_REPO || vars.GITEA_SYNC_REPO }}
+        run: |
+          set -euo pipefail
+          set +x
+          chmod +x ci/sign-wasm-demo.sh
+
+          target_env="$(printf '%s' "$TARGET_ENV" | tr -d '[:space:]')"
+          if [ "$target_env" != "production" ] && [ "$target_env" != "staging" ]; then
+            echo "::error::wasm_demo_target must be 'production' or 'staging' (got '$target_env')."
+            exit 1
+          fi
+
+          if [ -n "${INPUT_RELEASE_VER:-}" ]; then
+            tag="v${INPUT_RELEASE_VER#v}"
+          else
+            tag="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName,isDraft,isPrerelease -q 'select(.isDraft == false and .isPrerelease == false) | .tagName' || true)"
+          fi
+          if [ -z "$tag" ]; then
+            echo "::error::Could not resolve an existing published stable GitHub Release tag (pass release_version explicitly or create a release first)."
+            exit 1
+          fi
+
+          allow_pre="false"
+          if [[ "$tag" == *-* ]]; then
+            if [ "$target_env" = "production" ]; then
+              echo "::error::Pre-release tag '$tag' cannot target production demo; set wasm_demo_target=staging."
+              exit 1
+            fi
+            allow_pre="true"
+          fi
+          if [ "$allow_pre" = "true" ]; then
+            if ! [[ "$tag" =~ ^v(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})-[0-9A-Za-z.-]+$ ]]; then
+              echo "::error::Invalid SemVer pre-release tag '$tag'."
+              exit 1
+            fi
+          else
+            if ! [[ "$tag" =~ ^v(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})$ ]]; then
+              echo "::error::Invalid stable SemVer tag '$tag'."
+              exit 1
+            fi
+          fi
+
+          # Verify target GitHub Release exists and is published (not draft) before decrypting Minisign key.
+          rel_meta="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft,isPrerelease || true)"
+          if [ -z "$rel_meta" ]; then
+            echo "::error::GitHub Release '$tag' does not exist on $GITHUB_REPOSITORY."
+            exit 1
+          fi
+          REL_META="$rel_meta" TENV="$target_env" node -e '
+            const m = JSON.parse(process.env.REL_META);
+            if (m.isDraft) {
+              console.error("::error::Refusing to attach WASM Playground bundle to a draft GitHub Release (assets would 404 on public sync).");
+              process.exit(1);
+            }
+            if (process.env.TENV === "production" && m.isPrerelease) {
+              console.error("::error::Refusing to sync a pre-release GitHub Release to production demo.");
+              process.exit(1);
+            }
+          '
+
+          archive_name="$(node ci/verify-remote-manifest.mjs print-demo-urls | node -e 'process.stdout.write(JSON.parse(require("node:fs").readFileSync(0, "utf8")).archiveName)')"
+          archive_path="dist/wasm/$archive_name"
+          sig_path="${archive_path}.minisig"
+
+          ./ci/sign-wasm-demo.sh --archive "$archive_path" --version "${tag#v}"
+
+          verify_args=(verify-demo --archive "$archive_path" --sig "$sig_path" --tag "$tag")
+          [ "$allow_pre" = "true" ] && verify_args+=(--allow-prerelease)
+          node ci/verify-remote-manifest.mjs "${verify_args[@]}"
+
+          echo "Uploading signed $archive_name + .minisig to GitHub Release $tag ..."
+          gh release upload "$tag" "$archive_path" "$sig_path" --repo "$GITHUB_REPOSITORY" --clobber
+
+          if [ -z "${SYNC_TOKEN:-}" ] || [ -z "${GITEA_HOST:-}" ] || [ -z "${GITEA_SYNC_REPO:-}" ]; then
+            echo "::notice::GITEA_RELEASE_SYNC_TOKEN, GITEA_HOST, or GITEA_SYNC_REPO is not set; trigger sync-wasm-demo manually in Gitea."
+            exit 0
+          fi
+          if [[ "$SYNC_TOKEN" =~ [[:cntrl:][:space:]\"\\] ]]; then
+            echo "::error::Gitea sync token contains invalid whitespace, control, quote, or backslash characters."
+            exit 1
+          fi
+
+          host="${GITEA_HOST%/}"
+          if ! [[ "$host" =~ ^https://[A-Za-z0-9.-]+(:[0-9]+)?$ ]] || ! [[ "$GITEA_SYNC_REPO" =~ ^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$ ]] || [[ "$GITEA_SYNC_REPO" == *".."* ]]; then
+            echo "::error::Invalid GITEA_HOST or GITEA_SYNC_REPO format."
+            exit 1
+          fi
+
+          umask 077
+          dispatch_tmp="$(mktemp -d "${RUNNER_TEMP:-/tmp}/gitea-wasm-dispatch.XXXXXX")"
+          chmod 700 "$dispatch_tmp"
+          trap 'rm -rf "$dispatch_tmp"' EXIT
+
+          wf_payload="$(TAG="$tag" TENV="$target_env" node -e '
+            process.stdout.write(JSON.stringify({
+              ref: "main",
+              inputs: {
+                tag: process.env.TAG,
+                target_env: process.env.TENV
+              }
+            }));
+          ')"
+          wf_status="$(curl --silent --show-error --proto '=https' --tlsv1.2 --config - \
+            -o "$dispatch_tmp/wf.out" -w '%{http_code}' \
+            -X POST "$host/api/v1/repos/$GITEA_SYNC_REPO/actions/workflows/sync-wasm-demo.yml/dispatches" \
+            -H 'Content-Type: application/json' \
+            -d "$wf_payload" <<EOF
+          header = "Authorization: token ${SYNC_TOKEN}"
+          EOF
+          )"
+          if [ "$wf_status" = "204" ] || [ "$wf_status" = "200" ]; then
+            echo "Triggered Gitea sync-wasm-demo.yml workflow_dispatch successfully (HTTP $wf_status)."
+            exit 0
+          fi
+
+          repo_payload="$(TAG="$tag" TENV="$target_env" node -e '
+            process.stdout.write(JSON.stringify({
+              event_type: "wasm-demo-published",
+              client_payload: {
+                tag: process.env.TAG,
+                target_env: process.env.TENV
+              }
+            }));
+          ')"
+          repo_status="$(curl --silent --show-error --proto '=https' --tlsv1.2 --config - \
+            -o "$dispatch_tmp/repo.out" -w '%{http_code}' \
+            -X POST "$host/api/v1/repos/$GITEA_SYNC_REPO/dispatches" \
+            -H 'Content-Type: application/json' \
+            -d "$repo_payload" <<EOF
+          header = "Authorization: token ${SYNC_TOKEN}"
+          EOF
+          )"
+          if [ "$repo_status" = "204" ] || [ "$repo_status" = "200" ]; then
+            echo "Triggered Gitea wasm-demo-published repository_dispatch successfully (HTTP $repo_status)."
+            exit 0
+          fi
+
+          echo "::error::Failed to trigger Gitea sync-wasm-demo (workflow_dispatch HTTP $wf_status, repository_dispatch HTTP $repo_status)."
+          exit 1

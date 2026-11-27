@@ -40,6 +40,10 @@
         <translation>التحقق من التحديثات</translation>
     </message>
     <message>
+        <source>Download Desktop App</source>
+        <translation>تنزيل تطبيق سطح المكتب</translation>
+    </message>
+    <message>
         <source>Open-Source Licenses…</source>
         <translation>تراخيص المصادر المفتوحة…</translation>
     </message>
@@ -451,6 +455,14 @@
         <translation>مزامنة الآن</translation>
     </message>
     <message>
+        <source>Reset Demo Data…</source>
+        <translation>إعادة ضبط بيانات العرض…</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>تنزيل تطبيق سطح المكتب</translation>
+    </message>
+    <message>
         <source>Keyboard Shortcuts</source>
         <translation>اختصارات لوحة المفاتيح</translation>
     </message>
@@ -520,6 +532,18 @@
     <message>
         <source>Monitor</source>
         <translation>المراقب</translation>
+    </message>
+    <message>
+        <source>Reset Demo</source>
+        <translation>إعادة ضبط العرض</translation>
+    </message>
+    <message>
+        <source>Reset Demo Data</source>
+        <translation>إعادة ضبط بيانات العرض</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>تنزيل تطبيق سطح المكتب</translation>
     </message>
     <message>
         <source>Syncing…</source>
@@ -604,6 +628,10 @@
         <translation>JSON التصفية غير صالح: %1</translation>
     </message>
     <message>
+        <source>Collection export is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Cannot open output file for writing: %1</source>
         <translation>تعذّر فتح ملف الإخراج للكتابة: %1</translation>
     </message>
@@ -614,6 +642,10 @@
     <message>
         <source>Cannot open input file for reading: %1</source>
         <translation>تعذّر فتح ملف الإدخال للقراءة: %1</translation>
+    </message>
+    <message>
+        <source>Collection import is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Import cancelled.</source>
@@ -2893,6 +2925,18 @@
         <source>Close</source>
         <translation>إغلاق</translation>
     </message>
+    <message>
+        <source>Reset Demo Data?</source>
+        <translation>هل تريد إعادة ضبط بيانات العرض؟</translation>
+    </message>
+    <message>
+        <source>Reset Demo Data</source>
+        <translation>إعادة ضبط بيانات العرض</translation>
+    </message>
+    <message>
+        <source>Restore the in-browser demo database to its initial sample collections and documents? Any changes made in this session will be discarded.</source>
+        <translation>هل تريد استعادة قاعدة بيانات العرض داخل المتصفح إلى مجموعاتها ومستنداتها النموذجية الأولية؟ سيتم تجاهل أي تغييرات أُجريت في هذه الجلسة.</translation>
+    </message>
 </context>
 <context>
     <name>MainWorkspaceArea</name>
@@ -2905,8 +2949,16 @@
         <translation>لا توجد تبويبات مفتوحة</translation>
     </message>
     <message>
+        <source>Double-click any collection in Explorer to query, or open a new playground shell.</source>
+        <translation>انقر نقرًا مزدوجًا فوق أي مجموعة في المستكشف للاستعلام عنها، أو افتح صدفة ساحة تجربة جديدة.</translation>
+    </message>
+    <message>
         <source>Double-click any collection in Explorer to query, or open a new connection.</source>
         <translation>انقر نقرًا مزدوجًا على أي مجموعة في المستكشف لاستعلامها، أو افتح اتصالًا جديدًا.</translation>
+    </message>
+    <message>
+        <source>Open Playground Shell</source>
+        <translation>فتح صدفة ساحة التجربة</translation>
     </message>
     <message>
         <source>Welcome Guide</source>
@@ -4440,8 +4492,8 @@
         <translation>تعذّر العثور على عضو في مجموعة النسخ المتماثلة يمكن الوصول إليه لتشغيل rs.status().</translation>
     </message>
     <message>
-        <source>Shell tabs are not yet supported over gateway/demo connection channels.</source>
-        <translation>علامات تبويب شل غير مدعومة بعد عبر قنوات الاتصال بالبوابة أو العرض التوضيحي.</translation>
+        <source>Direct replica-set member connections are not supported over gateway or demo channels.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Server is not connected</source>
@@ -4450,6 +4502,10 @@
     <message>
         <source>Shell</source>
         <translation>شل</translation>
+    </message>
+    <message>
+        <source>Demo data reset to defaults.</source>
+        <translation>تمت إعادة ضبط بيانات العرض إلى الإعدادات الافتراضية.</translation>
     </message>
     <message>
         <source>The network changed. Checking the open connections…</source>
@@ -4531,6 +4587,10 @@
         <translation>الخادم غير متصل.</translation>
     </message>
     <message>
+        <source>Collection export is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Exporting %1.%2…</source>
         <translation>جارٍ تصدير %1.%2…</translation>
     </message>
@@ -4555,6 +4615,10 @@
             <numerusform>صُدِّر %n مستندًا من %1.%2.</numerusform>
             <numerusform>صُدِّر %n مستند من %1.%2.</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>Collection import is not supported over gateway or demo connection channels.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Importing into %1.%2…</source>
@@ -6298,6 +6362,14 @@ Error:
         <translation>اتصال جديد (%1)</translation>
     </message>
     <message>
+        <source>Open Playground Shell</source>
+        <translation>فتح صدفة ساحة التجربة</translation>
+    </message>
+    <message>
+        <source>Download Desktop App</source>
+        <translation>تنزيل تطبيق سطح المكتب</translation>
+    </message>
+    <message>
         <source>View Logs (%1)</source>
         <translation>عرض السجلات (%1)</translation>
     </message>
@@ -6318,8 +6390,16 @@ Error:
         <translation>البدء</translation>
     </message>
     <message>
+        <source>✦ In-Browser MongoDB Playground</source>
+        <translation>✦ ساحة تجربة MongoDB داخل المتصفح</translation>
+    </message>
+    <message>
         <source>✦ Connect to MongoDB</source>
         <translation>✦ الاتصال بـ MongoDB</translation>
+    </message>
+    <message>
+        <source>Explore the sample &apos;catalog&apos; database directly in browser memory — no server setup required. Use &apos;Reset Demo&apos; in the top bar anytime, or download the desktop app to connect to your own MongoDB servers.</source>
+        <translation>استكشف قاعدة البيانات النموذجية &apos;catalog&apos; مباشرةً في ذاكرة المتصفح دون الحاجة إلى إعداد خادم. استخدم &apos;إعادة ضبط العرض&apos; في الشريط العلوي في أي وقت، أو قم بتنزيل تطبيق سطح المكتب للاتصال بخوادم MongoDB الخاصة بك.</translation>
     </message>
     <message>
         <source>Click &apos;New Connection&apos; in the top bar or press Ctrl+N to configure Direct Connections, Replica Sets, SSH Tunnels, and TLS/SSL certificates.</source>
