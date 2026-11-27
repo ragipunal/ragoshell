@@ -30,6 +30,11 @@ import {
 } from './generate-releases-json.mjs';
 import { verifyReleaseTag } from './check-release-tag.mjs';
 import {
+  buildReleaseSyncUrls,
+  normalizeStableReleaseTag,
+  verifySignedManifestFiles,
+} from './verify-remote-manifest.mjs';
+import {
   generateEphemeralTestKeyPair,
   parseMinisignPublicKey,
   signBufferWithTestKey,
@@ -1539,6 +1544,136 @@ function testAndroidSigningAnd16KbAlignmentGates(brand, tmpRoot) {
   }
 }
 
+function testRemoteManifestSyncVerifier(brand, signedFixture, tmpRoot) {
+  const { distDir, version, keyA } = signedFixture;
+  const manifestPath = path.join(distDir, 'releases.json');
+  const sigPath = path.join(distDir, 'releases.json.minisig');
+
+  // 1. Tag grammar & URL derivation from single-source brand defaults
+  assert.deepEqual(normalizeStableReleaseTag('v2.1.2'), { tag: 'v2.1.2', version: '2.1.2' });
+  for (const badTag of ['2.1.2', 'v2.1.2-rc.1', 'v2.1.2-alpha.1', 'v02.1.2', 'v2.1.2;id', '../v2.1.2', '']) {
+    assert.throws(() => normalizeStableReleaseTag(badTag), /Refusing non-stable or invalid release tag/);
+  }
+
+  const urls = buildReleaseSyncUrls('v2.1.2', repoRoot);
+  assert.equal(urls.githubRepo, `${brand.githubOwner}/${brand.productId}`);
+  assert.equal(
+    urls.manifestUrl,
+    `https://github.com/${brand.githubOwner}/${brand.productId}/releases/download/v2.1.2/releases.json`
+  );
+  assert.equal(urls.liveManifestUrl, `${brand.defaultDlBaseUrl}/releases.json`);
+
+  // 2. Positive: signed manifest passes with older live version (upgrade) and equal live version (idempotent re-run)
+  const syncDir = path.join(tmpRoot, 'remote-sync-test');
+  fs.mkdirSync(syncDir, { recursive: true });
+  const olderLivePath = path.join(syncDir, 'live-older.json');
+  fs.writeFileSync(olderLivePath, JSON.stringify({ latestVersion: '1.9.5' }), 'utf8');
+
+  const okUpgrade = verifySignedManifestFiles({
+    manifestPath,
+    sigPath,
+    expectedTag: `v${version}`,
+    repoRoot,
+    currentManifestPath: olderLivePath,
+    allowTestPubkey: true,
+    pubKeyOverride: keyA.base64,
+    checkClockSkew: false,
+  });
+  assert.equal(okUpgrade.version, version);
+  assert.equal(okUpgrade.previousVersion, '1.9.5');
+
+  const sameLivePath = path.join(syncDir, 'live-same.json');
+  fs.writeFileSync(sameLivePath, JSON.stringify({ latestVersion: version }), 'utf8');
+  const okIdempotent = verifySignedManifestFiles({
+    manifestPath,
+    sigPath,
+    expectedTag: `v${version}`,
+    repoRoot,
+    currentManifestPath: sameLivePath,
+    allowTestPubkey: true,
+    pubKeyOverride: keyA.base64,
+    checkClockSkew: false,
+  });
+  assert.equal(okIdempotent.previousVersion, version);
+
+  // 3. Negative: pubKeyOverride without allowTestPubkey is strictly forbidden
+  assert.throws(
+    () =>
+      verifySignedManifestFiles({
+        manifestPath,
+        sigPath,
+        expectedTag: `v${version}`,
+        repoRoot,
+        pubKeyOverride: keyA.base64,
+        checkClockSkew: false,
+      }),
+    /pubKeyOverride is forbidden/
+  );
+
+  // 4. Negative: version downgrade over newer live manifest is refused unless allowRollback=true
+  const newerLivePath = path.join(syncDir, 'live-newer.json');
+  fs.writeFileSync(newerLivePath, JSON.stringify({ latestVersion: '9.9.9' }), 'utf8');
+  assert.throws(
+    () =>
+      verifySignedManifestFiles({
+        manifestPath,
+        sigPath,
+        expectedTag: `v${version}`,
+        repoRoot,
+        currentManifestPath: newerLivePath,
+        allowTestPubkey: true,
+        pubKeyOverride: keyA.base64,
+        checkClockSkew: false,
+      }),
+    /Refusing version downgrade/
+  );
+
+  const okRollback = verifySignedManifestFiles({
+    manifestPath,
+    sigPath,
+    expectedTag: `v${version}`,
+    repoRoot,
+    currentManifestPath: newerLivePath,
+    allowRollback: true,
+    allowTestPubkey: true,
+    pubKeyOverride: keyA.base64,
+    checkClockSkew: false,
+  });
+  assert.equal(okRollback.version, version);
+
+  // 5. Negative: tag mismatch against validly signed manifest is refused
+  assert.throws(
+    () =>
+      verifySignedManifestFiles({
+        manifestPath,
+        sigPath,
+        expectedTag: 'v2.0.1',
+        repoRoot,
+        allowTestPubkey: true,
+        pubKeyOverride: keyA.base64,
+        checkClockSkew: false,
+      }),
+    /Trusted comment release mismatch/
+  );
+
+  // 6. Negative: tampered JSON bytes fail Ed25519 verification
+  const tamperedPath = path.join(syncDir, 'tampered.json');
+  fs.writeFileSync(tamperedPath, `${fs.readFileSync(manifestPath, 'utf8')}\n`, 'utf8');
+  assert.throws(
+    () =>
+      verifySignedManifestFiles({
+        manifestPath: tamperedPath,
+        sigPath,
+        expectedTag: `v${version}`,
+        repoRoot,
+        allowTestPubkey: true,
+        pubKeyOverride: keyA.base64,
+        checkClockSkew: false,
+      }),
+    /signature verification failed/
+  );
+}
+
 async function main() {
   const brand = readBrandDefaults(repoRoot);
   assert.ok(brand.productId.length > 0);
@@ -1549,6 +1684,7 @@ async function main() {
     await testManifestGenerationAndSchemaCompatibility(brand, tmpRoot);
     testNegativeManifestAndFilesystemGuards(brand, tmpRoot);
     const signedFixture = testMinisignCryptographicAndCommentGuards(brand, tmpRoot);
+    testRemoteManifestSyncVerifier(brand, signedFixture, tmpRoot);
     testPublishDryRunAndLiveGuards(brand, signedFixture);
     testPublishPrereleaseSkipsRootManifest(brand, tmpRoot, signedFixture.keyA);
     testRealMinisignCliEndToEndIfInstalled(brand, tmpRoot);

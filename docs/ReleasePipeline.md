@@ -374,3 +374,28 @@ so stable installations are never offered a release candidate (`UpdatePulse` has
 `--stable` cannot override a pre-release version. Version precedence everywhere (`generate-releases-json.mjs`,
 `UpdatePulse::compareVersions`) follows SemVer 2.0.0 §11: `rc.10 > rc.2`, numeric < alphanumeric
 identifiers, leading-zero numeric identifiers are rejected.
+
+---
+
+## 9. UFW Korumalı Sunucuya HTTPS (Gitea Actions) Üzerinden İmzalı Manifest Köprüsü (2026-11-26)
+
+Üretim sunucusunda `22/tcp` (SSH) kapısı UFW üzerinde dış dünyaya kapalı tutulup yalnızca sabit yönetici IP'lerine
+açık olduğunda, GitHub Actions bulut koşucuları (`ubuntu-latest`) sunucuya doğrudan SSH kuramaz. `22/tcp` kapısını
+dış dünyaya açmadan tam otomatik yayın geçişi şu mimariyle sağlanır:
+
+```text
+GitHub Actions (release işi, vX.Y.Z kararlı etiketi)
+  └── HTTPS 443 POST ──► Gitea API (workflow_dispatch / repository_dispatch)
+                            └── Gitea Runner (izinli ağda) ──► .gitea/workflows/sync-releases-manifest.yml
+                                  ├── 1. GitHub Releases CDN'den releases.json + releases.json.minisig indirir (yalnız kararlı SemVer)
+                                  ├── 2. ci/verify-remote-manifest.mjs ile Ed25519/BLAKE2b-512 imzasını, şemayı ve sürüm düşürmeme kuralını doğrular
+                                  └── 3. Yalnız `releases` komutuna kilitli SSH anahtarıyla deploy-receive.sh üzerinden /srv/site/releases.json(.minisig) günceller
+```
+
+### Ek Tehdit Modeli ve Kontroller
+
+| Kod | Tehdit / Saldırı Yüzeyi | Uygulanan Kriptografik ve Mimari Önlem |
+|---|---|---|
+| **T9** | Bulut CI koşucuları için `22/tcp` kapısını tüm internete açma riski | `22/tcp` UFW kuralı değişmeden kalır; GitHub Actions yalnızca `443/tcp` HTTPS üzerinden Gitea API'sine tetik gönderir (`curl --config -` ile token süreç tablosunda görünmez). |
+| **T10** | Ele geçirilen Gitea tetikleme token'ı ile komut enjeksiyonu, SSRF, ön-sürüm (`-rc.N`) sızdırma veya eski imzalı sürüme geri alma (Downgrade Replay) | `ci/verify-remote-manifest.mjs` yalnız sıkı kararlı SemVer etiketlerini (`^v(0\|[1-9]\d{0,3})\.(0\|[1-9]\d{0,3})\.(0\|[1-9]\d{0,3})$`) kabul eder, ön sürümleri reddeder; indirme adresini kullanıcı girdisinden değil `cmake/RagoShellDefaults.cmake` tek kaynağından türetir; `RAGO_MINISIGN_PUBKEY` ile Ed25519 + `trusted comment` (`release:<ver>`, `file:releases.json`) doğrulaması yapar; ayrıca canlı manifest sürümüyle karşılaştırarak (`--current-manifest`) sürüm düşürmeyi (`new < live`) `--allow-rollback` açıkça verilmedikçe reddeder. |
+| **T11** | Gitea deposundaki SSH anahtarının `infra` / `api` / `site` komutlarını çalıştırabilmesi | Sunucu `~deploy/.ssh/authorized_keys` satırında `command="/usr/bin/env SSH_ORIGINAL_COMMAND=releases /opt/ragoshell-infra/scripts/deploy-receive.sh production",restrict` kullanılır; istemci hangi komutu gönderirse göndersin `sshd` yalnız `releases` (≤ 64 KiB `releases.json` + `releases.json.minisig` atomik değişimi) çalıştırır. |
